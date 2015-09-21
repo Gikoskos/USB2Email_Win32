@@ -15,11 +15,12 @@ HINSTANCE g_hInst;
 *Input field global data*
 \***********************/
 char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
+UINT PORT;
 
 /**********************\
 *AutoCheck Button Bools*
 \**********************/
-BOOL ValidEmailCheck = FALSE;
+BOOL ValidEmailCheck = TRUE;
 BOOL USBRefresh = TRUE;
 
 
@@ -39,10 +40,25 @@ HWND USBListButton, EMAILButton, STARTSTOP, time_track;
 #define T_MIN                       0
 #define T_MAX                      20
 
+/*Flag for ValidEmailCheck*/
+#define NO_SEPARATOR              '\0'
+
+
+/********************************************\
+*Macros to clear all data entered by the user*
+\********************************************/
 #define ClearPwd()                                               \
 while (1) {                                                      \
 	if (pass) free(pass);                                        \
 	pass = NULL;                                                 \
+	break;                                                       \
+}
+
+#define ClearPrefs()                                             \
+while (1) {                                                      \
+	if (SMTP_SERVER) free(SMTP_SERVER);                          \
+	SMTP_SERVER = NULL;                                          \
+	PORT = 0;                                                    \
 	break;                                                       \
 }
 
@@ -53,12 +69,40 @@ while (1) {                                                      \
 	if (CC) free(CC);                                            \
 	if (SUBJECT) free(SUBJECT);                                  \
 	if (BODY) free(BODY);                                        \
-	if (SMTP_SERVER) free(SMTP_SERVER);                          \
 	FROM = TO = CC = SUBJECT = BODY = SMTP_SERVER = NULL;        \
 	break;                                                       \
 }
 
-void GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
+/*********************\
+* Function prototypes *
+\*********************/
+LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+BOOL parseEmailDialogFields(HWND hwnd);
+BOOL parsePrefDialogFields(HWND hwnd);
+HWND WINAPI CreateToolTip(int toolID, HWND hDlg, PTSTR pszText);
+BOOL isValidDomain(char *str, char SEPARATOR);
+VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
+
+VOID InitEmailDialog(HWND hwnd);
+VOID InitAboutDialog(HWND hwnd);
+VOID InitPasswordDialog(HWND hwnd);
+VOID InitPreferencesDialog(HWND hwnd);
+VOID DeleteUSBItem(HWND hwnd, char *s);
+VOID AddUSBItem(HWND hwnd, char *s);
+VOID RemoveStringFromListBox(HWND hDlg, int nIDDlgItem, char *s);
+VOID AddStringToListBox(HWND hDlg, int nIDDlgItem, char *s);
+VOID DeleteAll();
+VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
+
+
+
+VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 {
 	int bufsiz = GetWindowTextLength(GetDlgItem(hwnd, nIDDlgItem)) + 1;
 
@@ -72,43 +116,101 @@ void GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 	}
 }
 
-void AddStringToListBox(HWND hDlg, int nIDDlgItem, char *s)
+VOID DeleteAll()
+{
+	ClearEmailData();
+	ClearPwd();
+	ClearPrefs();
+}
+
+VOID AddStringToListBox(HWND hDlg, int nIDDlgItem, char *s)
 {
 	SendDlgItemMessage(hDlg, nIDDlgItem, LB_ADDSTRING, 0, (LPARAM)s);
 }
 
-void RemoveStringFromListBox(HWND hDlg, int nIDDlgItem, char *s)
+VOID RemoveStringFromListBox(HWND hDlg, int nIDDlgItem, char *s)
 {
 	SendDlgItemMessage(hDlg, nIDDlgItem, LB_DELETESTRING, 0, (LPARAM)s);
 }
 
-void AddUSBItem(HWND hwnd, char *s)
+VOID AddUSBItem(HWND hwnd, char *s)
 {
 	AddStringToListBox(hwnd, IDC_USBDEVLIST, s);
 }
 
-void DeleteUSBItem(HWND hwnd, char *s)
+VOID DeleteUSBItem(HWND hwnd, char *s)
 {
 	RemoveStringFromListBox(hwnd, IDC_USBDEVLIST, s);
 }
 
-void getUSBlist(HWND hwnd)
+VOID getUSBlist(HWND hwnd)
 {
 	return;
 }
 
-BOOL isValidDomain(char *str)
+VOID InitPreferencesDialog(HWND hwnd)
 {
-	char *c = strchr(str, '@');
-	
+	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PREFDIALOG),
+					hwnd, PrefDialogProcedure) == -1) {
+		MessageBox(hwnd, "Preferences dialog failed!", "Error!", MB_OK | MB_ICONERROR);
+	}
+}
+
+VOID InitPasswordDialog(HWND hwnd)
+{
+	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PWDDIALOG),
+					hwnd, PwdDialogProcedure) == -1) {
+		MessageBox(hwnd, "Password dialog failed!", "Error!", MB_OK | MB_ICONERROR);
+	}
+}
+
+VOID InitUSBDialog(HWND hwnd)
+{
+	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_USBDIALOG),
+					hwnd, USBDialogProcedure) == -1) {
+		MessageBox(hwnd, "USB dialog failed!", "Error!", MB_OK | MB_ICONERROR);
+	}
+}
+
+VOID InitAboutDialog(HWND hwnd)
+{
+	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTDIALOG),
+					hwnd, AboutDialogProcedure) == -1) {
+		MessageBox(hwnd, "About dialog failed!", "Error!", MB_OK | MB_ICONERROR);
+	}
+}
+
+VOID InitEmailDialog(HWND hwnd)
+{
+	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAILDIALOG),
+					hwnd, EmailDialogProcedure) == -1) {
+		MessageBox(hwnd, "Email dialog failed!", "Error!", MB_OK | MB_ICONERROR);
+	}
+}
+
+BOOL isValidDomain(char *str, char SEPARATOR)
+{
+	char *c = strchr(str, '@') + 1;
+
 	if (!c)
 		return FALSE;
+	if (c[0] == '.')
+		return FALSE;
+	if(strchr(c, '@'))
+		return isValidDomain(strchr(c, '@'), SEPARATOR);
+
 	char *d = c;
 	c = strchr(c, '.');
-	if (!c || c[1] == '\0' || d[1] == c[0])
+	if (!c)
 		return FALSE;
-	if (strchr(c, ';'))
-		return isValidDomain(strchr(c, ';'));
+	if (c[0] == '\0' || d[1] == c[0])
+		return FALSE;
+
+	if (SEPARATOR != NO_SEPARATOR) {
+		if (strchr(c, SEPARATOR))
+			return isValidDomain(strchr(c, SEPARATOR), SEPARATOR);
+	}
+
 	return TRUE;
 }
 
@@ -139,6 +241,47 @@ HWND WINAPI CreateToolTip(int toolID, HWND hDlg, PTSTR pszText)
     return hwndTip;
 }
 
+BOOL parsePrefDialogFields(HWND hwnd)
+{
+	char *tmp = NULL;
+	
+	GetFieldText(hwnd, IDC_SERVERURLFIELD, &tmp);
+	if (!tmp) {
+		MessageBox(hwnd, "SMTP server field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		return FALSE;
+	}
+
+	SMTP_SERVER = realloc(NULL, strlen(tmp)+1);
+	strncpy(SMTP_SERVER, tmp, strlen(tmp)+1);
+	free(tmp);
+	tmp = NULL;
+	
+	GetFieldText(hwnd, IDC_PORTFIELD, &tmp);
+	if (!tmp) {
+		MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		return FALSE;
+	} else if (strlen(tmp) > 5) {
+		free(tmp);
+		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		return FALSE;
+	}
+
+	PORT = 0;
+	UINT c;
+	for (size_t i = 0; i < strlen(tmp) ; i++) {
+		c = tmp[i] - '0';
+		PORT = c*((UINT)pow(10, (strlen(tmp) - (i+1)))) + PORT;
+	}
+	free(tmp);
+
+	if (PORT > 65535) {
+		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 BOOL parseEmailDialogFields(HWND hwnd)
 {
 	char *tmp = NULL;
@@ -148,52 +291,55 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	if (!tmp) {
 		MessageBox(hwnd, "FROM field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
-	} else if (ValidEmailCheck) { 
-		if (!isValidDomain(tmp)) {
+	}
+	
+	if (ValidEmailCheck) { 
+		if (!isValidDomain(tmp, NO_SEPARATOR)) {
 			MessageBox(hwnd, "Invalid e-mail address on FROM field!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 			free(tmp);
 			return FALSE;
 		}
-	} else {
-		FROM = realloc(NULL, strlen(tmp)+1);
-		strncpy(FROM, tmp, strlen(tmp)+1);
-		free(tmp);
-		tmp = NULL;
 	}
+	FROM = realloc(NULL, strlen(tmp)+1);
+	strncpy(FROM, tmp, strlen(tmp)+1);
+	free(tmp);
+	tmp = NULL;
 	
 	GetFieldText(hwnd, IDC_TOFIELD, &tmp);
 	if (!tmp) {
 		MessageBox(hwnd, "TO field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
-	} else if (ValidEmailCheck) { 
-		if (!isValidDomain(tmp)) {
+	}
+
+	if (ValidEmailCheck) { 
+		if (!isValidDomain(tmp, NO_SEPARATOR)) {
 			MessageBox(hwnd, "Invalid e-mail address on TO field!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 			free(tmp);
 			return FALSE;
 		}
-	} else {
-		TO = realloc(NULL, strlen(tmp)+1);
-		strncpy(TO, tmp, strlen(tmp)+1);
-		free(tmp);
-		tmp = NULL;
 	}
+	TO = realloc(NULL, strlen(tmp)+1);
+	strncpy(TO, tmp, strlen(tmp)+1);
+	free(tmp);
+	tmp = NULL;
 	
 	GetFieldText(hwnd, IDC_CCFIELD, &tmp);
 	if (!tmp) {
 		CC = malloc(2);
 		snprintf(CC, 1, "");
-	} else if (ValidEmailCheck) { 
-		if (!isValidDomain(tmp)) {
+	}
+
+	if (ValidEmailCheck) { 
+		if (!isValidDomain(tmp, ';')) {
 			MessageBox(hwnd, "Invalid e-mail address on CC field!", "Error!", MB_OK | MB_ICONEXCLAMATION);
 			free(tmp);
 			return FALSE;
 		}
-	} else {
-		CC = realloc(NULL, strlen(tmp)+1);
-		strncpy(CC, tmp, strlen(tmp)+1);
-		free(tmp);
-		tmp = NULL;
 	}
+	CC = realloc(NULL, strlen(tmp)+1);
+	strncpy(CC, tmp, strlen(tmp)+1);
+	free(tmp);
+	tmp = NULL;
 	
 	GetFieldText(hwnd, IDC_SUBJECTFIELD, &tmp);
 	if (!tmp) {
@@ -215,7 +361,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	return TRUE;
 }
 
-BOOL CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_INITDIALOG:
@@ -240,7 +386,7 @@ BOOL CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 	return TRUE;
 }
 
-BOOL CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_INITDIALOG:
@@ -274,7 +420,7 @@ BOOL CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 	return TRUE;
 }
 
-BOOL CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_INITDIALOG:
@@ -286,6 +432,12 @@ BOOL CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 				case IDOK:
 					ValidEmailCheck = IsDlgButtonChecked(hwnd, IDC_CHECKVALIDEMAIL);
 					USBRefresh = IsDlgButtonChecked(hwnd, IDC_CHECKUSBREFRESH);
+					ClearPrefs();
+					if (parsePrefDialogFields(hwnd))
+						EndDialog(hwnd, wParam);
+					else
+						ClearPrefs();
+					break;
 				case IDCANCEL:
 					EndDialog(hwnd, wParam);
 					break;
@@ -297,10 +449,13 @@ BOOL CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 	return TRUE;
 }
 
-BOOL CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_INITDIALOG:
+			AddUSBItem(hwnd, "TEST1");
+			AddUSBItem(hwnd, "Test2");
+			AddUSBItem(hwnd, "test3");
 			getUSBlist(hwnd);
 			return TRUE;
 		case WM_COMMAND:
@@ -317,7 +472,7 @@ BOOL CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 	return TRUE;
 }
 
-BOOL CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	HWND FROM_ttip, TO_ttip, CC_ttip, SUBJECT_ttip, BODY_ttip;
 	switch (msg) {
@@ -349,52 +504,11 @@ BOOL CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 	return TRUE;
 }
 
-VOID InitAboutDialog(HWND hwnd)
-{
-	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTDIALOG),
-					hwnd, AboutDialogProcedure) == -1) {
-		MessageBox(hwnd, "About dialog failed!", "Error!", MB_OK | MB_ICONERROR);
-	}
-}
-
-VOID InitPreferencesDialog(HWND hwnd)
-{
-	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PREFDIALOG),
-					hwnd, PrefDialogProcedure) == -1) {
-		MessageBox(hwnd, "Preferences dialog failed!", "Error!", MB_OK | MB_ICONERROR);
-	}
-}
-
-VOID InitPasswordDialog(HWND hwnd)
-{
-	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PWDDIALOG),
-					hwnd, PwdDialogProcedure) == -1) {
-		MessageBox(hwnd, "Password dialog failed!", "Error!", MB_OK | MB_ICONERROR);
-	}
-}
-
-VOID InitUSBDialog(HWND hwnd)
-{
-	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_USBDIALOG),
-					hwnd, USBDialogProcedure) == -1) {
-		MessageBox(hwnd, "USB dialog failed!", "Error!", MB_OK | MB_ICONERROR);
-	}
-}
-
-VOID InitEmailDialog(HWND hwnd)
-{
-	if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAILDIALOG),
-					hwnd, EmailDialogProcedure) == -1) {
-		MessageBox(hwnd, "Email dialog failed!", "Error!", MB_OK | MB_ICONERROR);
-	}
-}
-
 LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_CREATE:
 			{
-				
 				USBListButton = CreateWindowEx(0, "BUTTON", "Choose USB device",
 					WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
 					30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
@@ -481,8 +595,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 			if (MessageBox(hwnd, "Are you sure you want to quit?", 
 			"Quiting...", MB_ICONASTERISK | MB_YESNO) == IDNO)
 				break;
-			ClearEmailData();
-			ClearPwd();
+			DeleteAll();
 			DestroyWindow(hwnd);
 			break;
 		case WM_DESTROY:
@@ -500,38 +613,39 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	HWND hwnd;
 	MSG Msg;
 	BOOL bRet = TRUE;
-	
+
+	PORT = 0;
 	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
 	g_hInst = hInstance;
-	
+
 	wc.cbSize = sizeof(WNDCLASSEX);
-    wc.style = wc.cbClsExtra = wc.cbWndExtra = 0;
-    wc.lpfnWndProc = MainWindowProcedure;
-    wc.hInstance = hInstance;
-    wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
+	wc.style = wc.cbClsExtra = wc.cbWndExtra = 0;
+	wc.lpfnWndProc = MainWindowProcedure;
+	wc.hInstance = hInstance;
+	wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
 	wc.hIconSm = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONSMALL));
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_INACTIVEBORDER);
-    wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAINMENU);
-    wc.lpszClassName = szClassName;
-	
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)(COLOR_INACTIVEBORDER);
+	wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAINMENU);
+	wc.lpszClassName = szClassName;
+
 	if (!RegisterClassEx(&wc)) {
-        MessageBox(NULL, "Window Registration Failed!", "Error!",
-            MB_ICONEXCLAMATION | MB_OK);
-        return -1;
-    }
-	
+			MessageBox(NULL, "Window Registration Failed!", "Error!",
+			MB_ICONEXCLAMATION | MB_OK);
+		return -1;
+	}
+
 	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, "USB2Mail Win",
 	WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 	CW_USEDEFAULT, CW_USEDEFAULT, 550, 350, NULL, NULL, hInstance, NULL);
-	
+
 	if (!hwnd) {
 		MessageBox(NULL, "Window creation failed!", "Error!", MB_ICONERROR | MB_OK);
 		return -2;
 	}
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
-	
+
 	while (bRet) {
 		bRet = GetMessage(&Msg, NULL, 0, 0);
 		
