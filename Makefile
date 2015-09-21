@@ -1,5 +1,7 @@
 CC = gcc
-CFLAGS = -g -Wall -std=c11 -pedantic
+DEBUG = -g -DDEBUG
+CFLAGS = -Wall -std=c11
+INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
 DBG = debug.exe
 RLS = release.exe
@@ -18,7 +20,7 @@ usb: $(USB_SOURCE)
 	$(CC) $(CFLAGS) $^ -lsetupapi
 
 debug: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
-	$(CC) $(CFLAGS) $^ $(RES_OBJ) $(OBJ) $(DBG)
+	$(CC) $(CFLAGS) $(DEBUG) $^ $(RES_OBJ) $(OBJ) $(DBG)
 
 release: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
 	$(CC) $(CFLAGS) $^ $(RES_OBJ) $(LINKER) $(OBJ) $(RLS)
