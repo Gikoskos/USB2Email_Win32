@@ -1,3 +1,8 @@
+/******************************************\
+*                usb2mail.h                *
+*        George Koskeridis (C)2015         *
+\******************************************/
+
 #pragma once
 
 #include <windows.h>
@@ -7,7 +12,20 @@
 #include <string.h>
 #include <tchar.h>
 #include <math.h>
+#include "resources\resource.h"
 
-extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY;
+#define ATTRIB(x) __attribute__((x))
+#define ATTRIB_UNUSED ATTRIB(unused)
 
-void InitU2M(BOOL onoff);
+extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
+extern UINT PORT;
+
+extern BOOL ValidEmailCheck;
+extern BOOL USBRefresh;
+volatile extern BOOL onoff;
+
+
+BOOL InitU2MThread();
+VOID fillUSBlist(HWND hwnd);
+VOID AddUSBItem(HWND hwnd, char *s);
+VOID USBisConnected();
