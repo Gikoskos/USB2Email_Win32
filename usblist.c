@@ -10,19 +10,21 @@
 #include <process.h>
 #include <curl/curl.h>
 
-#define TIMEOUT 1000
+#define TIMEOUT 680
 #define MSG_LEN 7
 
 struct upload_status {
 	int lines_read;
 };
 
-static char *payload_text[MSG_LEN] = {NULL};
+static char *payload_text[MSG_LEN];
 
 #define ClearPayloadText()                                       \
 while (1) {                                                      \
-	for (int i = 0; i < 9; i++)                                  \
-		free(payload_text[i]);                                   \
+	for (int i = 0; i < MSG_LEN; i++) {                          \
+		if (payload_text[i]) free(payload_text[i]);              \
+		payload_text[i] = NULL;                                  \
+	}                                                            \
 	break;                                                       \
 }
 
@@ -54,6 +56,7 @@ BOOL InitU2MThread()
 		MessageBox(NULL, "No USB device selected!", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
+	ClearPayloadText();
 	ConstructPayloadText();
 	if (onoff) {
 		
@@ -72,7 +75,8 @@ UINT __stdcall U2MThread(VOID)
 				MessageBox(NULL, "E-mail login credentials denied!", "Error!", MB_ICONERROR | MB_OK);
 			}
 		}
-		Sleep(TIMEOUT);
+		if (onoff)
+			Sleep(TIMEOUT);
 	}
 	ClearPayloadText();
 	_endthreadex(0);
@@ -151,27 +155,24 @@ static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
 
 void ConstructPayloadText()
 {
-	char tmp[MSG_LEN][1024];
-
-	snprintf(tmp[0], strlen(TO) + 9, "To: %s\r\n", TO);
-
-	snprintf(tmp[1], strlen(FROM) + 11, "From: %s\r\n", FROM);
-	if (CC)
-		snprintf(tmp[2], strlen(CC) + 9, "Cc: %s\r\n", CC);
-	else
-		snprintf(tmp[2], 9, "Cc: \r\n");
-	snprintf(tmp[3], strlen(SUBJECT) + 14, "Subject: %s\r\n", SUBJECT);
-	snprintf(tmp[4], 5, "\r\n");
-	snprintf(tmp[5], strlen(BODY) + 5, "%s\r\n", BODY);
-
-	for (int i = 0; i < MSG_LEN; i++) {
-		if (i == MSG_LEN-1) {
-			payload_text[i] = NULL;
-			break;
-		}
-		payload_text[i] = realloc(NULL, strlen(tmp[i]) + 1);
-		strncpy(payload_text[i], tmp[i], strlen(tmp[i] + 1));
+	payload_text[0] = malloc(strlen(TO) + 7);
+	snprintf(payload_text[0], strlen(TO) + 7, "To: %s\r\n", TO);
+	payload_text[1] = malloc(strlen(FROM) + 9);
+	snprintf(payload_text[1], strlen(FROM) + 9, "From: %s\r\n", FROM);
+	if (CC) {
+		payload_text[2] = malloc(strlen(CC) + 7);
+		snprintf(payload_text[2], strlen(CC) + 7, "Cc: %s\r\n", CC);
+	} else {
+		payload_text[2] = malloc(7);
+		snprintf(payload_text[2], 7, "Cc: \r\n");
 	}
+
+	payload_text[3] = malloc(strlen(SUBJECT) + 12);
+	snprintf(payload_text[3], strlen(SUBJECT) + 12, "Subject: %s\r\n", SUBJECT);
+	payload_text[4] = malloc(3);
+	snprintf(payload_text[4], 3, "\r\n");
+	payload_text[5] = malloc(strlen(BODY) + 3);
+	snprintf(payload_text[5], strlen(BODY) + 3, "%s\r\n", BODY);
 }
 
 int SendEmail()
