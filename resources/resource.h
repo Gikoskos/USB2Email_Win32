@@ -11,6 +11,7 @@
 #define IDI_USB2MAILICONMEDIUM                  202
 #define IDI_USB2MAILICONSMALL                   203
 #define IDD_PREFDIALOG                          205
+#define IDD_HELPDIALOG                          207
 #define IDC_FROMFIELD                           40000
 #define IDC_PORTFIELD                           40000
 #define IDM_PASSWORD                            40000
