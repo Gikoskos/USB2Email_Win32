@@ -1,7 +1,7 @@
-/******************************************\
+/******************************************
 *                 usblist.c                *
 *        George Koskeridis (C)2015         *
-\******************************************/
+ ******************************************/
 
 #include "usb2mail.h"
 #include <setupapi.h>
@@ -10,7 +10,6 @@
 #include <process.h>
 #include <curl/curl.h>
 
-#define TIMEOUT 680
 #define MSG_LEN 7
 
 struct upload_status {
@@ -28,9 +27,9 @@ while (1) {                                                      \
 	break;                                                       \
 }
 
-/*******************************************\
+/*******************************************
 * Prototypes for functions with local scope *
-\*******************************************/
+ *******************************************/
 BOOL USBisConnected(char *to_find);
 UINT __stdcall U2MThread(/*LPVOID args*/);
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp);

@@ -1,7 +1,7 @@
-/******************************************\
-*              mainWindow.c                *
+/******************************************
+*                U2MWin32.c                *
 *        George Koskeridis (C)2015         *
-\******************************************/
+ ******************************************/
 
 #include "usb2mail.h"
 
@@ -14,7 +14,7 @@ HINSTANCE g_hInst;
 *Input field formatted data*
  **************************/
 char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
-
+UINT TIMEOUT;
 
 /********************
 *Input field raw data*
@@ -25,7 +25,6 @@ UINT PORT;
 char *USBdev;
 
 INT usb_idx;
-
 
 /**********************
 *AutoCheck Button Bools*
@@ -493,7 +492,7 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	switch (msg) {
 		case WM_INITDIALOG:
 			if (pass)
-				SetDlgItemText(hwnd, IDC_PWDFIELD, "*****************");
+				SetDlgItemText(hwnd, IDC_PWDFIELD, pass);
 			return TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {

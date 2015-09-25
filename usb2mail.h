@@ -1,7 +1,7 @@
-/******************************************\
+/******************************************
 *                usb2mail.h                *
 *        George Koskeridis (C)2015         *
-\******************************************/
+ ******************************************/
 
 #pragma once
 
@@ -18,6 +18,7 @@
 #define ATTRIB_UNUSED ATTRIB(unused)
 
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev, *USER, *PORT_STR;
+extern UINT TIMEOUT;
 
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
