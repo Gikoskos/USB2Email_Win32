@@ -6,7 +6,7 @@ OBJ = -o
 DBG = debug.exe
 RLS = USB2EMAILwin32.exe
 DWARF2 = -ggdb
-LINKER = -lsetupapi -lcurl
+LINKER = -lsetupapi -lcurl -lcomctl32
 RLS_FLAGS = -mwindows
 WINDOW_SOURCE = U2MWin32.c
 USB2MAIL_SOURCE = usblist.c
@@ -14,7 +14,7 @@ USB_SOURCE = usbtest.c
 RESOURCE = resources.rc
 RES_OBJ = res.o
 
-dbg: compile_resource debug
+dbg: clean compile_resource debug
 
 rls: compile_resource release
 

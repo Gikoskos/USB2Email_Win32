@@ -7,22 +7,25 @@
 
 #include <windows.h>
 #include <commctrl.h>
+#include <windowsx.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tchar.h>
 #include <math.h>
+#include <signal.h>
 #include "resources\resource.h"
 
 #define ATTRIB(x) __attribute__((x))
-#define ATTRIB_UNUSED ATTRIB(unused)
 
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev, *USER, *PORT_STR;
-extern UINT TIMEOUT;
-
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
-volatile extern BOOL onoff;
+extern HANDLE u2mMainThread;
+extern UINT TIMEOUT;
+extern BOOL RUNNING;
+
+UINT onoff;
 
 
 BOOL InitU2MThread();

@@ -16,6 +16,9 @@ struct upload_status {
 	int lines_read;
 };
 
+HANDLE u2mMainThread;
+BOOL RUNNING = FALSE;
+UINT *thrdID;
 static char *payload_text[MSG_LEN];
 
 #define ClearPayloadText()                                       \
@@ -33,16 +36,13 @@ while (1) {                                                      \
 BOOL USBisConnected(char *to_find);
 UINT __stdcall U2MThread(/*LPVOID args*/);
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp);
-BOOL SendEmail();
+int SendEmail();
+BOOL GetCurlError(int err);
 void ConstructPayloadText();
 
 
 BOOL InitU2MThread()
 {
-	if (!pass) {
-		MessageBox(NULL, "No password set!", "Can't start service!", MB_ICONERROR | MB_OK);
-		return FALSE;
-	}
 	if (!FROM) {
 		MessageBox(NULL, "No e-mail to sent is set", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
@@ -55,30 +55,114 @@ BOOL InitU2MThread()
 		MessageBox(NULL, "No USB device selected!", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
+	if (!pass) {
+		MessageBox(NULL, "No password set!", "Can't start service!", MB_ICONERROR | MB_OK);
+		return FALSE;
+	}
 	ClearPayloadText();
 	ConstructPayloadText();
 	if (onoff) {
-		
-		//DWORD thrdaddr;
-		uintptr_t u2mMainThread ATTRIB_UNUSED = _beginthreadex(NULL, 0, U2MThread, /*(LPVOID)&ThreadArgs*/NULL, 0, NULL);
+		u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)&TIMEOUT, 0, thrdID);
+	} 
+	return TRUE;
+}
+
+BOOL GetCurlError(int err)
+{
+	switch (err) {
+		case CURLE_OK:
+			break;
+		case CURLE_LOGIN_DENIED:
+			MessageBox(NULL, "E-mail login credentials denied.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_NOT_BUILT_IN:
+		case CURLE_UNSUPPORTED_PROTOCOL:
+			MessageBox(NULL, "Unsupported protocol detected.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_FAILED_INIT:
+			MessageBox(NULL, "Curl failed at initializing.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_URL_MALFORMAT:
+			MessageBox(NULL, "URL isn't formatted.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_COULDNT_RESOLVE_PROXY:
+			MessageBox(NULL, "Couldn't resolve proxy.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_COULDNT_RESOLVE_HOST:
+			MessageBox(NULL, "Couldn't resolve host.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_COULDNT_CONNECT:
+			MessageBox(NULL, "Failed to connect() to host or proxy.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_REMOTE_ACCESS_DENIED:
+			MessageBox(NULL, "Access to URL resource denied.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_WRITE_ERROR:
+			MessageBox(NULL, "An error occurred when writing received data to a local file, or an error was returned to libcurl from a write callback.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_READ_ERROR:
+			MessageBox(NULL, "There was a problem reading a local file or an error returned by the read callback.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_OUT_OF_MEMORY:
+			MessageBox(NULL, "Out of memory error!", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_OPERATION_TIMEDOUT:
+			MessageBox(NULL, "Operation timeout. The specified time-out period was reached according to the conditions.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_FUNCTION_NOT_FOUND:
+			MessageBox(NULL, "Function not found. A required zlib function was not found.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_INTERFACE_FAILED:
+			MessageBox(NULL, "Interface failed.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_TOO_MANY_REDIRECTS:
+			MessageBox(NULL, "Redirect limit reached.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_GOT_NOTHING:
+			MessageBox(NULL, "Nothing returned back from server.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_SEND_ERROR:
+			MessageBox(NULL, "Failed sending network data.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_RECV_ERROR:
+			MessageBox(NULL, "Failure with receiving network data.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_SSL_CERTPROBLEM:
+			MessageBox(NULL, "Problem with the local client certificate.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_SSL_CACERT:
+			MessageBox(NULL, "Peer certificate cannot be authenticated with known CA certificates.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
+		case CURLE_BAD_CONTENT_ENCODING:
+			MessageBox(NULL, "Unrecognized transfer encoding.", "Error!", MB_ICONERROR | MB_OK);
+			return FALSE;
 	}
 	return TRUE;
 }
 
-UINT __stdcall U2MThread(VOID)
+UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT)
 {
+	UINT timeout = *((UINT*)PTR_TIMEOUT);
 	while (onoff) {
+		RUNNING = TRUE;
 		if (USBisConnected(USBdev)) {
 			int ret = SendEmail();
-			if (ret == CURLE_LOGIN_DENIED) {
-				MessageBox(NULL, "E-mail login credentials denied!", "Error!", MB_ICONERROR | MB_OK);
+			RUNNING = FALSE;
+			if (!GetCurlError(ret)) {
+				ClearPayloadText();
+				_endthreadex(0);
+				return 0;
 			}
 		}
-		if (onoff)
-			Sleep(TIMEOUT);
+		RUNNING = FALSE;
+		if (onoff) {
+			Sleep(timeout);
+		} else {
+			ClearPayloadText();
+			_endthreadex(0);
+			return 0;
+		}
 	}
-	ClearPayloadText();
-	_endthreadex(0);
 	return 0;
 }
 
@@ -208,9 +292,6 @@ int SendEmail()
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 #endif
 		res = curl_easy_perform(curl);
-
-		if(res != CURLE_OK)
-			fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
 
 		curl_slist_free_all(recipients);
 

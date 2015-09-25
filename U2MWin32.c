@@ -13,50 +13,50 @@ HINSTANCE g_hInst;
 /**************************
 *Input field formatted data*
  **************************/
-char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
-UINT TIMEOUT;
+char *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
 
 /********************
 *Input field raw data*
  ********************/
-char *USER, *RECEIVER, *CC_RAW, *PORT_STR, *SMTP_STR;
+char *pass, *USER, *RECEIVER, *CC_RAW, *PORT_STR, *SMTP_STR;
 UINT PORT;
 
 char *USBdev;
-
+UINT TIMEOUT;
 INT usb_idx;
 
-/**********************
-*AutoCheck Button Bools*
- **********************/
+/*******************************
+*Bools to check enabled controls*
+ *******************************/
 BOOL ValidEmailCheck = FALSE;
 BOOL USBRefresh = TRUE;
-
+BOOL STARTSTOPstate = TRUE;
 
 HDC hdc;
 PAINTSTRUCT ps;
 
 /*Is TRUE when the service is running and FALSE when it's not*/
-volatile BOOL onoff = FALSE;
+UINT onoff = FALSE;
 
 
 /********************
 *Main Window controls*
  ********************/
-HWND USBListButton, EMAILButton, STARTSTOP, time_track;
-
+HWND USBListButton, EMAILButton, STARTSTOP, time_track, ttrack_tooltip;
+TOOLINFO ttrack_struct;
+char ttrack_tooltip_text[50];
 
 #define IDC_CHOOSEUSBBUTTON     40027
 #define IDC_EMAILBUTTON         40028
 #define IDC_STARTSTOP           40029
 #define IDC_TIMETRACK           40030
-#define IDC_HELPOK              40031
 
-#define T_MIN                       0
-#define T_MAX                      20
+/*Trackbar limits*/
+#define T_MIN                     200
+#define T_MAX                    2000
+
 /*Flag for ValidEmailCheck*/
 #define NO_SEPARATOR              '\0'
-
 
 /********************************************
 *Macros to clear all data entered by the user*
@@ -117,7 +117,8 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 BOOL parseEmailDialogFields(HWND hwnd);
 BOOL parsePrefDialogFields(HWND hwnd);
 BOOL parsePwdField(HWND hwnd);
-HWND WINAPI CreateToolTip(int toolID, HWND hDlg, PTSTR pszText);
+HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText);
+HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText);
 BOOL isValidDomain(char *str, char SEPARATOR);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
 
@@ -157,6 +158,19 @@ VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 		if (*str)
 			free(*str);
 		(*str) = NULL;
+	}
+}
+
+VOID ChangeSTARTSTOPText()
+{
+	if (onoff) {
+		if (!SetWindowText(STARTSTOP, "Stop")) {
+			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
+		}
+	} else {
+		if (!SetWindowText(STARTSTOP, "Start")) {
+			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
+		}
 	}
 }
 
@@ -266,30 +280,53 @@ BOOL isValidDomain(char *str, char SEPARATOR)
 	return TRUE;
 }
 
-HWND WINAPI CreateToolTip(int toolID, HWND hDlg, PTSTR pszText)
+HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 {
-    if (!toolID || !hDlg || !pszText)
-        return FALSE;
-    HWND hwndTool = GetDlgItem(hDlg, toolID);
-    
-    HWND hwndTip = CreateWindowEx(0, TOOLTIPS_CLASS, NULL,
-                              WS_POPUP |TTS_ALWAYSTIP | TTS_BALLOON,
-                              CW_USEDEFAULT, CW_USEDEFAULT,
-                              CW_USEDEFAULT, CW_USEDEFAULT,
-                              hDlg, NULL, 
-                              g_hInst, NULL);
-    
-   if (!hwndTool || !hwndTip)
-       return (HWND)NULL;             
-                              
-    TOOLINFO toolInfo = { 0 };
-    toolInfo.cbSize = sizeof(toolInfo);
-    toolInfo.hwnd = hDlg;
-    toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
-    toolInfo.uId = (UINT_PTR)hwndTool;
-    toolInfo.lpszText = pszText;
-    SendMessage(hwndTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
-    return hwndTip;
+	if (!toolID || !hDlg || !pszText)
+		return FALSE;
+	HWND hwndTool = GetDlgItem(hDlg, toolID);
+
+	HWND hwndTip = CreateWindowEx(0, TOOLTIPS_CLASS, NULL,
+								WS_POPUP |TTS_ALWAYSTIP | TTS_BALLOON,
+								CW_USEDEFAULT, CW_USEDEFAULT,
+								CW_USEDEFAULT, CW_USEDEFAULT,
+								hDlg, NULL, 
+								g_hInst, NULL);
+
+	if (!hwndTool || !hwndTip)
+		return (HWND)NULL;             
+
+	TOOLINFO toolInfo = { 0 };
+	toolInfo.cbSize = sizeof(TTTOOLINFO_V1_SIZE);
+	toolInfo.hwnd = hDlg;
+	toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+	toolInfo.uId = (UINT_PTR)hwndTool;
+	toolInfo.lpszText = pszText;
+	SendMessage(hwndTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+	return hwndTip;
+}
+
+HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText)
+{
+	HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, 
+							WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 
+							CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+							hDlg, NULL, g_hInst,NULL);
+
+	if (!hwndTT)
+		return NULL;
+
+	ttrack_struct.cbSize   = sizeof(TOOLINFO);
+	ttrack_struct.uFlags   = TTF_IDISHWND | TTF_TRACK | TTF_ABSOLUTE;
+	ttrack_struct.hwnd     = hDlg;
+	ttrack_struct.hinst    = g_hInst;
+	ttrack_struct.lpszText = pszText;
+	ttrack_struct.uId      = (UINT_PTR)hDlg;
+
+	GetClientRect (hDlg, &ttrack_struct.rect);
+
+	SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &ttrack_struct);		
+	return hwndTT;
 }
 
 void OnButtonClickGetSelection(HWND hwnd)
@@ -355,7 +392,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
 BOOL parseEmailDialogFields(HWND hwnd)
 {
 	char *tmp = NULL;
-	
+
 
 	GetFieldText(hwnd, IDC_FROMFIELD, &tmp);
 	if (!tmp) {
@@ -376,7 +413,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	snprintf(FROM, strlen(tmp)+3, "<%s>", tmp);
 	free(tmp);
 	tmp = NULL;
-	
+
 	GetFieldText(hwnd, IDC_TOFIELD, &tmp);
 	if (!tmp) {
 		MessageBox(hwnd, "TO field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
@@ -396,7 +433,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	snprintf(TO, strlen(tmp)+3, "<%s>", tmp);
 	free(tmp);
 	tmp = NULL;
-	
+
 	GetFieldText(hwnd, IDC_CCFIELD, &tmp);
 
 	if (ValidEmailCheck && tmp) { 
@@ -415,7 +452,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 		free(tmp);
 		tmp = NULL;
 	}
-	
+
 	GetFieldText(hwnd, IDC_SUBJECTFIELD, &tmp);
 	if (!tmp) {
 		if (MessageBox(hwnd, "Are you sure you don't want to have a Subject in your e-mail?", 
@@ -431,8 +468,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
 		free(tmp);
 		tmp = NULL;
 	}
-	
-	
+
+
 	GetFieldText(hwnd, IDC_MESSAGEFIELD, &tmp);
 	if (!tmp) {
 		if (MessageBox(hwnd, "Are you sure you want to send a blank message?",
@@ -469,22 +506,22 @@ BOOL parsePwdField(HWND hwnd)
 
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	HICON about_usb_icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
+	HICON about_usb_icon;
 	switch (msg) {
 		case WM_INITDIALOG:
+			about_usb_icon = (HICON)LoadIcon(GetModuleHandle(NULL), 
+				MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
 			SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
-			return TRUE;
+			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDUSB2MAIL:
 					EndDialog(hwnd, IDUSB2MAIL);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			break;
-		default:
-			return FALSE;
 	}
-	return TRUE;
+	return (INT_PTR)FALSE;
 }
 
 INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -493,7 +530,7 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_INITDIALOG:
 			if (pass)
 				SetDlgItemText(hwnd, IDC_PWDFIELD, pass);
-			return TRUE;
+			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDOK:
@@ -501,16 +538,14 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						EndDialog(hwnd, wParam);
 					else
 						ClearPwd();
-					break;
+					return (INT_PTR)TRUE;
 				case IDCANCEL:
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			break;
-		default:
-			return FALSE;
 	}
-	return TRUE;
+	return (INT_PTR)FALSE;
 }
 
 INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -523,7 +558,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 				SetDlgItemText(hwnd, IDC_PORTFIELD, PORT_STR);
 			CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck==TRUE)?BST_CHECKED:BST_UNCHECKED);
 			CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh==TRUE)?BST_CHECKED:BST_UNCHECKED);
-			return TRUE;
+			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDOK:
@@ -534,71 +569,72 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 						EndDialog(hwnd, wParam);
 					else
 						ClearPrefs();
-					break;
+					return (INT_PTR)TRUE;
 				case IDCANCEL:
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			break;
-		default:
-			return FALSE;
 	}
-	return TRUE;
+	return (INT_PTR)FALSE;
 }
 
 INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	HBITMAP refresh_bitmap = LoadImage(NULL,
-	"icons\\refreshbitmap.bmp", IMAGE_BITMAP, 0, 0,
-	LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
+	HBITMAP refresh_bitmap;
 	switch (msg) {
 		case WM_INITDIALOG:
+			refresh_bitmap = (HBITMAP)LoadImage(NULL, "icons\\refreshbitmap.bmp",
+				IMAGE_BITMAP, 0, 0,	LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
 			SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
 			fillUSBlist(hwnd);
 			SendDlgItemMessage(hwnd, IDC_USBDEVLIST, LB_SETCURSEL, (WPARAM)usb_idx, (LPARAM)0);
-			return TRUE;
+			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDUSBREFRESH:
 					SendDlgItemMessage(hwnd, IDC_USBDEVLIST, LB_RESETCONTENT, (WPARAM)0, (LPARAM)0);
 					fillUSBlist(hwnd);
-					break;
+					return (INT_PTR)TRUE;
 				case IDOK:
 					ClearUSBSelection();
 					OnButtonClickGetSelection(hwnd);
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 				case IDCANCEL:
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			switch (HIWORD(wParam)) {
 				case LBN_DBLCLK:
 					OnButtonClickGetSelection(hwnd);
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			break;
-		default:
-			return FALSE;
 	}
-	return TRUE;
+	return (INT_PTR)FALSE;
 }
 
 INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	HWND FROM_ttip ATTRIB_UNUSED,
-		 TO_ttip ATTRIB_UNUSED,
-		 CC_ttip ATTRIB_UNUSED,
-		 SUBJECT_ttip ATTRIB_UNUSED,
-		 BODY_ttip ATTRIB_UNUSED;
+	HWND FROM_ttip ATTRIB(unused),
+		 TO_ttip ATTRIB(unused),
+		 CC_ttip ATTRIB(unused),
+		 SUBJECT_ttip ATTRIB(unused),
+		 BODY_ttip ATTRIB(unused);
 	switch (msg) {
 		case WM_INITDIALOG:
-			FROM_ttip = CreateToolTip(IDC_FROMFIELD, hwnd, "E-mail address of sender");
-			TO_ttip = CreateToolTip(IDC_TOFIELD, hwnd, "E-mail address of recipient");
-			CC_ttip = CreateToolTip(IDC_CCFIELD, hwnd, "Group of addresses to send to. Multiple e-mails are seperated with ';'");
-			SUBJECT_ttip = CreateToolTip(IDC_SUBJECTFIELD, hwnd, "Subject of the e-mail");
-			BODY_ttip = CreateToolTip(IDC_MESSAGEFIELD, hwnd, "Body of the e-mail");
+			FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd, 
+			"E-mail address of sender");
+			TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd, 
+			"E-mail address of recipient");
+			CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd, 
+			"Group of addresses to send to. Multiple e-mails are seperated with ';'");
+			SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, 
+			"Subject of the e-mail");
+			BODY_ttip = CreateBaloonToolTip(IDC_MESSAGEFIELD, hwnd,
+			"Body of the e-mail");
 			if (FROM)
 				SetDlgItemText(hwnd, IDC_FROMFIELD, USER);
 			if (TO)
@@ -609,7 +645,7 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 				SetDlgItemText(hwnd, IDC_SUBJECTFIELD, SUBJECT);
 			if (BODY)
 				SetDlgItemText(hwnd, IDC_MESSAGEFIELD, BODY);
-			return TRUE;
+			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDOK:
@@ -621,31 +657,30 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 					break;
 				case IDCANCEL:
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			break;
-		default:
-			return FALSE;
 	}
-	return TRUE;
+	return (INT_PTR)FALSE;
 }
 
 INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_INITDIALOG:
-			return TRUE;
+			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDOK:
 					EndDialog(hwnd, wParam);
-					break;
+					return (INT_PTR)TRUE;
 			}
 			break;
-		default:
-			return FALSE;
+		case WM_CLOSE:
+			EndDialog(hwnd, wParam);
+			return (INT_PTR)TRUE;
 	}
-	return TRUE;
+	return (INT_PTR)FALSE;
 }
 
 LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -653,6 +688,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 	switch (msg) {
 		case WM_CREATE:
 			{
+				InitCommonControls();
 				USBListButton = CreateWindowEx(0, "BUTTON", "Choose USB device",
 					WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
 					30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
@@ -661,7 +697,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					MessageBox(NULL, "USBLISTButton creation failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
-				
+
 				EMAILButton = CreateWindowEx(0, "BUTTON", "Configure E-Mail to send",
 					WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
 					300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
@@ -670,7 +706,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					MessageBox(NULL, "EMAILButton creation failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
-				
+
 				STARTSTOP = CreateWindowEx(0, "BUTTON", "Start",
 					WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 					300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP, 
@@ -679,25 +715,32 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					MessageBox(NULL, "STARTSTOP creation failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
-				
+
 				time_track = CreateWindowEx(0, TRACKBAR_CLASS, "Set waiting time after an e-mail is sent",
-					WS_CHILD | WS_VISIBLE,
+					WS_CHILD | WS_VISIBLE | TBS_TOOLTIPS | TBS_NOTICKS | TBS_HORZ,
 					30, 200, 200, 30, hwnd, (HMENU)IDC_TIMETRACK, g_hInst, NULL);
 				if (!time_track) {
 					MessageBox(NULL, "Trackbar creation failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
-				}	
-				
+				}
+				SetFocus(USBListButton);
+				/*ttrack_tooltip = CreateTrackingToolTip(IDC_TIMETRACK, time_track,
+					ttrack_tooltip_text);*/
+
+				SendMessage(time_track, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)&ttrack_struct);
 				SendMessage(time_track, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(T_MIN, T_MAX));
 				SendMessage(time_track, TBM_SETPAGESIZE, (WPARAM)0, (LPARAM)4);
 				SendMessage(time_track, TBM_SETSEL, (WPARAM)FALSE, (LPARAM)MAKELONG(T_MIN, T_MAX));
-				SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)T_MIN);
-				
-				//SetFocus(time_track);
+				SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
+				//SendMessage(time_track, TBM_SETTOOLTIPS, (WPARAM)ttrack_tooltip, (LPARAM)0);
+				UpdateWindow(hwnd);
 			}
+		case WM_MOUSEMOVE:
+			break;
 		case WM_PAINT:
-			hdc = BeginPaint(hwnd, &ps);
-			EndPaint(hwnd, &ps);
+			if ((hdc = BeginPaint(hwnd, &ps))) {
+				EndPaint(hwnd, &ps);
+			}
 			break;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
@@ -716,16 +759,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 				case IDC_STARTSTOP:
 					onoff = (onoff == TRUE)?FALSE:TRUE;
 					if (InitU2MThread()) {
-						if (onoff) {
-							if (!SetWindowText(STARTSTOP, "Stop")) {
-								MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
-							}
-						}
-						else {
-							if (!SetWindowText(STARTSTOP, "Start")) {
-								MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
-							}
-						}
+						ChangeSTARTSTOPText();
+						PostMessage(hwnd, WM_PAINT, wParam, lParam);
 					}
 					break;
 				case IDC_EMAILBUTTON:
@@ -744,9 +779,18 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 			"Quiting...", MB_ICONASTERISK | MB_YESNO) == IDNO)
 				break;
 			DeleteAll();
+			AnimateWindow(hwnd, 200, AW_HIDE | AW_CENTER);
 			DestroyWindow(hwnd);
 			break;
+		case WM_HSCROLL:
+			TIMEOUT = (UINT)SendMessage(time_track, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+#if 0
+			snprintf(ttrack_tooltip_text, 12, "%u ms", TIMEOUT);
+			printf("%d\n", TIMEOUT);
+#endif
+			break;
 		case WM_DESTROY:
+			DeleteAll();
 			PostQuitMessage(0);
 			break;
 		default:
@@ -793,12 +837,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, "Window creation failed!", "Error!", MB_ICONERROR | MB_OK);
 		return -2;
 	}
-	ShowWindow(hwnd, nCmdShow);
-	UpdateWindow(hwnd);
-
+	AnimateWindow(hwnd, 200, AW_CENTER);
 	while (bRet) {
 		bRet = GetMessage(&Msg, NULL, 0, 0);
-		
+
 		if (bRet == -1) {
 			MessageBox(NULL, "Message queue error", "Error!", MB_ICONERROR | MB_OK);
 			return -3;
@@ -806,6 +848,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			return -2;
 		}
 
+		if (RUNNING == STARTSTOPstate) {
+			Button_Enable(STARTSTOP, FALSE);
+			UpdateWindow(hwnd);
+		} else {
+			Button_Enable(STARTSTOP, TRUE);
+			UpdateWindow(hwnd);
+		}
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
