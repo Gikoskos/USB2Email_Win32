@@ -42,9 +42,11 @@ UINT onoff = FALSE;
 /********************
 *Main Window controls*
  ********************/
-HWND USBListButton, EMAILButton, STARTSTOP, time_track, ttrack_tooltip;
+HWND USBListButton, EMAILButton, STARTSTOP, time_track, ttrack_tooltip, ttrack_label;
 TOOLINFO ttrack_struct;
 char ttrack_tooltip_text[50];
+
+UINT EMAIL_PAUSE = 0;
 
 #define IDC_CHOOSEUSBBUTTON     40027
 #define IDC_EMAILBUTTON         40028
@@ -346,20 +348,20 @@ BOOL parsePrefDialogFields(HWND hwnd)
 	char *tmp1 = NULL, *tmp2 = NULL;
 
 	GetFieldText(hwnd, IDC_SERVERURLFIELD, &tmp1);
-	if (!tmp1) {
-		MessageBox(hwnd, "SMTP server field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+	if (!tmp1 && !onoff) {
+		MessageBox(hwnd, "SMTP server field is empty!", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
 
 	GetFieldText(hwnd, IDC_PORTFIELD, &tmp2);
 	if (!tmp2) {
 		free(tmp1);
-		MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	} else if (strlen(tmp2) > 5) {
 		free(tmp1);
 		free(tmp2);
-		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
 
@@ -371,7 +373,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
 	}
 
 	if (PORT > 65535) {
-		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONERROR);
 		free(tmp1);
 		free(tmp2);
 		return FALSE;
@@ -396,13 +398,13 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
 	GetFieldText(hwnd, IDC_FROMFIELD, &tmp);
 	if (!tmp) {
-		MessageBox(hwnd, "FROM field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(hwnd, "FROM field is empty!", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
 
 	if (ValidEmailCheck) { 
 		if (!isValidDomain(tmp, NO_SEPARATOR)) {
-			MessageBox(hwnd, "Invalid e-mail address on FROM field!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+			MessageBox(hwnd, "Invalid e-mail address on FROM field!", "Error!", MB_OK | MB_ICONERROR);
 			free(tmp);
 			return FALSE;
 		}
@@ -416,13 +418,13 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
 	GetFieldText(hwnd, IDC_TOFIELD, &tmp);
 	if (!tmp) {
-		MessageBox(hwnd, "TO field is empty!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(hwnd, "TO field is empty!", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
 
 	if (ValidEmailCheck) { 
 		if (!isValidDomain(tmp, NO_SEPARATOR)) {
-			MessageBox(hwnd, "Invalid e-mail address on TO field!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+			MessageBox(hwnd, "Invalid e-mail address on TO field!", "Error!", MB_OK | MB_ICONERROR);
 			free(tmp);
 			return FALSE;
 		}
@@ -438,7 +440,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
 	if (ValidEmailCheck && tmp) { 
 		if (!isValidDomain(tmp, ';')) {
-			MessageBox(hwnd, "Invalid e-mail address on CC field!", "Error!", MB_OK | MB_ICONEXCLAMATION);
+			MessageBox(hwnd, "Invalid e-mail address on CC field!", "Error!", MB_OK | MB_ICONERROR);
 			free(tmp);
 			return FALSE;
 		}
@@ -456,7 +458,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	GetFieldText(hwnd, IDC_SUBJECTFIELD, &tmp);
 	if (!tmp) {
 		if (MessageBox(hwnd, "Are you sure you don't want to have a Subject in your e-mail?", 
-			"No Subject", MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
+			"No Subject", MB_YESNO | MB_ICONASTERISK) == IDYES) {
 			SUBJECT = malloc(2);
 			snprintf(SUBJECT, 2, "");
 		} else {
@@ -473,7 +475,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	GetFieldText(hwnd, IDC_MESSAGEFIELD, &tmp);
 	if (!tmp) {
 		if (MessageBox(hwnd, "Are you sure you want to send a blank message?",
-			"No e-mail body", MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
+			"No e-mail body", MB_YESNO | MB_ICONASTERISK) == IDYES) {
 			BODY = malloc(2);
 			snprintf(BODY, 2, "");
 		} else {
@@ -494,7 +496,7 @@ BOOL parsePwdField(HWND hwnd)
 
 	GetFieldText(hwnd, IDC_PWDFIELD, &tmp);
 	if (!tmp) {
-		MessageBox(hwnd, "No password entered", "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(hwnd, "No password entered", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	} else {
 		pass = realloc(NULL, strlen(tmp)+1);
@@ -534,6 +536,7 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDOK:
+					ClearPwd();
 					if (parsePwdField(hwnd))
 						EndDialog(hwnd, wParam);
 					else
@@ -558,6 +561,8 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 				SetDlgItemText(hwnd, IDC_PORTFIELD, PORT_STR);
 			CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck==TRUE)?BST_CHECKED:BST_UNCHECKED);
 			CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh==TRUE)?BST_CHECKED:BST_UNCHECKED);
+			SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 50));
+			SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)0);
 			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
@@ -574,6 +579,8 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					EndDialog(hwnd, wParam);
 					return (INT_PTR)TRUE;
 			}
+		case WM_HSCROLL:
+			EMAIL_PAUSE = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
 			break;
 	}
 	return (INT_PTR)FALSE;
@@ -694,7 +701,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
 					(HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
 				if (!USBListButton) {
-					MessageBox(NULL, "USBLISTButton creation failed!", "Error!", MB_ICONERROR | MB_OK);
+					MessageBox(NULL, "USB list button failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
 
@@ -703,27 +710,36 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
 					(HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
 				if (!EMAILButton) {
-					MessageBox(NULL, "EMAILButton creation failed!", "Error!", MB_ICONERROR | MB_OK);
+					MessageBox(NULL, "E-mail button failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
 
 				STARTSTOP = CreateWindowEx(0, "BUTTON", "Start",
 					WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 					300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP, 
-					(HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+					g_hInst, NULL);
 				if (!STARTSTOP) {
-					MessageBox(NULL, "STARTSTOP creation failed!", "Error!", MB_ICONERROR | MB_OK);
+					MessageBox(NULL, "Start/Stop button failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
 
-				time_track = CreateWindowEx(0, TRACKBAR_CLASS, "Set waiting time after an e-mail is sent",
+				time_track = CreateWindowEx(0, TRACKBAR_CLASS, "",
 					WS_CHILD | WS_VISIBLE | TBS_TOOLTIPS | TBS_NOTICKS | TBS_HORZ,
-					30, 200, 200, 30, hwnd, (HMENU)IDC_TIMETRACK, g_hInst, NULL);
+					30, 200, 200, 30, hwnd, (HMENU)IDC_TIMETRACK,
+					g_hInst, NULL);
 				if (!time_track) {
-					MessageBox(NULL, "Trackbar creation failed!", "Error!", MB_ICONERROR | MB_OK);
+					MessageBox(NULL, "Trackbar failed!", "Error!", MB_ICONERROR | MB_OK);
 					return -2;
 				}
-				SetFocus(USBListButton);
+
+				ttrack_label = CreateWindow("STATIC", 
+					"Set waiting interval between each scan of all USB devices in milliseconds",
+					WS_VISIBLE | WS_CHILD | SS_CENTER,
+					30, 140, 200, 60, hwnd, NULL, g_hInst, NULL);
+				if (!ttrack_label) {
+					MessageBox(NULL, "Trackbar label failed!", "Error!", MB_ICONERROR | MB_OK);
+					return -2;
+				}
 				/*ttrack_tooltip = CreateTrackingToolTip(IDC_TIMETRACK, time_track,
 					ttrack_tooltip_text);*/
 
@@ -734,6 +750,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 				SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
 				//SendMessage(time_track, TBM_SETTOOLTIPS, (WPARAM)ttrack_tooltip, (LPARAM)0);
 				UpdateWindow(hwnd);
+				SetActiveWindow(hwnd);
 			}
 		case WM_MOUSEMOVE:
 			break;
@@ -748,13 +765,25 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					InitAboutDialog(hwnd);
 					break;
 				case IDM_PREF:
-					InitPreferencesDialog(hwnd);
+					if (!onoff)
+						InitPreferencesDialog(hwnd);
+					else
+						MessageBox(hwnd, "Can't change preferences while the service is running.", 
+							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDM_PASSWORD:
-					InitPasswordDialog(hwnd);
+					if (!onoff)
+						InitPasswordDialog(hwnd);
+					else
+						MessageBox(hwnd, "Can't change password while the service is running.", 
+							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDC_CHOOSEUSBBUTTON:
-					InitUSBDialog(hwnd);
+					if (!onoff)
+						InitUSBDialog(hwnd);
+					else
+						MessageBox(hwnd, "Can't change USB device while the service is running.", 
+							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDC_STARTSTOP:
 					onoff = (onoff == TRUE)?FALSE:TRUE;
@@ -764,7 +793,11 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					}
 					break;
 				case IDC_EMAILBUTTON:
-					InitEmailDialog(hwnd);
+					if (!onoff)
+						InitEmailDialog(hwnd);
+					else
+						MessageBox(hwnd, "Can't change e-mail while the service is running.", 
+							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDM_H_ELP1:
 					InitHelpDialog(hwnd);
@@ -776,18 +809,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 			break;
 		case WM_CLOSE:
 			if (MessageBox(hwnd, "Are you sure you want to quit?", 
-			"Quiting...", MB_ICONASTERISK | MB_YESNO) == IDNO)
+					"Quiting...", MB_ICONASTERISK | MB_YESNO) == IDNO)
 				break;
 			DeleteAll();
-			AnimateWindow(hwnd, 200, AW_HIDE | AW_CENTER);
+			AnimateWindow(hwnd, 100, AW_HIDE | AW_CENTER);
 			DestroyWindow(hwnd);
 			break;
 		case WM_HSCROLL:
 			TIMEOUT = (UINT)SendMessage(time_track, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
-#if 0
-			snprintf(ttrack_tooltip_text, 12, "%u ms", TIMEOUT);
-			printf("%d\n", TIMEOUT);
-#endif
 			break;
 		case WM_DESTROY:
 			DeleteAll();
@@ -820,12 +849,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.hIconSm = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONSMALL));
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW);
-	wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAINMENU);
 	wc.lpszClassName = szClassName;
+	wc.lpszMenuName = MAKEINTRESOURCE(IDR_MAINMENU);
 
 	if (!RegisterClassEx(&wc)) {
 			MessageBox(NULL, "Main Window class registration Failed!", "Error!",
-			MB_ICONEXCLAMATION | MB_OK);
+			MB_ICONERROR | MB_OK);
 		return -1;
 	}
 

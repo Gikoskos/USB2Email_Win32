@@ -1,3 +1,8 @@
+/******************************************
+*                resource.h                *
+*        George Koskeridis (C)2015         *
+ ******************************************/
+
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
 #endif
@@ -19,6 +24,7 @@
 #define IDUSBREFRESH                            40000
 #define IDC_PWDFIELD                            40001
 #define IDC_USBDEVLIST                          40001
+#define IDT_TRACKEMAILINTERVAL                  40001
 #define IDC_SERVERURLFIELD                      40002
 #define IDC_TOFIELD                             40002
 #define IDM_ABOUT                               40002
