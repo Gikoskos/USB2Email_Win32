@@ -30,7 +30,7 @@ INT usb_idx;
  *******************************/
 BOOL ValidEmailCheck = FALSE;
 BOOL USBRefresh = TRUE;
-BOOL STARTSTOPstate = TRUE;
+BOOL CHECK_STARTSTOP_STATE = FALSE;
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -786,10 +786,9 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDC_STARTSTOP:
-					onoff = (onoff == TRUE)?FALSE:TRUE;
 					if (InitU2MThread()) {
+						CHECK_STARTSTOP_STATE = TRUE;
 						ChangeSTARTSTOPText();
-						PostMessage(hwnd, WM_PAINT, wParam, lParam);
 					}
 					break;
 				case IDC_EMAILBUTTON:
@@ -877,13 +876,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			return -2;
 		}
 
-		if (RUNNING == STARTSTOPstate) {
-			Button_Enable(STARTSTOP, FALSE);
-			UpdateWindow(hwnd);
-		} else {
-			Button_Enable(STARTSTOP, TRUE);
-			UpdateWindow(hwnd);
-		}
+		//if (bRet != WM_CLOSE && bRet != WM_DESTROY) {
+			if (RUNNING)
+				Button_Enable(STARTSTOP, FALSE);
+			else
+				Button_Enable(STARTSTOP, TRUE);
+
+			if (RUNNING == FALSE && onoff == FALSE) {
+				Button_Enable(STARTSTOP, TRUE);
+				ChangeSTARTSTOPText();
+				CHECK_STARTSTOP_STATE = FALSE;
+			}
+		//}
+		UpdateWindow(hwnd);
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}

@@ -44,23 +44,24 @@ void ConstructPayloadText();
 BOOL InitU2MThread()
 {
 	if (!FROM) {
-		MessageBox(NULL, "No e-mail to sent is set", "Can't start service!", MB_ICONERROR | MB_OK);
+		MessageBox(NULL, "No e-mail to send, is set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	if (!SMTP_SERVER || !PORT_STR) {
-		MessageBox(NULL, "SMTP server domain and port aren't set!", "Can't start service!", MB_ICONERROR | MB_OK);
+		MessageBox(NULL, "SMTP server domain and port aren't set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	if (!USBdev) {
-		MessageBox(NULL, "No USB device selected!", "Can't start service!", MB_ICONERROR | MB_OK);
+		MessageBox(NULL, "No USB device selected.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	if (!pass) {
-		MessageBox(NULL, "No password set!", "Can't start service!", MB_ICONERROR | MB_OK);
+		MessageBox(NULL, "No password set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	ClearPayloadText();
 	ConstructPayloadText();
+	onoff = (onoff == TRUE)?FALSE:TRUE;
 	if (onoff) {
 		u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)&TIMEOUT, 0, thrdID);
 	} 
@@ -150,10 +151,11 @@ UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT)
 			RUNNING = FALSE;
 			if (!GetCurlError(ret)) {
 				ClearPayloadText();
+				onoff = FALSE;
 				return 0;
 			}
 			if (EMAIL_PAUSE) {
-				Sleep(EMAIL_PAUSE);
+				Sleep(EMAIL_PAUSE*1000);
 			}
 		}
 		RUNNING = FALSE;

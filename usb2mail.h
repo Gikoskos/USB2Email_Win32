@@ -25,7 +25,7 @@ extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern BOOL RUNNING;
 extern UINT EMAIL_PAUSE;
-UINT onoff;
+extern UINT onoff;
 
 
 BOOL InitU2MThread();
