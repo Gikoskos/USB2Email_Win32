@@ -13,6 +13,8 @@ USB2MAIL_SOURCE = usblist.c
 USB_SOURCE = usbtest.c
 RESOURCE = resources.rc
 RES_OBJ = res.o
+WXS = Setup.wxs
+WIXOBJ = Setup.wixobj
 
 dbg: clean compile_resource debug
 
@@ -30,6 +32,14 @@ release: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
 compile_resource:
 	cd resources & windres $(RESOURCE) ..\$(RES_OBJ) & cd ..
 
+installer: candle light
+	
+candle: $(WXS)
+	candle.exe <
+
+light: $(WIXOBJ)
+	light.exe <
+
 ml: smtp-tls.c
 	$(CC) $(CFLAGS) $^ -lcurl
 
@@ -38,7 +48,7 @@ ml: smtp-tls.c
 clean: cleanobj cleanexe
 
 cleanobj:
-	@del *.o
+	@del *.o *.wixobj *.wixpdb
 
 cleanexe:
 	@del *.exe
