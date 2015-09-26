@@ -150,8 +150,10 @@ UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT)
 			RUNNING = FALSE;
 			if (!GetCurlError(ret)) {
 				ClearPayloadText();
-				_endthreadex(0);
 				return 0;
+			}
+			if (EMAIL_PAUSE) {
+				Sleep(EMAIL_PAUSE);
 			}
 		}
 		RUNNING = FALSE;
@@ -159,7 +161,6 @@ UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT)
 			Sleep(timeout);
 		} else {
 			ClearPayloadText();
-			_endthreadex(0);
 			return 0;
 		}
 	}
@@ -171,6 +172,7 @@ BOOL USBisConnected(char *to_find)
 	HDEVINFO hDevInfo;
 	SP_DEVINFO_DATA DeviceInfoData;
 	DWORD i;
+	UINT len = strlen(to_find);
 
 	hDevInfo = SetupDiGetClassDevs(NULL, 0, 0, DIGCF_PRESENT | DIGCF_ALLCLASSES );
 
@@ -194,13 +196,14 @@ BOOL USBisConnected(char *to_find)
 			&buffersize)) {
 			if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 				if (buffer) LocalFree(buffer);
+				buffer = NULL;
 				buffer = LocalAlloc(LPTR,buffersize * 2);
 			} else {
 				break;
 			}
 		}
 		if (buffer) {
-			if (!memcmp(buffer, to_find, strlen(to_find))) {
+			if (!strncmp(buffer, to_find, len)) {
 				LocalFree(buffer);
 				return TRUE;
 			}
@@ -320,14 +323,9 @@ VOID fillUSBlist(HWND hwnd)
 			char *buffer = NULL;
 			DWORD buffersize = 0;
 
-		   while (!SetupDiGetDeviceRegistryProperty(
-				hDevInfo,
-				&DeviceInfoData,
-				SPDRP_DEVICEDESC,
-				&DataT,
-				(PBYTE)buffer,
-				buffersize,
-				&buffersize)) {
+		   while (!SetupDiGetDeviceRegistryProperty(hDevInfo,
+				&DeviceInfoData, SPDRP_DEVICEDESC, &DataT,
+				(PBYTE)buffer, buffersize, &buffersize)) {
 				if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 					if (buffer) LocalFree(buffer);
 					buffer = LocalAlloc(LPTR,buffersize * 2);

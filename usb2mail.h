@@ -24,7 +24,7 @@ extern BOOL USBRefresh;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern BOOL RUNNING;
-
+extern UINT EMAIL_PAUSE;
 UINT onoff;
 
 
