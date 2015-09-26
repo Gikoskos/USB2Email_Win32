@@ -876,7 +876,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			return -2;
 		}
 
-		//if (bRet != WM_CLOSE && bRet != WM_DESTROY) {
+		if (bRet) {
 			if (RUNNING)
 				Button_Enable(STARTSTOP, FALSE);
 			else
@@ -887,7 +887,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ChangeSTARTSTOPText();
 				CHECK_STARTSTOP_STATE = FALSE;
 			}
-		//}
+		}
 		UpdateWindow(hwnd);
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
