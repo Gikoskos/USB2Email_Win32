@@ -18,7 +18,7 @@
 
 #define ATTRIB(x) __attribute__((x))
 
-extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev, *USER, *PORT_STR;
+extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev, *USER, *PORT_STR, *SMTP_STR;
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
 extern HANDLE u2mMainThread;
@@ -26,6 +26,7 @@ extern UINT TIMEOUT;
 extern BOOL RUNNING;
 extern UINT EMAIL_PAUSE;
 extern UINT onoff;
+extern UINT PORT;
 
 
 BOOL InitU2MThread();

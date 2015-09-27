@@ -47,7 +47,7 @@ BOOL InitU2MThread()
 		MessageBox(NULL, "No e-mail to send, is set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
-	if (!SMTP_SERVER || !PORT_STR) {
+	if (!SMTP_STR) {
 		MessageBox(NULL, "SMTP server domain and port aren't set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
@@ -277,14 +277,16 @@ int SendEmail()
 		curl_easy_setopt(curl, CURLOPT_USERNAME, USER);
 		curl_easy_setopt(curl, CURLOPT_PASSWORD, pass);
 
-		curl_easy_setopt(curl, CURLOPT_URL, SMTP_SERVER);
-
-		curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
+		if (!PORT)
+			curl_easy_setopt(curl, CURLOPT_URL, SMTP_STR);
+		else {
+			curl_easy_setopt(curl, CURLOPT_URL, SMTP_SERVER);
+			curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
+		}
 
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 		curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM);
-
 		recipients = curl_slist_append(recipients, TO);
 		if (CC)
 			recipients = curl_slist_append(recipients, CC);
@@ -297,9 +299,7 @@ int SendEmail()
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 #endif
 		res = curl_easy_perform(curl);
-
 		curl_slist_free_all(recipients);
-
 		curl_easy_cleanup(curl);
 	}
 

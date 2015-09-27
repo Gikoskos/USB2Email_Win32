@@ -355,9 +355,12 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
 	GetFieldText(hwnd, IDC_PORTFIELD, &tmp2);
 	if (!tmp2) {
+		SMTP_STR = realloc(NULL, strlen(tmp1)+1);
+		strncpy(SMTP_STR, tmp1, strlen(tmp1)+1);
 		free(tmp1);
-		MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONERROR);
-		return FALSE;
+		free(tmp2);
+		//MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONERROR);
+		return TRUE;
 	} else if (strlen(tmp2) > 5) {
 		free(tmp1);
 		free(tmp2);
@@ -772,6 +775,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDM_PASSWORD:
+					ChangeSTARTSTOPText();
 					if (!onoff)
 						InitPasswordDialog(hwnd);
 					else
@@ -836,7 +840,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	/* Global initializations */
 	PORT = 0;
-	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = USBdev = USER = PORT_STR = SMTP_STR = RECEIVER = CC_RAW = NULL;
+	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = USBdev = USER = SMTP_STR = PORT_STR = RECEIVER = CC_RAW = NULL;
 	g_hInst = hInstance;
 	usb_idx = -1;
 
@@ -857,7 +861,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return -1;
 	}
 
-	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, "USB2Mail Win",
+	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, "USB2EMail Win32",
 	WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 	CW_USEDEFAULT, CW_USEDEFAULT, 550, 350, NULL, NULL, hInstance, NULL);
 
