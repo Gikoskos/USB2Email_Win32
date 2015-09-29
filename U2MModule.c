@@ -4,8 +4,10 @@
  ******************************************/
 
 #include "usb2mail.h"
+#include "usb_ids.h"
 #include <setupapi.h>
 #include <devguid.h>
+#include <initguid.h>
 #include <regstr.h>
 #include <process.h>
 #include <curl/curl.h>
@@ -19,7 +21,12 @@ struct upload_status {
 HANDLE u2mMainThread;
 BOOL RUNNING = FALSE;
 UINT *thrdID;
+UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
+
 static char *payload_text[MSG_LEN];
+
+DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
+			0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
 
 #define ClearPayloadText()                                       \
 while (1) {                                                      \
@@ -39,6 +46,8 @@ static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp);
 int SendEmail();
 BOOL GetCurlError(int err);
 void ConstructPayloadText();
+int cmp(const void *vp, const void *vq);
+UsbDevStruct *find(unsigned long vendor, unsigned long device);
 
 
 BOOL InitU2MThread()
@@ -188,14 +197,8 @@ BOOL USBisConnected(char *to_find)
 		char *buffer = NULL;
 		DWORD buffersize = 0;
 
-	   while (!SetupDiGetDeviceRegistryProperty(
-			hDevInfo,
-			&DeviceInfoData,
-			SPDRP_DEVICEDESC,
-			&DataT,
-			(PBYTE)buffer,
-			buffersize,
-			&buffersize)) {
+	   while (!SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData,
+			SPDRP_DEVICEDESC, &DataT, (PBYTE)buffer, buffersize, &buffersize)) {
 			if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 				if (buffer) LocalFree(buffer);
 				buffer = NULL;
@@ -306,40 +309,53 @@ int SendEmail()
 	return (int)res;
 }
 
-VOID fillUSBlist(HWND hwnd)
+VOID fillUSBlist(HWND hDlg)
 {
-	if (USBRefresh) {
-		HDEVINFO hDevInfo;
-		SP_DEVINFO_DATA DeviceInfoData;
-		DWORD i;
+	HDEVINFO                         hDevInfo;
+	SP_DEVICE_INTERFACE_DATA         DevIntfData;
+	PSP_DEVICE_INTERFACE_DETAIL_DATA DevIntfDetailData;
+	SP_DEVINFO_DATA                  DevData;
+	DWORD dwSize, dwMemberIdx;
+	char temp[5];
+	UINT idx = 0;
+	unsigned short vID, dID;
 
-		hDevInfo = SetupDiGetClassDevs(NULL, 0, 0, DIGCF_PRESENT | DIGCF_ALLCLASSES );
+	hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
+		NULL, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
 
-		if (hDevInfo == INVALID_HANDLE_VALUE) {
-			return;
-		}
+	if (hDevInfo != INVALID_HANDLE_VALUE) {
+		DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+		dwMemberIdx = 0;
+		SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
+			dwMemberIdx, &DevIntfData);
 
-		DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
-		for (i = 0; SetupDiEnumDeviceInfo(hDevInfo, i, &DeviceInfoData); i++) {
-			DWORD DataT;
-			char *buffer = NULL;
-			DWORD buffersize = 0;
+		while (GetLastError() != ERROR_NO_MORE_ITEMS) {
+			DevData.cbSize = sizeof(DevData);
+			SetupDiGetDeviceInterfaceDetail(hDevInfo, &DevIntfData, NULL, 0, &dwSize, NULL);
+			DevIntfDetailData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwSize);
+			DevIntfDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
-		   while (!SetupDiGetDeviceRegistryProperty(hDevInfo,
-				&DeviceInfoData, SPDRP_DEVICEDESC, &DataT,
-				(PBYTE)buffer, buffersize, &buffersize)) {
-				if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-					if (buffer) LocalFree(buffer);
-					buffer = LocalAlloc(LPTR,buffersize * 2);
-				} else {
-					break;
-				}
+			if (SetupDiGetDeviceInterfaceDetail(hDevInfo, &DevIntfData,
+				DevIntfDetailData, dwSize, &dwSize, &DevData)) {
+				temp[0] = DevIntfDetailData->DevicePath[12];
+				temp[1] = DevIntfDetailData->DevicePath[13];
+				temp[2] = DevIntfDetailData->DevicePath[14];
+				temp[3] = DevIntfDetailData->DevicePath[15];
+				temp[4] = '\0';
+				vID = (unsigned short)strtoul(temp, NULL, 16);
+				temp[0] = DevIntfDetailData->DevicePath[21];
+				temp[1] = DevIntfDetailData->DevicePath[22];
+				temp[2] = DevIntfDetailData->DevicePath[23];
+				temp[3] = DevIntfDetailData->DevicePath[24];
+				dID = (unsigned short)strtoul(temp, NULL, 16);
+				UsbDevStruct *new = UsbFind((unsigned long)vID, (unsigned long)dID);
+				scanned_usb_ids[idx][0] = vID;
+				scanned_usb_ids[idx][1] = dID;
+				AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
 			}
-			AddUSBItem(hwnd, buffer);
-			if (buffer) LocalFree(buffer);
-		}
-		if (GetLastError() != NO_ERROR && GetLastError() != ERROR_NO_MORE_ITEMS) {
-			return;
+			HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
+			SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, ++dwMemberIdx, &DevIntfData);
+			idx++;
 		}
 		SetupDiDestroyDeviceInfoList(hDevInfo);
 	}

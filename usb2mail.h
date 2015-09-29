@@ -17,6 +17,7 @@
 #include "resources\resource.h"
 
 #define ATTRIB(x) __attribute__((x))
+#define MAX_CONNECTED_USB 100
 
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev, *USER, *PORT_STR, *SMTP_STR;
 extern BOOL ValidEmailCheck;
@@ -27,8 +28,8 @@ extern BOOL RUNNING;
 extern UINT EMAIL_PAUSE;
 extern UINT onoff;
 extern UINT PORT;
-
+extern UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
 
 BOOL InitU2MThread();
 VOID fillUSBlist(HWND hwnd);
-VOID AddUSBItem(HWND hwnd, char *s);
+VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);

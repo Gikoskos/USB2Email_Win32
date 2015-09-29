@@ -9,8 +9,9 @@ DWARF2 = -ggdb
 LINKER = -lsetupapi -lcurl -lcomctl32
 RLS_FLAGS = -mwindows
 WINDOW_SOURCE = U2MWin32.c
-USB2MAIL_SOURCE = usblist.c
-USB_SOURCE = usbtest.c
+USB2MAIL_SOURCE = U2MModule.c
+USBLIST = find_usb.c usb_ids.c
+USBTEST_SOURCE = usbtest.c
 RESOURCE = resources.rc
 RES_OBJ = res.o
 WXS = Setup.wxs
@@ -20,13 +21,13 @@ dbg: clean compile_resource debug
 
 rls: compile_resource release
 
-usb: $(USB_SOURCE)
+usb: $(USBTEST_SOURCE)
 	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^
 
-debug: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
+debug: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
 	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^ $(RES_OBJ) $(LINKER) $(OBJ) $(DBG)
 
-release: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
+release: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
 	$(CC) $(CFLAGS) $^ $(RES_OBJ) $(LINKER) $(RLS_FLAGS) $(OBJ) $(RLS)
 	
 compile_resource:

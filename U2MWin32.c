@@ -23,7 +23,7 @@ UINT PORT;
 
 char *USBdev;
 UINT TIMEOUT;
-INT usb_idx;
+UINT usb_idx;
 
 /*******************************
 *Bools to check enabled controls*
@@ -87,7 +87,7 @@ while (1) {                                                            \
 while (1) {                                                            \
 	if (USBdev) free(USBdev);                                          \
 	USBdev = NULL;                                                     \
-	usb_idx = -1;                                                      \
+	usb_idx = 0;                                                       \
 	break;                                                             \
 }
 
@@ -130,8 +130,8 @@ VOID InitPasswordDialog(HWND hwnd);
 VOID InitPreferencesDialog(HWND hwnd);
 VOID InitHelpWindow(HWND hwnd);
 
-VOID DeleteUSBItem(HWND hwnd, char *s);
-VOID AddUSBItem(HWND hwnd, char *s);
+VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
+VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s);
 VOID RemoveStringFromListBox(HWND hDlg, int nIDDlgItem, char *s);
 VOID AddStringToListBox(HWND hDlg, int nIDDlgItem, char *s);
 VOID DeleteAll();
@@ -184,26 +184,31 @@ VOID DeleteAll()
 	ClearUSBSelection();
 }
 
-VOID AddStringToListBox(HWND hDlg, int nIDDlgItem, char *s)
+VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
 {
-	if (s)
-		SendDlgItemMessage(hDlg, nIDDlgItem, LB_ADDSTRING, (WPARAM)0, (LPARAM)s);
+	LVITEM dev;
+
+	if (!dev_str)
+		dev.pszText = "Unidentified vendor";
+	else
+		dev.pszText = dev_str;
+
+	dev.mask = LVIF_TEXT | LVIF_STATE;
+	dev.stateMask = dev.iSubItem = dev.state = 0;
+	dev.iItem = usb_idx;
+	ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
+	if (!ven_str) {
+		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, "Unidentified device");
+	} else {
+		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
+	}
+	usb_idx++;
 }
 
-VOID RemoveStringFromListBox(HWND hDlg, int nIDDlgItem, char *s)
+VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s)
 {
 	if (s)
 		SendDlgItemMessage(hDlg, nIDDlgItem, LB_DELETESTRING, (WPARAM)0, (LPARAM)s);
-}
-
-VOID AddUSBItem(HWND hwnd, char *s)
-{
-	AddStringToListBox(hwnd, IDC_USBDEVLIST, s);
-}
-
-VOID DeleteUSBItem(HWND hwnd, char *s)
-{
-	RemoveStringFromListBox(hwnd, IDC_USBDEVLIST, s);
 }
 
 VOID InitPreferencesDialog(HWND hwnd)
@@ -331,16 +336,16 @@ HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 	return hwndTT;
 }
 
-void OnButtonClickGetSelection(HWND hwnd)
+VOID OnButtonClickGetSelection(HWND hwnd)
 {
-	usb_idx = (int)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), LB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+	/*usb_idx = (int)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), LB_GETCURSEL, (WPARAM)0, (LPARAM)0);
 
 	if (usb_idx == LB_ERR)
 		return;
 
 	int str_len = (int)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), LB_GETTEXTLEN, (WPARAM)usb_idx, 0);
 	USBdev = malloc(str_len + 1);
-	SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), LB_GETTEXT, (WPARAM)usb_idx, (LPARAM)USBdev);
+	SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), LB_GETTEXT, (WPARAM)usb_idx, (LPARAM)USBdev);*/
 }
 
 BOOL parsePrefDialogFields(HWND hwnd)
@@ -592,18 +597,32 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	HBITMAP refresh_bitmap;
+	LVCOLUMN vendCol, devcCol;
+	INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
 	switch (msg) {
 		case WM_INITDIALOG:
+			InitCommonControlsEx(&columnControlClass);
 			refresh_bitmap = (HBITMAP)LoadImage(NULL, "icons\\refreshbitmap.bmp",
 				IMAGE_BITMAP, 0, 0,	LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
 			SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
+			vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+			vendCol.iSubItem = 0;
+			devcCol.iSubItem = 1;
+			vendCol.cx = devcCol.cx = 150;
+			vendCol.fmt = LVCFMT_LEFT;
+			devcCol.fmt = LVCFMT_RIGHT;			
+			vendCol.pszText = "Device";
+			devcCol.pszText = "Vendor";
+			ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
+			ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
 			fillUSBlist(hwnd);
-			SendDlgItemMessage(hwnd, IDC_USBDEVLIST, LB_SETCURSEL, (WPARAM)usb_idx, (LPARAM)0);
 			return (INT_PTR)TRUE;
 		case WM_COMMAND:
 			switch (LOWORD(wParam)) {
 				case IDUSBREFRESH:
-					SendDlgItemMessage(hwnd, IDC_USBDEVLIST, LB_RESETCONTENT, (WPARAM)0, (LPARAM)0);
+					ListView_DeleteAllItems(GetDlgItem(hwnd, IDC_USBDEVLIST));
+					ClearUSBSelection();
+					memset(scanned_usb_ids, 0, sizeof(scanned_usb_ids[0][0])* MAX_CONNECTED_USB * 2);
 					fillUSBlist(hwnd);
 					return (INT_PTR)TRUE;
 				case IDOK:
@@ -698,7 +717,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 	switch (msg) {
 		case WM_CREATE:
 			{
-				InitCommonControls();
 				USBListButton = CreateWindowEx(0, "BUTTON", "Choose USB device",
 					WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
 					30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
@@ -791,7 +809,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					break;
 				case IDC_STARTSTOP:
 					if (InitU2MThread()) {
-						CHECK_STARTSTOP_STATE = TRUE;
 						ChangeSTARTSTOPText();
 					}
 					break;
@@ -842,7 +859,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PORT = 0;
 	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = USBdev = USER = SMTP_STR = PORT_STR = RECEIVER = CC_RAW = NULL;
 	g_hInst = hInstance;
-	usb_idx = -1;
+	usb_idx = 0;
 
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = wc.cbClsExtra = wc.cbWndExtra = 0;
@@ -869,6 +886,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, "Window creation failed!", "Error!", MB_ICONERROR | MB_OK);
 		return -2;
 	}
+	InitCommonControls();
 	AnimateWindow(hwnd, 200, AW_CENTER);
 	while (bRet) {
 		bRet = GetMessage(&Msg, NULL, 0, 0);
@@ -880,7 +898,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			return -2;
 		}
 
-		if (bRet) {
+		/*if (bRet) {
 			if (RUNNING)
 				Button_Enable(STARTSTOP, FALSE);
 			else
@@ -891,7 +909,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ChangeSTARTSTOPText();
 				CHECK_STARTSTOP_STATE = FALSE;
 			}
-		}
+		}*/
 		UpdateWindow(hwnd);
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
