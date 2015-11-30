@@ -53,7 +53,7 @@ UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL InitU2MThread()
 {
 	if (!FROM) {
-		MessageBox(NULL, "No e-mail to send, is set.", "Can't start service!", MB_ICONERROR | MB_OK);
+		MessageBox(NULL, "You have to set an e-mail to send, first.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	if (!SMTP_STR) {

@@ -66,43 +66,43 @@ UINT EMAIL_PAUSE = 0;
 
 #define ClearPwd()                                                     \
 while (1) {                                                            \
-	if (pass) free(pass);                                              \
-	pass = NULL;                                                       \
-	break;                                                             \
+    if (pass) free(pass);                                              \
+    pass = NULL;                                                       \
+    break;                                                             \
 }
 
 #define ClearPrefs()                                                   \
 while (1) {                                                            \
-	if (SMTP_SERVER) free(SMTP_SERVER);                                \
-	if (PORT_STR) free(PORT_STR);                                      \
-	if (SMTP_STR) free(SMTP_STR);                                      \
-	SMTP_STR = NULL;                                                   \
-	PORT_STR = NULL;                                                   \
-	SMTP_SERVER = NULL;                                                \
-	PORT = 0;                                                          \
-	break;                                                             \
+    if (SMTP_SERVER) free(SMTP_SERVER);                                \
+    if (PORT_STR) free(PORT_STR);                                      \
+    if (SMTP_STR) free(SMTP_STR);                                      \
+    SMTP_STR = NULL;                                                   \
+    PORT_STR = NULL;                                                   \
+    SMTP_SERVER = NULL;                                                \
+    PORT = 0;                                                          \
+    break;                                                             \
 }
 
 #define ClearUSBSelection()                                            \
 while (1) {                                                            \
-	if (USBdev) free(USBdev);                                          \
-	USBdev = NULL;                                                     \
-	usb_idx = 0;                                                       \
-	break;                                                             \
+    if (USBdev) free(USBdev);                                          \
+    USBdev = NULL;                                                     \
+    usb_idx = 0;                                                       \
+    break;                                                             \
 }
 
 #define ClearEmailData()                                               \
 while (1) {                                                            \
-	if (FROM) free(FROM);                                              \
-	if (TO) free(TO);                                                  \
-	if (CC) free(CC);                                                  \
-	if (SUBJECT) free(SUBJECT);                                        \
-	if (BODY) free(BODY);                                              \
-	if (USER) free(USER);                                              \
-	if (RECEIVER) free(RECEIVER);                                      \
-	if (CC_RAW) free(CC_RAW);                                          \
-	FROM = TO = CC = SUBJECT = BODY = USER = RECEIVER = CC_RAW = NULL; \
-	break;                                                             \
+    if (FROM) free(FROM);                                              \
+    if (TO) free(TO);                                                  \
+    if (CC) free(CC);                                                  \
+    if (SUBJECT) free(SUBJECT);                                        \
+    if (BODY) free(BODY);                                              \
+    if (USER) free(USER);                                              \
+    if (RECEIVER) free(RECEIVER);                                      \
+    if (CC_RAW) free(CC_RAW);                                          \
+    FROM = TO = CC = SUBJECT = BODY = USER = RECEIVER = CC_RAW = NULL; \
+    break;                                                             \
 }
 
 /*******************************************
@@ -517,6 +517,7 @@ BOOL parsePwdField(HWND hwnd)
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	HICON about_usb_icon;
+
 	switch (msg) {
 		case WM_INITDIALOG:
 			about_usb_icon = (HICON)LoadIcon(GetModuleHandle(NULL), 
@@ -599,10 +600,11 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	HBITMAP refresh_bitmap;
 	LVCOLUMN vendCol, devcCol;
 	INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
+
 	switch (msg) {
 		case WM_INITDIALOG:
 			InitCommonControlsEx(&columnControlClass);
-			refresh_bitmap = (HBITMAP)LoadImage(NULL, "icons\\refreshbitmap.bmp",
+			refresh_bitmap = (HBITMAP)LoadImage(g_hInst, "icons\\refreshbitmap.bmp",
 				IMAGE_BITMAP, 0, 0,	LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
 			SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
 			vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
@@ -628,15 +630,18 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				case IDOK:
 					ClearUSBSelection();
 					OnButtonClickGetSelection(hwnd);
+					DeleteObject((HGDIOBJ)refresh_bitmap);
 					EndDialog(hwnd, wParam);
 					return (INT_PTR)TRUE;
 				case IDCANCEL:
 					EndDialog(hwnd, wParam);
+					DeleteObject((HGDIOBJ)refresh_bitmap);
 					return (INT_PTR)TRUE;
 			}
 			switch (HIWORD(wParam)) {
 				case LBN_DBLCLK:
 					OnButtonClickGetSelection(hwnd);
+					DeleteObject((HGDIOBJ)refresh_bitmap);
 					EndDialog(hwnd, wParam);
 					return (INT_PTR)TRUE;
 			}
@@ -652,6 +657,7 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 		 CC_ttip ATTRIB(unused),
 		 SUBJECT_ttip ATTRIB(unused),
 		 BODY_ttip ATTRIB(unused);
+
 	switch (msg) {
 		case WM_INITDIALOG:
 			FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd, 
@@ -877,7 +883,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, "USB2EMail Win32",
-	WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+	WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_EX_LAYERED,
 	CW_USEDEFAULT, CW_USEDEFAULT, 550, 350, NULL, NULL, hInstance, NULL);
 
 	if (!hwnd) {

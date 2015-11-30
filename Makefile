@@ -6,7 +6,7 @@ OBJ = -o
 DBG = build/debug.exe
 RLS = build/USB2EMAILWin32.exe
 DWARF2 = -ggdb
-LINKER = -lsetupapi -lcurl -lcomctl32
+LINKER = -lsetupapi -lcurl -lcomctl32 -lgdi32
 RLS_FLAGS = -mwindows
 WINDOW_SOURCE = U2MWin32.c
 USB2MAIL_SOURCE = U2MModule.c
@@ -52,4 +52,4 @@ cleanobj:
 	@del *.o *.wixobj *.wixpdb
 
 cleanexe:
-	@del *.exe
+	@del build\*.exe
