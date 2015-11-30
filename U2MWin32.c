@@ -771,7 +771,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 				SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
 				//SendMessage(time_track, TBM_SETTOOLTIPS, (WPARAM)ttrack_tooltip, (LPARAM)0);
 				UpdateWindow(hwnd);
-				SetActiveWindow(hwnd);
 			}
 		case WM_MOUSEMOVE:
 			break;
@@ -808,9 +807,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 							"Service is running!", MB_ICONEXCLAMATION | MB_OK);
 					break;
 				case IDC_STARTSTOP:
-					if (InitU2MThread()) {
-						ChangeSTARTSTOPText();
-					}
+					InitU2MThread();
+					ChangeSTARTSTOPText();
 					break;
 				case IDC_EMAILBUTTON:
 					if (!onoff)
@@ -888,6 +886,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 	InitCommonControls();
 	AnimateWindow(hwnd, 200, AW_CENTER);
+	SetActiveWindow(hwnd);
 	while (bRet) {
 		bRet = GetMessage(&Msg, NULL, 0, 0);
 
