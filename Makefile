@@ -3,8 +3,8 @@ DEBUG = -g -DDEBUG
 CFLAGS = -Wall -std=c11
 INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
-DBG = debug.exe
-RLS = USB2EMAILWin32.exe
+DBG = build/debug.exe
+RLS = build/USB2EMAILWin32.exe
 DWARF2 = -ggdb
 LINKER = -lsetupapi -lcurl -lcomctl32
 RLS_FLAGS = -mwindows
