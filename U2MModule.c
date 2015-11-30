@@ -30,11 +30,11 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 
 #define ClearPayloadText()                                       \
 while (1) {                                                      \
-	for (int i = 0; i < MSG_LEN; i++) {                          \
-		if (payload_text[i]) free(payload_text[i]);              \
-		payload_text[i] = NULL;                                  \
-	}                                                            \
-	break;                                                       \
+    for (int i = 0; i < MSG_LEN; i++) {                          \
+        if (payload_text[i]) free(payload_text[i]);              \
+        payload_text[i] = NULL;                                  \
+    }                                                            \
+    break;                                                       \
 }
 
 /*******************************************
