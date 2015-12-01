@@ -519,6 +519,7 @@ VOID CenterChild(HWND hwnd)
 {
 	HWND hwndOwner = GetParent(hwnd);
 	RECT rc, rcDlg, rcOwner;
+	int final_x, final_y;
 
 	GetWindowRect(hwndOwner, &rcOwner);
 	GetWindowRect(hwnd, &rcDlg);
@@ -526,8 +527,12 @@ VOID CenterChild(HWND hwnd)
 	OffsetRect(&rcDlg, -rcDlg.left, -rcDlg.top);
 	OffsetRect(&rc, -rc.left, -rc.top);
 	OffsetRect(&rc, -rcDlg.right, -rcDlg.bottom);
-	SetWindowPos(hwnd, HWND_TOP, rcOwner.left + (rc.right / 2),
-                 rcOwner.top + (rc.bottom / 2), 0, 0, SWP_NOSIZE);
+
+	final_x = rcOwner.left + (rc.right / 2);
+	final_y = rcOwner.top + (rc.bottom / 2);
+	if (final_x < 0) final_x = 0;
+	if (final_y < 0) final_y = 0;
+	SetWindowPos(hwnd, HWND_TOP, final_x, final_y, 0, 0, SWP_NOSIZE);
 }
 
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -918,10 +923,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, "Window creation failed!", "Error!", MB_ICONERROR | MB_OK);
 		return -2;
 	}
+
 	InitCommonControls();
-	//ShowWindow(hwnd, SW_SHOW);
-	//SetActiveWindow(hwnd);
+#ifdef DEBUG
+	ShowWindow(hwnd, SW_SHOW);
+	SetActiveWindow(hwnd);
+#else
 	AnimateWindow(hwnd, 200, AW_CENTER | AW_ACTIVATE);
+#endif
 	while (bRet) {
 		bRet = GetMessage(&Msg, NULL, 0, 0);
 
