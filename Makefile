@@ -22,7 +22,7 @@ dbg: clean compile_resource debug
 rls: compile_resource release
 
 usb: $(USBTEST_SOURCE)
-	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^
+	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^ $(LINKER)
 
 debug: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
 	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) $^ $(RES_OBJ) $(LINKER)
