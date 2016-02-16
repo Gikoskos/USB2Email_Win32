@@ -18,12 +18,15 @@ struct upload_status {
 	int lines_read;
 };
 
-#ifdef DEFINE_GUID
+HANDLE u2mMainThread;
+BOOL RUNNING = FALSE;
+UINT *thrdID;
+UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
+
+static char *payload_text[MSG_LEN];
+
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
             0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
-#else
-#error DEFINE_GUID is not defined.
-#endif
 
 #define ClearPayloadText()                                       \
 while (1) {                                                      \
@@ -34,6 +37,7 @@ while (1) {                                                      \
     break;                                                       \
 }
 
+<<<<<<< HEAD
 
 /*** Globals ***/
 HANDLE u2mMainThread;
@@ -43,6 +47,8 @@ UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
 
 static char *payload_text[MSG_LEN];
 
+=======
+>>>>>>> parent of c5e0de9... changed function order
 /*******************************************
 * Prototypes for functions with local scope *
  *******************************************/

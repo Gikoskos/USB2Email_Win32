@@ -150,12 +150,60 @@ char *ErrorCodeDlgTitles(int i)
 }*/
 
 
+VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
+{
+	int bufsiz = GetWindowTextLength(GetDlgItem(hwnd, nIDDlgItem)) + 1;
+
+	if (bufsiz > 1) {
+		(*str) = calloc(bufsiz, 1);
+		GetDlgItemText(hwnd, nIDDlgItem, (*str), bufsiz);
+	} else {
+		if (*str)
+			free(*str);
+		(*str) = NULL;
+	}
+}
+
+VOID ChangeSTARTSTOPText()
+{
+	if (onoff) {
+		if (!SetWindowText(STARTSTOP, "Stop")) {
+			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
+		}
+	} else {
+		if (!SetWindowText(STARTSTOP, "Start")) {
+			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
+		}
+	}
+}
+
 VOID DeleteAll()
 {
 	ClearEmailData();
 	ClearPwd();
 	ClearPrefs();
 	ClearUSBSelection();
+}
+
+VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
+{
+	LVITEM dev;
+
+	if (!dev_str)
+		dev.pszText = "Unidentified vendor";
+	else
+		dev.pszText = dev_str;
+
+	dev.mask = LVIF_TEXT | LVIF_STATE;
+	dev.stateMask = dev.iSubItem = dev.state = 0;
+	dev.iItem = usb_idx;
+	ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
+	if (!ven_str) {
+		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, "Unidentified device");
+	} else {
+		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
+	}
+	usb_idx++;
 }
 
 VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s)
@@ -240,6 +288,7 @@ BOOL isValidDomain(char *str, char SEPARATOR)
 	return TRUE;
 }
 
+<<<<<<< HEAD
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 {
 	int bufsiz = GetWindowTextLength(GetDlgItem(hwnd, nIDDlgItem)) + 1;
@@ -267,6 +316,8 @@ VOID ChangeSTARTSTOPText()
 	}
 }
 
+=======
+>>>>>>> parent of c5e0de9... changed function order
 HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 {
 	if (!toolID || !hDlg || !pszText)
@@ -314,27 +365,6 @@ HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 
 	SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &ttrack_struct);		
 	return hwndTT;
-}
-
-VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
-{
-	LVITEM dev;
-
-	if (!dev_str)
-		dev.pszText = "Unidentified vendor";
-	else
-		dev.pszText = dev_str;
-
-	dev.mask = LVIF_TEXT | LVIF_STATE;
-	dev.stateMask = dev.iSubItem = dev.state = 0;
-	dev.iItem = usb_idx;
-	ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
-	if (!ven_str) {
-		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, "Unidentified device");
-	} else {
-		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
-	}
-	usb_idx++;
 }
 
 VOID OnButtonClickGetSelection(HWND hwnd)
@@ -626,17 +656,16 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch (msg) {
 		case WM_INITDIALOG:
+			InitCommonControlsEx(&columnControlClass);
 			refresh_bitmap = (HBITMAP)LoadImage(g_hInst, "icons\\refreshbitmap.bmp",
                                  IMAGE_BITMAP, 0, 0,	LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
 			SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
-
-			InitCommonControlsEx(&columnControlClass);
 			vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 			vendCol.iSubItem = 0;
 			devcCol.iSubItem = 1;
 			vendCol.cx = devcCol.cx = 150;
 			vendCol.fmt = LVCFMT_LEFT;
-			devcCol.fmt = LVCFMT_LEFT;			
+			devcCol.fmt = LVCFMT_RIGHT;			
 			vendCol.pszText = "Device";
 			devcCol.pszText = "Vendor";
 			ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
@@ -682,11 +711,11 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
 	switch (msg) {
 		case WM_INITDIALOG:
-			FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,
+			FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd, 
                                  "E-mail address of sender");
-			TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd,
+			TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd, 
                                  "E-mail address of recipient");
-			CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd,
+			CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd, 
                                  "Group of addresses to send to. Multiple e-mails are seperated with ';'");
 			SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, 
                                  "Subject of the e-mail");
