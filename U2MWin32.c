@@ -3,7 +3,7 @@
 *        George Koskeridis (C)2015         *
  ******************************************/
 
-#include "usb2mail.h"
+#include "U2MWin32.h"
 
 const char szClassName[] = "USB2MailClass";
 
@@ -18,7 +18,7 @@ char *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
 /********************
 *Input field raw data*
  ********************/
-char *pass, *USER, *RECEIVER, *CC_RAW, *PORT_STR, *SMTP_STR;
+char *pass, *RECEIVER, *CC_RAW, *PORT_STR, *SMTP_STR;
 UINT PORT;
 
 char *USBdev;
@@ -98,10 +98,9 @@ while (1) {                                                            \
     if (CC) free(CC);                                                  \
     if (SUBJECT) free(SUBJECT);                                        \
     if (BODY) free(BODY);                                              \
-    if (USER) free(USER);                                              \
     if (RECEIVER) free(RECEIVER);                                      \
     if (CC_RAW) free(CC_RAW);                                          \
-    FROM = TO = CC = SUBJECT = BODY = USER = RECEIVER = CC_RAW = NULL; \
+    FROM = TO = CC = SUBJECT = BODY = RECEIVER = CC_RAW = NULL;        \
     break;                                                             \
 }
 
@@ -150,60 +149,12 @@ char *ErrorCodeDlgTitles(int i)
 }*/
 
 
-VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
-{
-	int bufsiz = GetWindowTextLength(GetDlgItem(hwnd, nIDDlgItem)) + 1;
-
-	if (bufsiz > 1) {
-		(*str) = calloc(bufsiz, 1);
-		GetDlgItemText(hwnd, nIDDlgItem, (*str), bufsiz);
-	} else {
-		if (*str)
-			free(*str);
-		(*str) = NULL;
-	}
-}
-
-VOID ChangeSTARTSTOPText()
-{
-	if (onoff) {
-		if (!SetWindowText(STARTSTOP, "Stop")) {
-			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
-		}
-	} else {
-		if (!SetWindowText(STARTSTOP, "Start")) {
-			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
-		}
-	}
-}
-
 VOID DeleteAll()
 {
 	ClearEmailData();
 	ClearPwd();
 	ClearPrefs();
 	ClearUSBSelection();
-}
-
-VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
-{
-	LVITEM dev;
-
-	if (!dev_str)
-		dev.pszText = "Unidentified vendor";
-	else
-		dev.pszText = dev_str;
-
-	dev.mask = LVIF_TEXT | LVIF_STATE;
-	dev.stateMask = dev.iSubItem = dev.state = 0;
-	dev.iItem = usb_idx;
-	ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
-	if (!ven_str) {
-		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, "Unidentified device");
-	} else {
-		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
-	}
-	usb_idx++;
 }
 
 VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s)
@@ -288,7 +239,6 @@ BOOL isValidDomain(char *str, char SEPARATOR)
 	return TRUE;
 }
 
-<<<<<<< HEAD
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 {
 	int bufsiz = GetWindowTextLength(GetDlgItem(hwnd, nIDDlgItem)) + 1;
@@ -305,19 +255,11 @@ VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 
 VOID ChangeSTARTSTOPText()
 {
-	if (onoff) {
-		if (!SetWindowText(STARTSTOP, "Stop")) {
-			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
-		}
-	} else {
-		if (!SetWindowText(STARTSTOP, "Start")) {
-			MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
-		}
+	if (!SetWindowText(STARTSTOP, (onoff)?"Start":"Stop")) {
+		MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
 	}
 }
 
-=======
->>>>>>> parent of c5e0de9... changed function order
 HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 {
 	if (!toolID || !hDlg || !pszText)
@@ -365,6 +307,27 @@ HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 
 	SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &ttrack_struct);		
 	return hwndTT;
+}
+
+VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
+{
+	LVITEM dev;
+
+	if (!dev_str)
+		dev.pszText = "Unidentified vendor";
+	else
+		dev.pszText = dev_str;
+
+	dev.mask = LVIF_TEXT | LVIF_STATE;
+	dev.stateMask = dev.iSubItem = dev.state = 0;
+	dev.iItem = usb_idx;
+	ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
+	if (!ven_str) {
+		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, "Unidentified device");
+	} else {
+		ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
+	}
+	usb_idx++;
 }
 
 VOID OnButtonClickGetSelection(HWND hwnd)
@@ -449,8 +412,6 @@ BOOL parseEmailDialogFields(HWND hwnd)
 		}
 	}
 	FROM = realloc(NULL, strlen(tmp)+3);
-	USER = realloc(NULL, strlen(tmp)+1);
-	strncpy(USER, tmp, strlen(tmp)+1);
 	snprintf(FROM, strlen(tmp)+3, "<%s>", tmp);
 	free(tmp);
 	tmp = NULL;
@@ -656,16 +617,17 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 	switch (msg) {
 		case WM_INITDIALOG:
-			InitCommonControlsEx(&columnControlClass);
 			refresh_bitmap = (HBITMAP)LoadImage(g_hInst, "icons\\refreshbitmap.bmp",
                                  IMAGE_BITMAP, 0, 0,	LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
 			SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
+
+			InitCommonControlsEx(&columnControlClass);
 			vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 			vendCol.iSubItem = 0;
 			devcCol.iSubItem = 1;
 			vendCol.cx = devcCol.cx = 150;
 			vendCol.fmt = LVCFMT_LEFT;
-			devcCol.fmt = LVCFMT_RIGHT;			
+			devcCol.fmt = LVCFMT_LEFT;			
 			vendCol.pszText = "Device";
 			devcCol.pszText = "Vendor";
 			ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
@@ -711,22 +673,22 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
 	switch (msg) {
 		case WM_INITDIALOG:
-			FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd, 
+			FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,
                                  "E-mail address of sender");
-			TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd, 
+			TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd,
                                  "E-mail address of recipient");
-			CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd, 
+			CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd,
                                  "Group of addresses to send to. Multiple e-mails are seperated with ';'");
 			SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, 
                                  "Subject of the e-mail");
 			BODY_ttip = CreateBaloonToolTip(IDC_MESSAGEFIELD, hwnd,
                                  "Body of the e-mail");
 			if (FROM)
-				SetDlgItemText(hwnd, IDC_FROMFIELD, USER);
+				SetDlgItemText(hwnd, IDC_FROMFIELD, FROM);
 			if (TO)
-				SetDlgItemText(hwnd, IDC_TOFIELD, RECEIVER);
+				SetDlgItemText(hwnd, IDC_TOFIELD, TO);
 			if (CC)
-				SetDlgItemText(hwnd, IDC_CCFIELD, CC_RAW);
+				SetDlgItemText(hwnd, IDC_CCFIELD, CC);
 			if (SUBJECT)
 				SetDlgItemText(hwnd, IDC_SUBJECTFIELD, SUBJECT);
 			if (BODY)
@@ -867,7 +829,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 					break;
 				case IDC_STARTSTOP:
 					InitU2MThread();
-					ChangeSTARTSTOPText();
 					break;
 				case IDC_EMAILBUTTON:
 					if (!onoff)
@@ -917,9 +878,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	/*** Global initializations ***/
 	PORT = 0;
-	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = USBdev = USER = SMTP_STR = PORT_STR = RECEIVER = CC_RAW = NULL;
+	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = USBdev = NULL;
+	SMTP_STR = PORT_STR = RECEIVER = CC_RAW = NULL;
+
 	g_hInst = hInstance;
 	usb_idx = 0;
+
+	parseConfFile();
 
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = wc.cbClsExtra = wc.cbWndExtra = 0;
@@ -971,18 +936,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			return -2;
 		}
 
-		/*if (bRet) {
-			if (RUNNING)
-				Button_Enable(STARTSTOP, FALSE);
-			else
-				Button_Enable(STARTSTOP, TRUE);
 
-			if (RUNNING == FALSE && onoff == FALSE) {
-				Button_Enable(STARTSTOP, TRUE);
-				ChangeSTARTSTOPText();
-				CHECK_STARTSTOP_STATE = FALSE;
-			}
-		}*/
 		UpdateWindow(hwnd);
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);

@@ -1,43 +1,27 @@
 /******************************************
-*                 usblist.c                *
+*               U2MModule.c                *
 *        George Koskeridis (C)2015         *
  ******************************************/
 
-#include "usb2mail.h"
+#include "U2MWin32.h"
 #include "usb_ids.h"
 #include <setupapi.h>
 #include <devguid.h>
 #include <initguid.h>
 #include <regstr.h>
 #include <process.h>
+#include <quickmail.h>
 #include <curl/curl.h>
 
-#define MSG_LEN 7
 
-struct upload_status {
-	int lines_read;
-};
-
-HANDLE u2mMainThread;
-BOOL RUNNING = FALSE;
-UINT *thrdID;
-UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
-
-static char *payload_text[MSG_LEN];
-
+#ifdef DEFINE_GUID
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
             0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
+#else
+#error DEFINE_GUID is not defined.
+#endif
 
-#define ClearPayloadText()                                       \
-while (1) {                                                      \
-    for (int i = 0; i < MSG_LEN; i++) {                          \
-        if (payload_text[i]) free(payload_text[i]);              \
-        payload_text[i] = NULL;                                  \
-    }                                                            \
-    break;                                                       \
-}
 
-<<<<<<< HEAD
 
 /*** Globals ***/
 HANDLE u2mMainThread;
@@ -45,19 +29,14 @@ BOOL RUNNING = FALSE;
 UINT *thrdID;
 UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
 
-static char *payload_text[MSG_LEN];
 
-=======
->>>>>>> parent of c5e0de9... changed function order
 /*******************************************
 * Prototypes for functions with local scope *
  *******************************************/
 BOOL USBisConnected(char *to_find);
 UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT);
-static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp);
-int SendEmail();
+BOOL SendEmail(VOID);
 BOOL GetCurlError(int err);
-void ConstructPayloadText();
 int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 
@@ -68,24 +47,21 @@ BOOL InitU2MThread()
 		MessageBox(NULL, "You have to set an e-mail to send, first.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
-	if (!SMTP_STR) {
+	/*if (!SMTP_STR) {
 		MessageBox(NULL, "SMTP server domain and port aren't set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
-	}
-	if (!USBdev) {
+	}*/
+	/*if (!USBdev) {
 		MessageBox(NULL, "No USB device selected.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
-	}
+	}*/
 	if (!pass) {
 		MessageBox(NULL, "No password set.", "Can't start service!", MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
-	ClearPayloadText();
-	ConstructPayloadText();
-	onoff = (onoff == TRUE)?FALSE:TRUE;
-	if (onoff) {
-		u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)&TIMEOUT, 0, thrdID);
-	} 
+	onoff = TRUE;
+	u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)&TIMEOUT, 0, thrdID);
+
 	return TRUE;
 }
 
@@ -165,13 +141,13 @@ BOOL GetCurlError(int err)
 UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT)
 {
 	UINT timeout = *((UINT*)PTR_TIMEOUT);
+	int i = 0;
 	while (onoff) {
 		RUNNING = TRUE;
-		if (USBisConnected(USBdev)) {
+		if (i++ < 3) {
 			int ret = SendEmail();
 			RUNNING = FALSE;
-			if (!GetCurlError(ret)) {
-				ClearPayloadText();
+			if (!ret) {
 				onoff = FALSE;
 				return 0;
 			}
@@ -180,10 +156,10 @@ UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT)
 			}
 		}
 		RUNNING = FALSE;
+		break;
 		if (onoff) {
 			Sleep(timeout);
 		} else {
-			ClearPayloadText();
 			return 0;
 		}
 	}
@@ -234,91 +210,35 @@ BOOL USBisConnected(char *to_find)
 	return FALSE;
 }
 
-static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
+BOOL SendEmail(VOID)
 {
-	struct upload_status *upload_ctx = (struct upload_status *)userp;
-	const char *data;
+	BOOL retvalue = TRUE;
+	quickmail_initialize();
+	quickmail mailobj = quickmail_create(FROM, "Alarm e-mail");
 
-	if ((size == 0) || (nmemb == 0) || ((size*nmemb) < 1)) {
-		return 0;
-	}
+	quickmail_add_to(mailobj, TO);
 
-	data = payload_text[upload_ctx->lines_read];
+	if (CC)
+		quickmail_add_cc(mailobj, CC);
 
-	if (data) {
-		size_t len = strlen(data);
-		memcpy(ptr, data, len);
-		upload_ctx->lines_read++;
 
-		return len;
-	}
+	quickmail_add_header(mailobj, "Importance: Low");
+	quickmail_add_header(mailobj, "X-Priority: 5");
+	quickmail_add_header(mailobj, "X-MSMail-Priority: Low");
+	quickmail_set_body(mailobj, "This is a test e-mail.");
+	//quickmail_add_body_memory(mailobj, NULL, "This is a test e-mail.\nThis mail was sent using libquickmail.", 64, 0);
+	//quickmail_add_body_memory(mailobj, "text/html", "This is a <b>test</b> e-mail.<br/>\nThis mail was sent using <u>libquickmail</u>.", 80, 0);
 
-	return 0;
-}
-
-void ConstructPayloadText()
-{
-	payload_text[0] = malloc(strlen(TO) + 7);
-	snprintf(payload_text[0], strlen(TO) + 7, "To: %s\r\n", TO);
-	payload_text[1] = malloc(strlen(FROM) + 9);
-	snprintf(payload_text[1], strlen(FROM) + 9, "From: %s\r\n", FROM);
-	if (CC) {
-		payload_text[2] = malloc(strlen(CC) + 7);
-		snprintf(payload_text[2], strlen(CC) + 7, "Cc: %s\r\n", CC);
-	} else {
-		payload_text[2] = malloc(7);
-		snprintf(payload_text[2], 7, "Cc: \r\n");
-	}
-
-	payload_text[3] = malloc(strlen(SUBJECT) + 12);
-	snprintf(payload_text[3], strlen(SUBJECT) + 12, "Subject: %s\r\n", SUBJECT);
-	payload_text[4] = malloc(3);
-	snprintf(payload_text[4], 3, "\r\n");
-	payload_text[5] = malloc(strlen(BODY) + 3);
-	snprintf(payload_text[5], strlen(BODY) + 3, "%s\r\n", BODY);
-}
-
-int SendEmail()
-{
-	CURL *curl;
-	CURLcode res = CURLE_OK;
-	struct curl_slist *recipients = NULL;
-	struct upload_status upload_ctx;
-
-	upload_ctx.lines_read = 0;
-
-	curl = curl_easy_init();
-	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_USERNAME, USER);
-		curl_easy_setopt(curl, CURLOPT_PASSWORD, pass);
-
-		if (!PORT)
-			curl_easy_setopt(curl, CURLOPT_URL, SMTP_STR);
-		else {
-			curl_easy_setopt(curl, CURLOPT_URL, SMTP_SERVER);
-			curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
-		}
-
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-		curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM);
-		recipients = curl_slist_append(recipients, TO);
-		if (CC)
-			recipients = curl_slist_append(recipients, CC);
-		curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
-		curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
-		curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
-		curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-
+	const char* errmsg;
 #ifdef DEBUG
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	quickmail_set_debug_log(mailobj, stderr);
 #endif
-		res = curl_easy_perform(curl);
-		curl_slist_free_all(recipients);
-		curl_easy_cleanup(curl);
+	if ((errmsg = quickmail_send(mailobj, SMTP_SERVER, PORT, FROM, pass)) != NULL) {
+		fprintf(stderr, "Error sending e-mail: %s\n", errmsg);
+		retvalue = FALSE;
 	}
-
-	return (int)res;
+	quickmail_destroy(mailobj);
+	return retvalue;
 }
 
 VOID fillUSBlist(HWND hDlg)

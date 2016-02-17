@@ -6,9 +6,10 @@ OBJ = -o
 DBG = build/debug.exe
 RLS = build/USB2EMAILWin32.exe
 DWARF2 = -ggdb
-LINKER = -lsetupapi -lcurl -lcomctl32 -lgdi32
+LINKER = -lsetupapi -lcomctl32 -lgdi32 -lconfuse -lquickmail
 RLS_FLAGS = -mwindows
 WINDOW_SOURCE = U2MWin32.c
+CONFIG_SOURCE = U2MConf.c
 USB2MAIL_SOURCE = U2MModule.c
 USBLIST = find_usb.c usb_ids.c
 USBTEST_SOURCE = usbtest.c
@@ -22,12 +23,12 @@ dbg: clean compile_resource debug
 rls: compile_resource release
 
 usb: $(USBTEST_SOURCE)
-	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^
+	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^ $(LINKER)
 
-debug: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
+debug: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE)
 	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) $^ $(RES_OBJ) $(LINKER)
 
-release: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE)
+release: $(USBLIST) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE)
 	$(CC) $(CFLAGS) $(OBJ) $(RLS) $^ $(RES_OBJ) $(LINKER) $(RLS_FLAGS)
 	
 compile_resource:
