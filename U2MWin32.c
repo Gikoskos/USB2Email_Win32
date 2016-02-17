@@ -9,17 +9,12 @@ const char szClassName[] = "USB2MailClass";
 
 HINSTANCE g_hInst;
 
-
-/**************************
-*Input field formatted data*
- **************************/
-char *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
-
 /********************
 *Input field raw data*
  ********************/
-char *pass, *RECEIVER, *CC_RAW, *PORT_STR, *SMTP_STR;
+char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
 UINT PORT;
+
 
 char *USBdev;
 UINT TIMEOUT;
@@ -63,45 +58,12 @@ UINT EMAIL_PAUSE = 0;
 /********************************************
 *Macros to clear all data entered by the user*
  ********************************************/
-
-#define ClearPwd()                                                     \
-while (1) {                                                            \
-    if (pass) free(pass);                                              \
-    pass = NULL;                                                       \
-    break;                                                             \
-}
-
-#define ClearPrefs()                                                   \
-while (1) {                                                            \
-    if (SMTP_SERVER) free(SMTP_SERVER);                                \
-    if (PORT_STR) free(PORT_STR);                                      \
-    if (SMTP_STR) free(SMTP_STR);                                      \
-    SMTP_STR = NULL;                                                   \
-    PORT_STR = NULL;                                                   \
-    SMTP_SERVER = NULL;                                                \
-    PORT = 0;                                                          \
-    break;                                                             \
-}
-
-#define ClearUSBSelection()                                            \
-while (1) {                                                            \
-    if (USBdev) free(USBdev);                                          \
-    USBdev = NULL;                                                     \
-    usb_idx = 0;                                                       \
-    break;                                                             \
-}
-
-#define ClearEmailData()                                               \
-while (1) {                                                            \
-    if (FROM) free(FROM);                                              \
-    if (TO) free(TO);                                                  \
-    if (CC) free(CC);                                                  \
-    if (SUBJECT) free(SUBJECT);                                        \
-    if (BODY) free(BODY);                                              \
-    if (RECEIVER) free(RECEIVER);                                      \
-    if (CC_RAW) free(CC_RAW);                                          \
-    FROM = TO = CC = SUBJECT = BODY = RECEIVER = CC_RAW = NULL;        \
-    break;                                                             \
+#define ClearUSBSelection()                      \
+while (1) {                                      \
+    if (USBdev) free(USBdev);                    \
+    USBdev = NULL;                               \
+    usb_idx = 0;                                 \
+    break;                                       \
 }
 
 /*******************************************
@@ -354,11 +316,9 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
 	GetFieldText(hwnd, IDC_PORTFIELD, &tmp2);
 	if (!tmp2) {
-		SMTP_STR = realloc(NULL, strlen(tmp1)+1);
-		strncpy(SMTP_STR, tmp1, strlen(tmp1)+1);
 		free(tmp1);
 		free(tmp2);
-		//MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONERROR);
+		MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONERROR);
 		return TRUE;
 	} else if (strlen(tmp2) > 5) {
 		free(tmp1);
@@ -373,23 +333,17 @@ BOOL parsePrefDialogFields(HWND hwnd)
 		c = tmp2[i] - '0';
 		PORT = c*((UINT)pow(10, (strlen(tmp2) - (i+1)))) + PORT;
 	}
+	free(tmp2);
 
 	if (PORT > 65535) {
-		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONERROR);
 		free(tmp1);
-		free(tmp2);
+		MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
-	SMTP_STR = realloc(NULL, strlen(tmp1)+1);
-	strncpy(SMTP_STR, tmp1, strlen(tmp1)+1);
-	PORT_STR = realloc(NULL, strlen(tmp2)+1);
-	strncpy(PORT_STR, tmp2, strlen(tmp2)+1);
 
-	/*Create a string of this format "smtp://domain.name:PORT" to use with curl*/
-	SMTP_SERVER = realloc(NULL, strlen(tmp1)+strlen(tmp2)+2);
-	snprintf(SMTP_SERVER, strlen(tmp1)+strlen(tmp2)+2, "%s:%s", tmp1, tmp2);
+	SMTP_SERVER = realloc(NULL, strlen(tmp1)+1);
+	snprintf(SMTP_SERVER, strlen(tmp1)+1, "%s", tmp1);
 	free(tmp1);
-	free(tmp2);
 	return TRUE;
 }
 
@@ -411,8 +365,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
 			return FALSE;
 		}
 	}
-	FROM = realloc(NULL, strlen(tmp)+3);
-	snprintf(FROM, strlen(tmp)+3, "<%s>", tmp);
+	FROM = realloc(NULL, strlen(tmp)+1);
+	snprintf(FROM, strlen(tmp)+1, "%s", tmp);
 	free(tmp);
 	tmp = NULL;
 
@@ -429,10 +383,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
 			return FALSE;
 		}
 	}
-	TO = realloc(NULL, strlen(tmp)+3);
-	RECEIVER = realloc(NULL, strlen(tmp)+1);
-	strncpy(RECEIVER, tmp, strlen(tmp)+1);
-	snprintf(TO, strlen(tmp)+3, "<%s>", tmp);
+	TO = realloc(NULL, strlen(tmp)+1);
+	snprintf(TO, strlen(tmp)+1, "%s", tmp);
 	free(tmp);
 	tmp = NULL;
 
@@ -447,10 +399,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
 	} else if (!tmp) {
 		CC = NULL;
 	} else {
-		CC = realloc(NULL, strlen(tmp)+3);
-		CC_RAW = realloc(NULL, strlen(tmp)+1);
-		strncpy(CC_RAW, tmp, strlen(tmp)+1);
-		snprintf(CC, strlen(tmp)+3, "<%s>", tmp);
+		CC = realloc(NULL, strlen(tmp)+1);
+		strncpy(CC, tmp, strlen(tmp)+1);
 		free(tmp);
 		tmp = NULL;
 	}
@@ -577,10 +527,13 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 {
 	switch (msg) {
 		case WM_INITDIALOG:
-			if (SMTP_STR)
-				SetDlgItemText(hwnd, IDC_SERVERURLFIELD, SMTP_STR);
-			if (PORT_STR)
+			if (SMTP_SERVER)
+				SetDlgItemText(hwnd, IDC_SERVERURLFIELD, SMTP_SERVER);
+			if (PORT) {
+				char PORT_STR[9];
+				snprintf(PORT_STR, 9, "%u", PORT);
 				SetDlgItemText(hwnd, IDC_PORTFIELD, PORT_STR);
+			}
 			CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck == TRUE)?BST_CHECKED:BST_UNCHECKED);
 			CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh == TRUE)?BST_CHECKED:BST_UNCHECKED);
 			SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 50));
@@ -879,7 +832,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	/*** Global initializations ***/
 	PORT = 0;
 	pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = USBdev = NULL;
-	SMTP_STR = PORT_STR = RECEIVER = CC_RAW = NULL;
 
 	g_hInst = hInstance;
 	usb_idx = 0;

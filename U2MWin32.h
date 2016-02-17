@@ -19,22 +19,36 @@
 #define ATTRIB(x) __attribute__((x))
 #define MAX_CONNECTED_USB 100
 
-#define ClearGlobalEmailData()                                         \
-while (1) {                                                            \
-    if (FROM) free(FROM);                                              \
-    if (TO) free(TO);                                                  \
-    if (CC) free(CC);                                                  \
-    if (SUBJECT) free(SUBJECT);                                        \
-    if (BODY) free(BODY);                                              \
-    if (SMTP_SERVER) free(SMTP_SERVER);                                \
-    if (PORT_STR) free(PORT_STR);                                      \
-    if (SMTP_STR) free(SMTP_STR);                                      \
-    SMTP_STR = PORT_STR = SMTP_SERVER = NULL;                          \
-    FROM = TO = CC = SUBJECT = BODY = NULL;                            \
-    break;                                                             \
+/********************************************
+*Macros to clear all data entered by the user*
+ ********************************************/
+#define ClearEmailData()                         \
+while (1) {                                      \
+    if (FROM) free(FROM);                        \
+    if (TO) free(TO);                            \
+    if (CC) free(CC);                            \
+    if (SUBJECT) free(SUBJECT);                  \
+    if (BODY) free(BODY);                        \
+    FROM = TO = CC = SUBJECT = BODY = NULL;      \
+    break;                                       \
 }
 
-extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev, *PORT_STR, *SMTP_STR;
+#define ClearPwd()                               \
+while (1) {                                      \
+    if (pass) free(pass);                        \
+    pass = NULL;                                 \
+    break;                                       \
+}
+
+#define ClearPrefs()                             \
+while (1) {                                      \
+    if (SMTP_SERVER) free(SMTP_SERVER);          \
+    SMTP_SERVER = NULL;                          \
+    PORT = 0;                                    \
+    break;                                       \
+}
+
+extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
 extern HANDLE u2mMainThread;
@@ -49,4 +63,4 @@ BOOL InitU2MThread();
 VOID fillUSBlist(HWND hwnd);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 
-BOOL parseConfFile();
+BOOL parseConfFile(VOID);

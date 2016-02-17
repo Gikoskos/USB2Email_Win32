@@ -36,7 +36,6 @@ UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
 BOOL USBisConnected(char *to_find);
 UINT __stdcall U2MThread(LPVOID PTR_TIMEOUT);
 BOOL SendEmail(VOID);
-BOOL GetCurlError(int err);
 int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 
@@ -62,79 +61,6 @@ BOOL InitU2MThread()
 	onoff = TRUE;
 	u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)&TIMEOUT, 0, thrdID);
 
-	return TRUE;
-}
-
-BOOL GetCurlError(int err)
-{
-	switch (err) {
-		case CURLE_OK:
-			break;
-		case CURLE_LOGIN_DENIED:
-			MessageBox(NULL, "E-mail login credentials denied.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_NOT_BUILT_IN:
-		case CURLE_UNSUPPORTED_PROTOCOL:
-			MessageBox(NULL, "Unsupported protocol detected.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_FAILED_INIT:
-			MessageBox(NULL, "Curl failed at initializing.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_URL_MALFORMAT:
-			MessageBox(NULL, "URL isn't formatted.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_COULDNT_RESOLVE_PROXY:
-			MessageBox(NULL, "Couldn't resolve proxy.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_COULDNT_RESOLVE_HOST:
-			MessageBox(NULL, "Couldn't resolve host.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_COULDNT_CONNECT:
-			MessageBox(NULL, "Failed to connect() to host or proxy.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_REMOTE_ACCESS_DENIED:
-			MessageBox(NULL, "Access to URL resource denied.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_WRITE_ERROR:
-			MessageBox(NULL, "An error occurred when writing received data to a local file, or an error was returned to libcurl from a write callback.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_READ_ERROR:
-			MessageBox(NULL, "There was a problem reading a local file or an error returned by the read callback.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_OUT_OF_MEMORY:
-			MessageBox(NULL, "Out of memory error!", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_OPERATION_TIMEDOUT:
-			MessageBox(NULL, "Operation timeout. The specified time-out period was reached according to the conditions.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_FUNCTION_NOT_FOUND:
-			MessageBox(NULL, "Function not found. A required zlib function was not found.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_INTERFACE_FAILED:
-			MessageBox(NULL, "Interface failed.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_TOO_MANY_REDIRECTS:
-			MessageBox(NULL, "Redirect limit reached.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_GOT_NOTHING:
-			MessageBox(NULL, "Nothing returned back from server.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_SEND_ERROR:
-			MessageBox(NULL, "Failed sending network data.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_RECV_ERROR:
-			MessageBox(NULL, "Failure with receiving network data.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_SSL_CERTPROBLEM:
-			MessageBox(NULL, "Problem with the local client certificate.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_SSL_CACERT:
-			MessageBox(NULL, "Peer certificate cannot be authenticated with known CA certificates.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-		case CURLE_BAD_CONTENT_ENCODING:
-			MessageBox(NULL, "Unrecognized transfer encoding.", "Error!", MB_ICONERROR | MB_OK);
-			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -259,7 +185,7 @@ VOID fillUSBlist(HWND hDlg)
 		DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 		dwMemberIdx = 0;
 		SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
-			dwMemberIdx, &DevIntfData);
+                  dwMemberIdx, &DevIntfData);
 
 		while (GetLastError() != ERROR_NO_MORE_ITEMS) {
 			DevData.cbSize = sizeof(DevData);

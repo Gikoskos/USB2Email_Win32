@@ -8,7 +8,7 @@
 
 char *cfg_filename = "U2M.conf";
 
-BOOL parseConfFile(void)
+BOOL parseConfFile(VOID)
 {
 	cfg_opt_t email_opts[] = {
 		CFG_STR("from", NULL, CFGF_NONE),
@@ -21,7 +21,6 @@ BOOL parseConfFile(void)
 		CFG_INT("port", 0, CFGF_NONE),
 		CFG_END()
 	};
-
 	/*HANDLE ProcHeap = GetProcessHeap();
 	if (!ProcHeap)
 		return FALSE;
@@ -51,15 +50,11 @@ HeapAlloc(ProcHeap, HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)*/
 		cfg_getstr(U2MConf, "smtp_server")
 	};
 
-	printf("%s\n%s\n%s\n%s\n%s\n%s\n%ld\n",
-	       temp[0], //cfg_getstr(U2MConf, "from"),
-		   temp[1], //cfg_getstr(U2MConf, "to"),
-		   temp[2], //cfg_getstr(U2MConf, "subject"),
-		   temp[3], //cfg_getstr(U2MConf, "body"),
-		   temp[4], //cfg_getstr(U2MConf, "pass"),
-		   temp[5], //cfg_getstr(U2MConf, "smtp_server"),
-		   cfg_getint(U2MConf, "port"));//cfg_getstr(U2MConf, "port"));
-	ClearGlobalEmailData();
+#ifdef DEBUG
+	printf("%s\n%s\n%s\n%s\n%s\n%s\n%ld\n", temp[0], temp[1], temp[2],
+		   temp[3], temp[4], temp[5], cfg_getint(U2MConf, "port"));
+#endif
+	ClearEmailData();
 
 	if (temp[0]) {
 		FROM = malloc(sizeof(temp[0])*strlen(temp[0]) + 1);
