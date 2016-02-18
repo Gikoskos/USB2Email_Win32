@@ -17,7 +17,11 @@
 #include "resources/resource.h"
 
 #define ATTRIB(x) __attribute__((x))
-#define MAX_CONNECTED_USB 100
+#define MAX_CONNECTED_USB 20
+
+/* flags to use with the ConnectedUSBDevs() function */
+#define FILL_USB_LISTVIEW 10
+#define IS_USB_CONNECTED 20
 
 /********************************************
 *Macros to clear all data entered by the user*
@@ -48,6 +52,17 @@ while (1) {                                      \
     break;                                       \
 }
 
+#define DeleteScannedUSBIDs()                    \
+while (1) {                                      \
+    int i, j;                                    \
+    for (i = 0; i < MAX_CONNECTED_USB; i++) {    \
+        for (j = 0; j < 2; j++) {                \
+            scanned_usb_ids[i][j] = 0;           \
+        }                                        \
+    }                                            \
+    break;                                       \
+}
+
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
@@ -55,12 +70,11 @@ extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern BOOL RUNNING;
 extern UINT EMAIL_PAUSE;
-extern UINT onoff;
-extern UINT PORT;
-extern UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
+extern UINT onoff, PORT, scanned_usb_ids[MAX_CONNECTED_USB][2];
+UINT usb_id_selection[2];
 
 BOOL InitU2MThread();
-VOID fillUSBlist(HWND hwnd);
+BOOL ConnectedUSBDevs(HWND hDlg, USHORT flag);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 
 BOOL parseConfFile(VOID);
