@@ -16,6 +16,10 @@
 #include <signal.h>
 #include "resources/resource.h"
 
+#ifdef _MSC_VER
+# define snprintf _snprintf
+#endif
+
 #define ATTRIB(x) __attribute__((x))
 #define MAX_CONNECTED_USB 20
 

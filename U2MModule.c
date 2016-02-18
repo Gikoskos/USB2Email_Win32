@@ -157,7 +157,6 @@ BOOL ConnectedUSBDevs(HWND hDlg, USHORT flag)
     UINT idx = 0;
     USHORT vID, dID;
 
-    DeleteScannedUSBIDs();
     hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
         NULL, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
 
@@ -188,7 +187,8 @@ BOOL ConnectedUSBDevs(HWND hDlg, USHORT flag)
                         }
                         break;
                     case IS_USB_CONNECTED:
-                        if (usb_id_selection[0] == vID && usb_id_selection[1] == dID) {
+                        if ((usb_id_selection[0] == vID && usb_id_selection[1] == dID) ||
+                            (usb_id_selection[0] == vID && usb_id_selection[1] == 0xabcd)) {
                             HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
                             SetupDiEnumDeviceInterfaces(hDevInfo, NULL, 
                                                         &GUID_DEVINTERFACE_USB_DEVICE, 
