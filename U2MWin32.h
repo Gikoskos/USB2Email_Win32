@@ -19,6 +19,11 @@
 #define ATTRIB(x) __attribute__((x))
 #define MAX_CONNECTED_USB 20
 
+#define IDC_CHOOSEUSBBUTTON     40027
+#define IDC_EMAILBUTTON         40028
+#define IDC_STARTSTOP           40029
+#define IDC_TIMETRACK           40030
+
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10
 #define IS_USB_CONNECTED 20
@@ -73,7 +78,7 @@ extern UINT EMAIL_PAUSE;
 extern UINT onoff, PORT, scanned_usb_ids[MAX_CONNECTED_USB][2];
 UINT usb_id_selection[2];
 
-BOOL InitU2MThread();
+BOOL InitU2MThread(HWND hwnd);
 BOOL ConnectedUSBDevs(HWND hDlg, USHORT flag);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 

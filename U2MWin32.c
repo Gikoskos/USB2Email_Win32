@@ -41,10 +41,6 @@ char ttrack_tooltip_text[50];
 
 UINT EMAIL_PAUSE = 0;
 
-#define IDC_CHOOSEUSBBUTTON     40027
-#define IDC_EMAILBUTTON         40028
-#define IDC_STARTSTOP           40029
-#define IDC_TIMETRACK           40030
 
 /*Trackbar limits*/
 #define T_MIN                     200
@@ -198,13 +194,6 @@ VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
         if (*str)
             free(*str);
         (*str) = NULL;
-    }
-}
-
-VOID ChangeSTARTSTOPText()
-{
-    if (!SetWindowText(STARTSTOP, (onoff)?"Start":"Stop")) {
-        MessageBox(NULL, "Failure at changing label!", "Error!", MB_ICONERROR | MB_OK);
     }
 }
 
@@ -762,7 +751,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                    "Service is running!", MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDM_PASSWORD:
-                    ChangeSTARTSTOPText();
                     if (!onoff)
                         InitPasswordDialog(hwnd);
                     else
@@ -781,17 +769,18 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     break;
                 case IDC_STARTSTOP:
                     if (onoff) {
-                        EnableWindow(USBListButton, onoff);
-                        EnableWindow(EMAILButton, onoff);
-                        EnableWindow(time_track, onoff);
+                        EnableWindow(USBListButton, TRUE);
+                        EnableWindow(EMAILButton, TRUE);
+                        EnableWindow(time_track, TRUE);
                         onoff = FALSE;
                     } else {
-                        if (InitU2MThread()) {
+                        if (InitU2MThread(hwnd)) {
                             EnableWindow(USBListButton, FALSE);
                             EnableWindow(EMAILButton, FALSE);
                             EnableWindow(time_track, FALSE);
                         }
                     }
+                    SetWindowText(STARTSTOP, (!onoff)?"Start":"Stop");
                     break;
                 case IDC_EMAILBUTTON:
                     if (!onoff)
@@ -809,6 +798,12 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             }
             break;
         case WM_CLOSE:
+            if (onoff) {
+                MessageBox(hwnd, "Can't close the window.", 
+                           "Service is running!", MB_ICONEXCLAMATION | MB_OK);
+                break;
+            }
+                
 #ifndef DEBUG
             if (MessageBox(hwnd, "Are you sure you want to quit?", 
                 "Quiting...", MB_ICONASTERISK | MB_YESNO) == IDNO)
@@ -842,6 +837,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /*** Global initializations ***/
     PORT = 0;
     pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
+    memset(usb_id_selection, 0, sizeof(UINT)*2);
 
     g_hInst = hInstance;
     usb_idx = 0;
@@ -897,7 +893,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         } else if (bRet == -2) {
             return -2;
         }
-
 
         UpdateWindow(hwnd);
         TranslateMessage(&Msg);

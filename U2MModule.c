@@ -11,7 +11,6 @@
 #include <regstr.h>
 #include <process.h>
 #include <quickmail.h>
-#include <curl/curl.h>
 
 
 #ifdef DEFINE_GUID
@@ -25,7 +24,6 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 
 /*** Globals ***/
 HANDLE u2mMainThread;
-BOOL RUNNING = FALSE;
 UINT *thrdID;
 UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
 
@@ -34,58 +32,65 @@ UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
 * Prototypes for functions with local scope *
  *******************************************/
 BOOL USBisConnected();
-UINT CALLBACK U2MThread(LPVOID PTR_TIMEOUT);
+UINT CALLBACK U2MThread(LPVOID dat);
 BOOL SendEmail(VOID);
 int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath);
 
 
-BOOL InitU2MThread()
+BOOL InitU2MThread(HWND hwnd)
 {
     if (!FROM) {
-        MessageBox(NULL, "You have to set an e-mail to send, first.", "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, "You have to set an e-mail to send, first.", 
+                   "Can't start service!", MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!SMTP_SERVER) {
-        MessageBox(NULL, "SMTP server domain and port aren't set.", "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, "SMTP server domain not set.", "Can't start service!", MB_ICONERROR | MB_OK);
         return FALSE;
     }
-    if (usb_id_selection[0] && usb_id_selection[1]) {
-        MessageBox(NULL, "No USB device selected.", "Can't start service!", MB_ICONERROR | MB_OK);
+    if (!usb_id_selection[0] || !usb_id_selection[1]) {
+        MessageBox(hwnd, "No USB device selected.", "Can't start service!", MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!pass) {
-        MessageBox(NULL, "No password set.", "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, "No password set.", "Can't start service!", MB_ICONERROR | MB_OK);
         return FALSE;
     }
     onoff = TRUE;
-    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)&TIMEOUT, 0, thrdID);
+    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)hwnd, 0, thrdID);
 
     return TRUE;
 }
 
-UINT CALLBACK U2MThread(LPVOID PTR_TIMEOUT)
+UINT CALLBACK U2MThread(LPVOID dat)
 {
-    UINT timeout = *((UINT*)PTR_TIMEOUT);
+    HWND hwnd = (HWND)dat;
 
     while (onoff) {
-        RUNNING = TRUE;
+        Sleep(TIMEOUT);
         if (ConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
             BOOL ret = SendEmail();
-            RUNNING = FALSE;
             if (!ret) {
-                onoff = FALSE;
-                return 0;
+#ifndef DEBUG
+                MessageBox(hwnd, "Failed to send the e-mail.", 
+                           "Something happened!", MB_ICONERROR | MB_OK);
+#else
+                fprintf(stderr, "\nFAILED TO SENT EMAIL\n");
+#endif
+                if (!SendMessageTimeout(HWND_BROADCAST, 
+                                   WM_COMMAND, 
+                                   MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
+                                   (LPARAM)0,
+                                   SMTO_NORMAL,
+                                   0,
+                                   NULL)) printf("\n\n\nHELPPPPPZ\n\n\n");
+                break;
             }
             if (EMAIL_PAUSE) {
                 Sleep(EMAIL_PAUSE*1000);
             }
-        }
-        if (onoff) {
-            Sleep(timeout);
-        } else {
-            return 0;
         }
     }
     return 0;
@@ -107,8 +112,6 @@ BOOL SendEmail(VOID)
     quickmail_add_header(mailobj, "X-Priority: 5");
     quickmail_add_header(mailobj, "X-MSMail-Priority: Low");
     quickmail_set_body(mailobj, "This is a test e-mail.");
-    //quickmail_add_body_memory(mailobj, NULL, "This is a test e-mail.\nThis mail was sent using libquickmail.", 64, 0);
-    //quickmail_add_body_memory(mailobj, "text/html", "This is a <b>test</b> e-mail.<br/>\nThis mail was sent using <u>libquickmail</u>.", 80, 0);
 
     const char* errmsg;
 #ifdef DEBUG
