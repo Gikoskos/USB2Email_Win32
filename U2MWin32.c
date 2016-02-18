@@ -838,6 +838,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     PORT = 0;
     pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
     memset(usb_id_selection, 0, sizeof(UINT)*2);
+    TIMEOUT = 1000;
 
     g_hInst = hInstance;
     usb_idx = 0;

@@ -73,7 +73,6 @@ extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
-extern BOOL RUNNING;
 extern UINT EMAIL_PAUSE;
 extern UINT onoff, PORT, scanned_usb_ids[MAX_CONNECTED_USB][2];
 UINT usb_id_selection[2];
