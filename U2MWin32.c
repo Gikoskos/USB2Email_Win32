@@ -587,6 +587,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             devcCol.fmt = LVCFMT_LEFT;
             vendCol.pszText = "Device";
             devcCol.pszText = "Vendor";
+            ListView_SetExtendedListViewStyle(GetDlgItem(hwnd, IDC_USBDEVLIST), LVS_EX_FULLROWSELECT);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
             ConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
