@@ -22,7 +22,8 @@
 #include <process.h>
 #include "resources/resource.h"
 
-#define str(x) #x
+#define _str(x) #x
+#define str(x) _str(x)
 #define _ver_str(x,y,z) str(x)"."str(y)"."str(z)
 #define ver_str(x,y,z) _ver_str(x,y,z)
 

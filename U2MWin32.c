@@ -734,7 +734,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, //clipping, output quality
                                 VARIABLE_PITCH, TEXT("Trebuchet MS"));
 
-                mainwindowcontrol_font = CreateFont(19, 0, 0, 0, 550,
+                mainwindowcontrol_font = CreateFont(18, 0, 0, 0, 550,
                                 FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
                                 VARIABLE_PITCH, TEXT("Trebuchet MS"));
