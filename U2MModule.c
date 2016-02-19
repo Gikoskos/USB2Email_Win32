@@ -65,26 +65,22 @@ BOOL InitU2MThread(HWND hwnd)
 
 UINT CALLBACK U2MThread(LPVOID dat)
 {
-    HWND hwnd = (HWND)dat;
+    HWND hwnd ATTRIB_UNUSED = (HWND)dat;
+    UINT failed_emails = 0;
 
-    while (onoff) {
+    while (onoff && failed_emails <= MAX_FAILED_EMAILS) {
         Sleep((DWORD)TIMEOUT);
-        if (ConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
-            BOOL ret = SendEmail();
-            if (!ret) {
-                MessageBox(hwnd, "Failed to send the e-mail.", 
-                           "Something happened!", MB_ICONERROR | MB_OK);
-                SendMessageTimeout(HWND_BROADCAST, 
-                                   WM_COMMAND, 
-                                   MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
-                                   (LPARAM)0,
-                                   SMTO_NORMAL,
-                                   0,
-                                   NULL);
-                break;
-            }
+        if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
+            SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
+                               (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
+            if (!SendEmail()) failed_emails++;
+            SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
+                               (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
         }
     }
+    SendMessageTimeout(HWND_BROADCAST, WM_COMMAND, 
+                       MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
+                       (LPARAM)0, SMTO_NORMAL, 0, NULL);
     return 0;
 }
 
@@ -122,6 +118,7 @@ BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath)
     /* precaution to check if devicepath actually has vid and pid stored */
     if (devpath[8] == 'v' && devpath[9] == 'i' && devpath[10] == 'd') {
         char temp[5];
+
         temp[4] = '\0';
         temp[0] = devpath[12];
         temp[1] = devpath[13];
@@ -133,13 +130,12 @@ BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath)
         temp[2] = devpath[23];
         temp[3] = devpath[24];
         *pid = (USHORT)strtoul(temp, NULL, 16);
-
         return TRUE;
     }
     return FALSE;
 }
 
-BOOL ConnectedUSBDevs(HWND hDlg, USHORT flag)
+BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
 {
     HDEVINFO                         hDevInfo;
     SP_DEVICE_INTERFACE_DATA         DevIntfData;

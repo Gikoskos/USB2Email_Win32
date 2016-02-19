@@ -32,19 +32,22 @@
 # define COMPILER_NAME_STR str(Microsoft Visual C++)
 # define snprintf _snprintf
 # define strdup _strdup
-# define __attribute__((unused))
+# define ATTRIB_UNUSED
 /* options for MinGW */
 #elif defined(__GNUC__)
 # define COMPILER_VERSION_STR ver_str(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
 # define COMPILER_NAME_STR str(GCC)
+# define ATTRIB_UNUSED __attribute__((unused))
 /* options for Intel C/C++ compiler */
 #elif defined(__INTEL_COMPILER)
 # define COMPILER_VERSION_STR str(__INTEL_COMPILER)
 # define COMPILER_NAME_STR str(Intel C/C++)
+# define ATTRIB_UNUSED
 #endif
 
 #define MAX_CONNECTED_USB 20
 
+#define WM_ENABLE_STARTSTOP WM_USER + 0x00dd
 
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10
@@ -52,8 +55,8 @@
 
 /* versioning */
 #define U2MWin32_MAJOR 1
-#define U2MWin32_MINOR 3
-#define U2MWin32_PATCH 2
+#define U2MWin32_MINOR 4
+#define U2MWin32_PATCH 0
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
 
@@ -102,12 +105,12 @@ extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
-extern UINT EMAIL_PAUSE;
+extern UINT MAX_FAILED_EMAILS;
 extern UINT onoff, PORT, scanned_usb_ids[MAX_CONNECTED_USB][2];
 UINT usb_id_selection[2];
 
 BOOL InitU2MThread(HWND hwnd);
-BOOL ConnectedUSBDevs(HWND hDlg, USHORT flag);
+BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 
 BOOL parseConfFile(VOID);

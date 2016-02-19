@@ -15,9 +15,6 @@ HINSTANCE g_hInst;
 char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
 UINT PORT;
 
-UINT TIMEOUT;
-UINT usb_idx;
-
 /*******************************
 *Bools to check enabled controls*
  *******************************/
@@ -31,7 +28,6 @@ PAINTSTRUCT ps;
 /*Is TRUE when the service is running and FALSE when it's not*/
 UINT onoff = FALSE;
 
-
 /********************
 *Main Window controls*
  ********************/
@@ -39,8 +35,9 @@ HWND USBListButton, EMAILButton, STARTSTOP, time_track, ttrack_tooltip, ttrack_l
 TOOLINFO ttrack_struct;
 char ttrack_tooltip_text[50];
 
-UINT EMAIL_PAUSE = 0;
-
+UINT MAX_FAILED_EMAILS = 0;
+UINT TIMEOUT;
+UINT usb_idx;
 
 /*Trackbar limits*/
 #define T_MIN                     200
@@ -558,7 +555,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     return (INT_PTR)TRUE;
             }
         case WM_HSCROLL:
-            EMAIL_PAUSE = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+            MAX_FAILED_EMAILS = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
             break;
     }
     return (INT_PTR)FALSE;
@@ -569,7 +566,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     HBITMAP refresh_bitmap;
     LVCOLUMN vendCol, devcCol;
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
-    HANDLE refresh_usb_hnd  __attribute__((unused)) = NULL;
+    HANDLE refresh_usb_hnd ATTRIB_UNUSED = NULL;
     static INT temp_idx = -1;
 
     switch (msg) {
@@ -578,6 +575,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                                  IMAGE_BITMAP, 0, 0,    LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
             SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
 
+            temp_idx = -1;
             InitCommonControlsEx(&columnControlClass);
             vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
             vendCol.iSubItem = 0;
@@ -590,7 +588,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             ListView_SetExtendedListViewStyle(GetDlgItem(hwnd, IDC_USBDEVLIST), LVS_EX_FULLROWSELECT);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
-            ConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
+            GetConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
             CenterChild(hwnd);
             if (USBRefresh) {
                 USBdev_scan = TRUE;
@@ -604,7 +602,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 case IDUSBREFRESH:
                     ListView_DeleteAllItems(GetDlgItem(hwnd, IDC_USBDEVLIST));
                     DeleteScannedUSBIDs();
-                    ConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
+                    GetConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
                     if (temp_idx != -1)
                         ListView_SetItemState(GetDlgItem(hwnd, IDC_USBDEVLIST), (UINT)temp_idx,
                                               LVIS_FOCUSED | LVIS_SELECTED, 0x000f);
@@ -652,11 +650,11 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    HWND FROM_ttip __attribute__((unused)),
-         TO_ttip __attribute__((unused)),
-         CC_ttip __attribute__((unused)),
-         SUBJECT_ttip __attribute__((unused)),
-         BODY_ttip __attribute__((unused));
+    HWND FROM_ttip ATTRIB_UNUSED,
+         TO_ttip ATTRIB_UNUSED,
+         CC_ttip ATTRIB_UNUSED,
+         SUBJECT_ttip ATTRIB_UNUSED,
+         BODY_ttip ATTRIB_UNUSED;
 
     switch (msg) {
         case WM_INITDIALOG:
@@ -784,6 +782,10 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 EndPaint(hwnd, &ps);
             }
             break;
+        /* custom message to use from the U2MThread */
+        case WM_ENABLE_STARTSTOP:
+            EnableWindow(STARTSTOP, !IsWindowEnabled(STARTSTOP));
+            break;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDM_ABOUT:
@@ -871,14 +873,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     return 0;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, INT nCmdShow)
 {
     WNDCLASSEX wc;
     HWND hwnd;
     MSG Msg;
     BOOL bRet = TRUE;
     RECT wrkspace_px;
-    int center_x, center_y;
+    INT center_x, center_y;
 
     /*** Global initializations ***/
     PORT = 0;
