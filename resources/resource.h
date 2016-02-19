@@ -3,6 +3,8 @@
 *        George Koskeridis (C)2015         *
  ******************************************/
 
+#pragma once
+
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
 #endif
@@ -36,3 +38,14 @@
 #define IDM_EXIT                                40004
 #define IDM_H_ELP1                              40005
 #define IDC_MESSAGEFIELD                        40006
+
+#define IDC_ABOUT_BUILD                         40007
+#define IDC_ABOUT_COMPILER                      40012
+
+#define IDC_CHOOSEUSBBUTTON                     40008
+#define IDC_EMAILBUTTON                         40009
+#define IDC_STARTSTOP                           40010
+#define IDC_TIMETRACK                           40011
+#define IDC_SAVECONFBUTTON                      40012
+
+#define IDAPPLY                                 40013

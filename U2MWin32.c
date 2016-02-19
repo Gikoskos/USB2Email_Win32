@@ -5,7 +5,7 @@
 
 #include "U2MWin32.h"
 
-const char szClassName[] = "USB2MailClass";
+const char szClassName[] = "USB2EMailWin32";
 
 HINSTANCE g_hInst;
 
@@ -23,7 +23,6 @@ UINT usb_idx;
  *******************************/
 BOOL ValidEmailCheck = FALSE;
 BOOL USBRefresh = TRUE;
-BOOL CHECK_STARTSTOP_STATE = FALSE;
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -82,8 +81,8 @@ VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s);
 VOID DeleteAll();
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
 
-//@TODO: Implement ErrorCodes functions
-/*char *ErrorCodes(int i)
+//@TODO: Implement ErrorCodes function
+/*void ErrorCodes(int i)
 {
 
 }
@@ -363,7 +362,6 @@ BOOL parseEmailDialogFields(HWND hwnd)
         tmp = NULL;
     }
 
-
     GetFieldText(hwnd, IDC_MESSAGEFIELD, &tmp);
     if (!tmp) {
         if (MessageBox(hwnd, "Are you sure you want to send a blank message?",
@@ -460,6 +458,9 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
         case WM_INITDIALOG:
             about_usb_icon = (HICON)LoadIcon(GetModuleHandle(NULL), 
                              MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
+
+            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, "USB2EMail Win32 "U2MWin32_VERSION_STR);
+            SetDlgItemText(hwnd, IDC_ABOUT_COMPILER,"built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR);
             SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
@@ -510,22 +511,29 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 snprintf(PORT_STR, 9, "%u", PORT);
                 SetDlgItemText(hwnd, IDC_PORTFIELD, PORT_STR);
             }
-            CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck == TRUE)?BST_CHECKED:BST_UNCHECKED);
-            CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh == TRUE)?BST_CHECKED:BST_UNCHECKED);
+            CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck)?BST_CHECKED:BST_UNCHECKED);
+            CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh)?BST_CHECKED:BST_UNCHECKED);
             SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 50));
             SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)0);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
+                case IDC_SAVECONFBUTTON:
+                    saveConfFile();
+                    return (INT_PTR)TRUE;
+                case IDAPPLY:
                 case IDOK:
                     ValidEmailCheck = IsDlgButtonChecked(hwnd, IDC_CHECKVALIDEMAIL);
                     USBRefresh = IsDlgButtonChecked(hwnd, IDC_CHECKUSBREFRESH);
                     ClearPrefs();
-                    if (parsePrefDialogFields(hwnd))
-                        EndDialog(hwnd, wParam);
-                    else
+                    if (parsePrefDialogFields(hwnd)) {
+                        if (LOWORD(wParam) == IDOK) {
+                            EndDialog(hwnd, wParam);
+                        }
+                    } else {
                         ClearPrefs();
+                    }
                     return (INT_PTR)TRUE;
                 case IDCANCEL:
                     EndDialog(hwnd, wParam);
@@ -606,11 +614,11 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    HWND FROM_ttip ATTRIB(unused),
-         TO_ttip ATTRIB(unused),
-         CC_ttip ATTRIB(unused),
-         SUBJECT_ttip ATTRIB(unused),
-         BODY_ttip ATTRIB(unused);
+    HWND FROM_ttip __attribute__((unused)),
+         TO_ttip __attribute__((unused)),
+         CC_ttip __attribute__((unused)),
+         SUBJECT_ttip __attribute__((unused)),
+         BODY_ttip __attribute__((unused));
 
     switch (msg) {
         case WM_INITDIALOG:

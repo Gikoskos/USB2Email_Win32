@@ -73,23 +73,16 @@ UINT CALLBACK U2MThread(LPVOID dat)
         if (ConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
             BOOL ret = SendEmail();
             if (!ret) {
-#ifndef DEBUG
                 MessageBox(hwnd, "Failed to send the e-mail.", 
                            "Something happened!", MB_ICONERROR | MB_OK);
-#else
-                fprintf(stderr, "\nFAILED TO SENT EMAIL\n");
-#endif
-                if (!SendMessageTimeout(HWND_BROADCAST, 
+                SendMessageTimeout(HWND_BROADCAST, 
                                    WM_COMMAND, 
                                    MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
                                    (LPARAM)0,
                                    SMTO_NORMAL,
                                    0,
-                                   NULL)) printf("\n\n\nHELPPPPPZ\n\n\n");
+                                   NULL);
                 break;
-            }
-            if (EMAIL_PAUSE) {
-                Sleep(EMAIL_PAUSE*1000);
             }
         }
     }
