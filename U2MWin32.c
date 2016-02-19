@@ -720,9 +720,25 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
 LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    static HFONT mainwindowcontrol_font_big, mainwindowcontrol_font;
+
     switch (msg) {
         case WM_CREATE:
             {
+                mainwindowcontrol_font_big = CreateFont(
+                                24, 0, //height, width
+                                0, 0, //escapement, orientation angles
+                                FW_DONTCARE, //boldness 0-1000, 400 = normal, 700 = bold
+                                FALSE, FALSE, FALSE, //italics, underline, strikeout
+                                DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, //charset, output precision
+                                CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, //clipping, output quality
+                                VARIABLE_PITCH, TEXT("Trebuchet MS"));
+
+                mainwindowcontrol_font = CreateFont(19, 0, 0, 0, 550,
+                                FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
+                                CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                                VARIABLE_PITCH, TEXT("Trebuchet MS"));
+
                 USBListButton = CreateWindowEx(0, "BUTTON", "Choose USB device",
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
@@ -731,6 +747,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     MessageBox(NULL, "USB list button failed!", "Error!", MB_ICONERROR | MB_OK);
                     return -2;
                 }
+                SendMessage(USBListButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
                 EMAILButton = CreateWindowEx(0, "BUTTON", "Configure E-Mail to send",
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
@@ -740,6 +757,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     MessageBox(NULL, "E-mail button failed!", "Error!", MB_ICONERROR | MB_OK);
                     return -2;
                 }
+                SendMessage(EMAILButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
                 STARTSTOP = CreateWindowEx(0, "BUTTON", "Start",
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -749,6 +767,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     MessageBox(NULL, "Start/Stop button failed!", "Error!", MB_ICONERROR | MB_OK);
                     return -2;
                 }
+                SendMessage(STARTSTOP, WM_SETFONT, (WPARAM)mainwindowcontrol_font_big, (LPARAM)TRUE);
 
                 time_track = CreateWindowEx(0, TRACKBAR_CLASS, "",
                                  WS_CHILD | WS_VISIBLE | TBS_TOOLTIPS | TBS_NOTICKS | TBS_HORZ,
@@ -767,6 +786,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     MessageBox(NULL, "Trackbar label failed!", "Error!", MB_ICONERROR | MB_OK);
                     return -2;
                 }
+                SendMessage(ttrack_label, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
                 SendMessage(time_track, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)&ttrack_struct);
                 SendMessage(time_track, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(T_MIN, T_MAX));
@@ -820,12 +840,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         EnableWindow(USBListButton, TRUE);
                         EnableWindow(EMAILButton, TRUE);
                         EnableWindow(time_track, TRUE);
+                        EnableWindow(ttrack_label, TRUE);
                         onoff = FALSE;
                     } else {
                         if (InitU2MThread(hwnd)) {
                             EnableWindow(USBListButton, FALSE);
                             EnableWindow(EMAILButton, FALSE);
                             EnableWindow(time_track, FALSE);
+                            EnableWindow(ttrack_label, FALSE);
                         }
                     }
                     SetWindowText(STARTSTOP, (!onoff)?"Start":"Stop");
@@ -858,6 +880,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 break;
 #endif
             DeleteAll();
+            DeleteObject(mainwindowcontrol_font_big);
+            DeleteObject(mainwindowcontrol_font);
             DestroyWindow(hwnd);
             break;
         case WM_HSCROLL:
@@ -865,6 +889,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             break;
         case WM_DESTROY:
             DeleteAll();
+            DeleteObject(mainwindowcontrol_font_big);
+            DeleteObject(mainwindowcontrol_font);
             PostQuitMessage(0);
             break;
         default:
