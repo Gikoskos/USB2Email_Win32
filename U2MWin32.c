@@ -22,7 +22,8 @@ UINT usb_idx;
 *Bools to check enabled controls*
  *******************************/
 BOOL ValidEmailCheck = FALSE;
-BOOL USBRefresh = TRUE;
+BOOL USBRefresh = FALSE;
+BOOL USBdev_scan = FALSE;
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -59,6 +60,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+UINT CALLBACK RefreshUSBThread(LPVOID dat);
 
 BOOL parseEmailDialogFields(HWND hwnd);
 BOOL parsePrefDialogFields(HWND hwnd);
@@ -421,7 +424,8 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
 
 BOOL GetUSBListViewSelection(HWND hwnd)
 {
-    int usb_sel_idx = (int)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), LVM_GETNEXTITEM, -1, LVNI_FOCUSED);
+    INT usb_sel_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), 
+                                       LVM_GETNEXTITEM, -1, LVNI_SELECTED);
 
     if (usb_sel_idx == -1) return FALSE;
 
@@ -434,7 +438,7 @@ VOID CenterChild(HWND hwnd)
 {
     HWND hwndOwner = GetParent(hwnd);
     RECT rc, rcDlg, rcOwner;
-    int final_x, final_y;
+    INT final_x, final_y;
 
     GetWindowRect(hwndOwner, &rcOwner);
     GetWindowRect(hwnd, &rcDlg);
@@ -448,6 +452,20 @@ VOID CenterChild(HWND hwnd)
     if (final_x < 0) final_x = 0;
     if (final_y < 0) final_y = 0;
     SetWindowPos(hwnd, HWND_TOP, final_x, final_y, 0, 0, SWP_NOSIZE);
+}
+
+UINT CALLBACK RefreshUSBThread(LPVOID dat)
+{
+    HWND hwnd = (HWND)dat;
+
+    while (USBdev_scan) {
+        Sleep(2000);
+        SendMessageTimeout(hwnd, WM_COMMAND, 
+                           MAKEWPARAM((WORD)IDUSBREFRESH, 0), 
+                           (LPARAM)0, SMTO_NORMAL,
+                           0, NULL);
+    }
+    return 0;
 }
 
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -551,6 +569,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     HBITMAP refresh_bitmap;
     LVCOLUMN vendCol, devcCol;
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
+    HANDLE refresh_usb_hnd  __attribute__((unused)) = NULL;
+    static INT temp_idx = -1;
 
     switch (msg) {
         case WM_INITDIALOG:
@@ -571,6 +591,10 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
             ConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
             CenterChild(hwnd);
+            if (USBRefresh) {
+                USBdev_scan = TRUE;
+                refresh_usb_hnd = (HANDLE)_beginthreadex(NULL, 0, RefreshUSBThread, (LPVOID)hwnd, 0, NULL);
+            }
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             usb_idx = 0;
@@ -580,31 +604,44 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     ListView_DeleteAllItems(GetDlgItem(hwnd, IDC_USBDEVLIST));
                     DeleteScannedUSBIDs();
                     ConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
+                    if (temp_idx != -1)
+                        ListView_SetItemState(GetDlgItem(hwnd, IDC_USBDEVLIST), (UINT)temp_idx,
+                                              LVIS_FOCUSED | LVIS_SELECTED, 0x000f);
                     return (INT_PTR)TRUE;
                 case IDOK:
                     if (!GetUSBListViewSelection(hwnd)) {
                         MessageBox(hwnd, "No USB device selected!", "Error!", MB_ICONERROR | MB_OK);
                     } else {
+                        DeleteScannedUSBIDs();
+                        USBdev_scan = FALSE;
                         EndDialog(hwnd, wParam);
                     }
                     return (INT_PTR)TRUE;
                 case IDCANCEL:
+                    DeleteScannedUSBIDs();
+                    USBdev_scan = FALSE;
                     EndDialog(hwnd, wParam);
                     return (INT_PTR)TRUE;
             }
-            break;
+            return (INT_PTR)TRUE;
         case WM_NOTIFY:
             switch (LOWORD(wParam)) {
                 case IDC_USBDEVLIST:
-                    if (((LPNMHDR)lParam)->code == NM_DBLCLK) {
-                        usb_idx = 0;
-                        if (!GetUSBListViewSelection(hwnd)) {
-                            memset(usb_id_selection, 0, sizeof(usb_id_selection)*2);
-                            MessageBox(hwnd, "No USB device selected!", "Error!", MB_ICONERROR | MB_OK);
-                        } else {
-                            EndDialog(hwnd, wParam);
-                        }
-                        return (INT_PTR)TRUE;
+                    switch (((LPNMHDR)lParam)->code) {
+                        case NM_DBLCLK:
+                            usb_idx = 0;
+                            if (!GetUSBListViewSelection(hwnd)) {
+                                memset(usb_id_selection, 0, sizeof(usb_id_selection)*2);
+                                MessageBox(hwnd, "No USB device selected!", "Error!", MB_ICONERROR | MB_OK);
+                            } else {
+                                USBdev_scan = FALSE;
+                                EndDialog(hwnd, wParam);
+                            }
+                            return (INT_PTR)TRUE;                            
+                        case NM_CLICK:
+                            temp_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), 
+                                                        LVM_GETNEXTITEM, -1, LVNI_FOCUSED | LVNI_SELECTED);
+                            return (INT_PTR)TRUE;
                     }
             }
             break;
