@@ -30,7 +30,7 @@
 /* options for Microsoft VC++ compiler */
 #ifdef _MSC_VER
 # define COMPILER_VERSION_STR str(_MSC_FULL_VER)
-# define COMPILER_NAME_STR str(Microsoft Visual C++)
+# define COMPILER_NAME_STR str(MSVC)
 # define snprintf _snprintf
 # define strdup _strdup
 # define ATTRIB_UNUSED
