@@ -8,16 +8,17 @@
 #include <setupapi.h>
 #include <devguid.h>
 #include <initguid.h>
+#include <usbiodef.h> //for GUID_DEVINTERFACE_USB_DEVICE
 #include <regstr.h>
 #include <quickmail.h>
 
 
-#ifdef DEFINE_GUID
+/*#ifdef DEFINE_GUID
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
             0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
 #else
 #error DEFINE_GUID is not defined.
-#endif
+#endif*/
 
 
 
@@ -137,27 +138,30 @@ BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath)
 
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
 {
-    HDEVINFO                         hDevInfo;
-    SP_DEVICE_INTERFACE_DATA         DevIntfData;
+    HDEVINFO hDevInfo;
+    SP_DEVICE_INTERFACE_DATA DevIntfData;
     PSP_DEVICE_INTERFACE_DETAIL_DATA DevIntfDetailData;
-    SP_DEVINFO_DATA                  DevData;
+    SP_DEVINFO_DATA DevData;
     DWORD dwSize, dwMemberIdx;
     UINT idx = 0;
     USHORT vID, dID;
 
     hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
-        NULL, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
+        NULL, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
 
     if (hDevInfo != INVALID_HANDLE_VALUE) {
         DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
         dwMemberIdx = 0;
-        SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
-                                    dwMemberIdx, &DevIntfData);
+        if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
+                                    dwMemberIdx, &DevIntfData))
+            return FALSE;
 
         while (GetLastError() != ERROR_NO_MORE_ITEMS) {
             DevData.cbSize = sizeof(DevData);
             SetupDiGetDeviceInterfaceDetail(hDevInfo, &DevIntfData, NULL, 0, &dwSize, NULL);
-            DevIntfDetailData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwSize);
+
+            DevIntfDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(dwSize);
+            memset(DevIntfDetailData, 0, dwSize - sizeof(ULONG_PTR)); //don't zero out Reserved
             DevIntfDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
             if (SetupDiGetDeviceInterfaceDetail(hDevInfo, &DevIntfData,
@@ -177,7 +181,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                     case IS_USB_CONNECTED:
                         if ((usb_id_selection[0] == vID && usb_id_selection[1] == dID) ||
                             (usb_id_selection[0] == vID && usb_id_selection[1] == 0xabcd)) {
-                            HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
+                            free(DevIntfDetailData);
                             SetupDiEnumDeviceInterfaces(hDevInfo, NULL, 
                                                         &GUID_DEVINTERFACE_USB_DEVICE, 
                                                         ++dwMemberIdx, &DevIntfData);
@@ -189,9 +193,8 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                 idx++;
             }
 SKIP_DEVICE:
-            HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
-            SetupDiEnumDeviceInterfaces(hDevInfo, NULL, 
-                                        &GUID_DEVINTERFACE_USB_DEVICE, ++dwMemberIdx, &DevIntfData);
+            free(DevIntfDetailData);
+            SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, ++dwMemberIdx, &DevIntfData);
         }
         SetupDiDestroyDeviceInfoList(hDevInfo);
     }

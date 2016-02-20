@@ -8,18 +8,18 @@
 /* compile for Win7 */
 #define WINVER 0x0601
 #define _WIN32_WINNT 0x0601
-#include <SDKDDKVer.h>
+#include <SDKDDKVer.h> //API versioning
+
 
 #include <windows.h>
 #include <commctrl.h>
 #include <windowsx.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <tchar.h>
+#include <tchar.h> //unicode
 #include <math.h>
 #include <signal.h>
-#include <process.h>
+#include <process.h> //threads
 #include "resources/resource.h"
 
 #define _str(x) #x
@@ -57,7 +57,7 @@
 /* versioning */
 #define U2MWin32_MAJOR 1
 #define U2MWin32_MINOR 4
-#define U2MWin32_PATCH 1
+#define U2MWin32_PATCH 2
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
 

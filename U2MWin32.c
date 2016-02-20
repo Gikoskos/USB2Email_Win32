@@ -270,9 +270,10 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
     PORT = 0;
     UINT c;
+    DOUBLE temp_len = (DOUBLE)strlen(tmp2);
     for (size_t i = 0; i < strlen(tmp2) ; i++) {
         c = tmp2[i] - '0';
-        PORT = c*((UINT)pow(10, (strlen(tmp2) - (i+1)))) + PORT;
+        PORT = c*((UINT)pow(10, (temp_len - (i + 1)))) + PORT;
     }
     free(tmp2);
 
@@ -588,8 +589,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             ListView_SetExtendedListViewStyle(GetDlgItem(hwnd, IDC_USBDEVLIST), LVS_EX_FULLROWSELECT);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
-            GetConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
             CenterChild(hwnd);
+            GetConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
             if (USBRefresh) {
                 USBdev_scan = TRUE;
                 refresh_usb_hnd = (HANDLE)_beginthreadex(NULL, 0, RefreshUSBThread, (LPVOID)hwnd, 0, NULL);
@@ -630,7 +631,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                         case NM_DBLCLK:
                             usb_idx = 0;
                             if (!GetUSBListViewSelection(hwnd)) {
-                                memset(usb_id_selection, 0, sizeof(usb_id_selection)*2);
+                                memset(usb_id_selection, 0, sizeof(usb_id_selection));
                                 MessageBox(hwnd, "No USB device selected!", "Error!", MB_ICONERROR | MB_OK);
                             } else {
                                 USBdev_scan = FALSE;
@@ -742,7 +743,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 USBListButton = CreateWindowEx(0, "BUTTON", "Choose USB device",
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
-                                 (HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+                                 (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!USBListButton) {
                     MessageBox(NULL, "USB list button failed!", "Error!", MB_ICONERROR | MB_OK);
                     return -2;
@@ -752,7 +753,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 EMAILButton = CreateWindowEx(0, "BUTTON", "Configure E-Mail to send",
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
-                                 (HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+                                 (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!EMAILButton) {
                     MessageBox(NULL, "E-mail button failed!", "Error!", MB_ICONERROR | MB_OK);
                     return -2;
