@@ -8,8 +8,8 @@
 #define USB_IDS_H
 
 typedef struct {
-	unsigned short VendorID;
-	unsigned short DeviceID;
+	unsigned long VendorID;
+	unsigned long DeviceID;
 	char *Vendor;
 	char *Device;
 } UsbDevStruct;

@@ -64,7 +64,7 @@ BOOL parseEmailDialogFields(HWND hwnd);
 BOOL parsePrefDialogFields(HWND hwnd);
 BOOL parsePwdField(HWND hwnd);
 HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText);
-HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText);
+HWND WINAPI CreateTrackingToolTip(HWND hDlg, LPTSTR pszText);
 BOOL isValidDomain(char *str, char SEPARATOR);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
 BOOL GetUSBListViewSelection(HWND hwnd);
@@ -199,7 +199,7 @@ VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
 HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
 {
     if (!toolID || !hDlg || !pszText)
-        return FALSE;
+        return NULL;
     HWND hwndTool = GetDlgItem(hDlg, toolID);
 
     HWND hwndTip = CreateWindowEx(0, TOOLTIPS_CLASS, NULL,
@@ -210,7 +210,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
                                   g_hInst, NULL);
 
     if (!hwndTool || !hwndTip)
-        return (HWND)NULL;             
+        return NULL;             
 
     TOOLINFO toolInfo = { 0 };
     toolInfo.cbSize = sizeof(TTTOOLINFO_V1_SIZE);
@@ -222,7 +222,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
     return hwndTip;
 }
 
-HWND WINAPI CreateTrackingToolTip(int toolID, HWND hDlg, LPTSTR pszText)
+HWND WINAPI CreateTrackingToolTip(HWND hDlg, LPTSTR pszText)
 {
     HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, 
                                  WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 

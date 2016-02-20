@@ -6,11 +6,12 @@
 #include "U2MWin32.h"
 #include "usb_ids.h"
 #include <setupapi.h>
-#include <devguid.h>
+//#include <devguid.h>
 #include <initguid.h>
 #include <usbiodef.h> //for GUID_DEVINTERFACE_USB_DEVICE
 #include <regstr.h>
 #include <quickmail.h>
+
 
 
 /*#ifdef DEFINE_GUID
@@ -36,7 +37,7 @@ UINT CALLBACK U2MThread(LPVOID dat);
 BOOL SendEmail(VOID);
 int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
-BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath);
+BOOL GetDevIDs(ULONG *vid, ULONG *pid, char *devpath);
 
 
 BOOL InitU2MThread(HWND hwnd)
@@ -114,8 +115,9 @@ BOOL SendEmail(VOID)
     return retvalue;
 }
 
-BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath)
+BOOL GetDevIDs(ULONG *vid, ULONG *pid, char *devpath)
 {
+    if (devpath == NULL)  return FALSE;
     /* precaution to check if devicepath actually has vid and pid stored */
     if (devpath[8] == 'v' && devpath[9] == 'i' && devpath[10] == 'd') {
         char temp[5];
@@ -125,12 +127,12 @@ BOOL GetDevIDs(USHORT *vid, USHORT *pid, char *devpath)
         temp[1] = devpath[13];
         temp[2] = devpath[14];
         temp[3] = devpath[15];
-        *vid = (USHORT)strtoul(temp, NULL, 16);
+        *vid = (ULONG)strtoul(temp, NULL, 16);
         temp[0] = devpath[21];
         temp[1] = devpath[22];
         temp[2] = devpath[23];
         temp[3] = devpath[24];
-        *pid = (USHORT)strtoul(temp, NULL, 16);
+        *pid = (ULONG)strtoul(temp, NULL, 16);
         return TRUE;
     }
     return FALSE;
@@ -144,10 +146,10 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
     SP_DEVINFO_DATA DevData;
     DWORD dwSize, dwMemberIdx;
     UINT idx = 0;
-    USHORT vID, dID;
+    ULONG vID, dID;
 
     hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
-        NULL, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
+        NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
 
     if (hDevInfo != INVALID_HANDLE_VALUE) {
         DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
@@ -172,7 +174,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                 switch (flag) {
                     case FILL_USB_LISTVIEW:
                         if (hDlg != NULL) {
-                            UsbDevStruct *new = UsbFind((unsigned long)vID, (unsigned long)dID);
+                            UsbDevStruct *new = UsbFind((ULONG)vID, (ULONG)dID);
                             scanned_usb_ids[idx][0] = vID;
                             scanned_usb_ids[idx][1] = dID;
                             AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
@@ -193,8 +195,9 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                 idx++;
             }
 SKIP_DEVICE:
+            SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
+                                        ++dwMemberIdx, &DevIntfData);
             free(DevIntfDetailData);
-            SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, ++dwMemberIdx, &DevIntfData);
         }
         SetupDiDestroyDeviceInfoList(hDevInfo);
     }
