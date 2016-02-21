@@ -26,7 +26,7 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 /*** Globals ***/
 HANDLE u2mMainThread;
 UINT *thrdID;
-UINT scanned_usb_ids[MAX_CONNECTED_USB][2];
+ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
 
 /*******************************************
@@ -37,26 +37,26 @@ UINT CALLBACK U2MThread(LPVOID dat);
 BOOL SendEmail(VOID);
 int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
-BOOL GetDevIDs(ULONG *vid, ULONG *pid, char *devpath);
+BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 
 
 BOOL InitU2MThread(HWND hwnd)
 {
     if (!FROM) {
-        MessageBox(hwnd, "You have to set an e-mail to send, first.", 
-                   "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, _T("You have to set an e-mail to send, first."), 
+                   _T("Can't start service!"), MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!SMTP_SERVER) {
-        MessageBox(hwnd, "SMTP server domain not set.", "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, _T("SMTP server domain not set."), _T("Can't start service!"), MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!usb_id_selection[0] || !usb_id_selection[1]) {
-        MessageBox(hwnd, "No USB device selected.", "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, _T("No USB device selected."), _T("Can't start service!"), MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!pass) {
-        MessageBox(hwnd, "No password set.", "Can't start service!", MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, _T("No password set."), _T("Can't start service!"), MB_ICONERROR | MB_OK);
         return FALSE;
     }
     onoff = TRUE;
@@ -115,24 +115,24 @@ BOOL SendEmail(VOID)
     return retvalue;
 }
 
-BOOL GetDevIDs(ULONG *vid, ULONG *pid, char *devpath)
+BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath)
 {
     if (devpath == NULL)  return FALSE;
     /* precaution to check if devicepath actually has vid and pid stored */
     if (devpath[8] == 'v' && devpath[9] == 'i' && devpath[10] == 'd') {
-        char temp[5];
+        TCHAR temp[5];
 
         temp[4] = '\0';
         temp[0] = devpath[12];
         temp[1] = devpath[13];
         temp[2] = devpath[14];
         temp[3] = devpath[15];
-        *vid = (ULONG)strtoul(temp, NULL, 16);
+        *vid = _tcstoul(temp, NULL, 16);
         temp[0] = devpath[21];
         temp[1] = devpath[22];
         temp[2] = devpath[23];
         temp[3] = devpath[24];
-        *pid = (ULONG)strtoul(temp, NULL, 16);
+        *pid = _tcstoul(temp, NULL, 16);
         return TRUE;
     }
     return FALSE;

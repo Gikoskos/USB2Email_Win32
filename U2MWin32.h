@@ -12,7 +12,7 @@
 
 
 #include <windows.h>
-#include <commctrl.h>
+#include <commctrl.h> //common controls
 #include <windowsx.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,10 +34,10 @@
 # define snprintf _snprintf
 # define strdup _strdup
 # define ATTRIB_UNUSED
-/* options for MinGW */
-#elif defined(__GNUC__)
+/* options for MinGW/GCC */
+#elif defined(__MINGW32__)
 # define COMPILER_VERSION_STR ver_str(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
-# define COMPILER_NAME_STR str(GCC)
+# define COMPILER_NAME_STR str(GCC(MinGW))
 # define ATTRIB_UNUSED __attribute__((unused))
 /* options for Intel C/C++ compiler */
 #elif defined(__INTEL_COMPILER)
@@ -107,7 +107,8 @@ extern BOOL USBRefresh;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern UINT MAX_FAILED_EMAILS;
-extern UINT onoff, PORT, scanned_usb_ids[MAX_CONNECTED_USB][2];
+extern UINT onoff, PORT;
+extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 UINT usb_id_selection[2];
 
 BOOL InitU2MThread(HWND hwnd);

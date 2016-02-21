@@ -5,7 +5,7 @@
 
 #include "U2MWin32.h"
 
-const char szClassName[] = "USB2EMailWin32";
+const _TCHAR szClassName[] = _T("USB2EMailWin32");
 
 HINSTANCE g_hInst;
 
@@ -63,10 +63,9 @@ UINT CALLBACK RefreshUSBThread(LPVOID dat);
 BOOL parseEmailDialogFields(HWND hwnd);
 BOOL parsePrefDialogFields(HWND hwnd);
 BOOL parsePwdField(HWND hwnd);
-HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText);
-HWND WINAPI CreateTrackingToolTip(HWND hDlg, LPTSTR pszText);
+HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText);
+HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText);
 BOOL isValidDomain(char *str, char SEPARATOR);
-VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
 BOOL GetUSBListViewSelection(HWND hwnd);
 
 VOID InitEmailDialog(HWND hwnd);
@@ -79,7 +78,8 @@ VOID CenterChild(HWND hwnd);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s);
 VOID DeleteAll();
-VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str);
+VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
+VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
 
 //@TODO: Implement ErrorCodes function
 /*void ErrorCodes(int i)
@@ -110,7 +110,7 @@ VOID InitPreferencesDialog(HWND hwnd)
 {
     if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PREFDIALOG),
                   hwnd, PrefDialogProcedure) == -1) {
-        MessageBox(hwnd, "Preferences dialog failed to open!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("Preferences dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
     }
 }
 
@@ -118,7 +118,7 @@ VOID InitPasswordDialog(HWND hwnd)
 {
     if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PWDDIALOG),
                   hwnd, PwdDialogProcedure) == -1) {
-        MessageBox(hwnd, "Password dialog failed to open!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("Password dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
     }
 }
 
@@ -126,7 +126,7 @@ VOID InitUSBDialog(HWND hwnd)
 {
     if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_USBDIALOG),
                   hwnd, USBDialogProcedure) == -1) {
-        MessageBox(hwnd, "USB dialog failed to open!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("USB dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
     }
 }
 
@@ -134,7 +134,7 @@ VOID InitAboutDialog(HWND hwnd)
 {
     if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTDIALOG),
                   hwnd, AboutDialogProcedure) == -1) {
-        MessageBox(hwnd, "About dialog failed to open!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("About dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
     }
 }
 
@@ -142,7 +142,7 @@ VOID InitEmailDialog(HWND hwnd)
 {
     if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAILDIALOG),
                   hwnd, EmailDialogProcedure) == -1) {
-        MessageBox(hwnd, "Email dialog failed to open!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("Email dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
     }
 }
 
@@ -150,7 +150,7 @@ VOID InitHelpDialog(HWND hwnd)
 {
     if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_HELPDIALOG),
                   hwnd, HelpDialogProcedure) == -1) {
-        MessageBox(hwnd, "Help dialog failed to open!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("Help dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
     }
 }
 
@@ -182,12 +182,26 @@ BOOL isValidDomain(char *str, char SEPARATOR)
     return TRUE;
 }
 
-VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
+VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str)
 {
-    int bufsiz = GetWindowTextLength(GetDlgItem(hwnd, nIDDlgItem)) + 1;
+    int bufsiz = GetWindowTextLengthA(GetDlgItem(hwnd, nIDDlgItem)) + 1;
 
     if (bufsiz > 1) {
         (*str) = calloc(bufsiz, 1);
+        GetDlgItemTextA(hwnd, nIDDlgItem, (*str), bufsiz);
+    } else {
+        if (*str)
+            free(*str);
+        (*str) = NULL;
+    }
+}
+
+VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str)
+{
+    int bufsiz = GetWindowTextLengthA(GetDlgItem(hwnd, nIDDlgItem)) + 1;
+
+    if (bufsiz > 1) {
+        (*str) = calloc(bufsiz, sizeof(TCHAR));
         GetDlgItemText(hwnd, nIDDlgItem, (*str), bufsiz);
     } else {
         if (*str)
@@ -196,7 +210,7 @@ VOID GetFieldText(HWND hwnd, int nIDDlgItem, char **str)
     }
 }
 
-HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
+HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
 {
     if (!toolID || !hDlg || !pszText)
         return NULL;
@@ -222,7 +236,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, LPTSTR pszText)
     return hwndTip;
 }
 
-HWND WINAPI CreateTrackingToolTip(HWND hDlg, LPTSTR pszText)
+HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
 {
     HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, 
                                  WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 
@@ -239,7 +253,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, LPTSTR pszText)
     ttrack_struct.lpszText = pszText;
     ttrack_struct.uId      = (UINT_PTR)hDlg;
 
-    GetClientRect (hDlg, &ttrack_struct.rect);
+    GetClientRect(hDlg, &ttrack_struct.rect);
 
     SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &ttrack_struct);      
     return hwndTT;
@@ -249,22 +263,22 @@ BOOL parsePrefDialogFields(HWND hwnd)
 {
     char *tmp1 = NULL, *tmp2 = NULL;
 
-    GetFieldText(hwnd, IDC_SERVERURLFIELD, &tmp1);
+    GetFieldTextA(hwnd, IDC_SERVERURLFIELD, &tmp1);
     if (!tmp1 && !onoff) {
-        MessageBox(hwnd, "SMTP server field is empty!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("SMTP server field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
-    GetFieldText(hwnd, IDC_PORTFIELD, &tmp2);
+    GetFieldTextA(hwnd, IDC_PORTFIELD, &tmp2);
     if (!tmp2) {
         free(tmp1);
         free(tmp2);
-        MessageBox(hwnd, "SMTP network port field is empty!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("SMTP network port field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
         return TRUE;
     } else if (strlen(tmp2) > 5) {
         free(tmp1);
         free(tmp2);
-        MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("Invalid SMTP network port number!"), _T("Error!"), MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
@@ -279,7 +293,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
     if (PORT > 65535) {
         free(tmp1);
-        MessageBox(hwnd, "Invalid SMTP network port number!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("Invalid SMTP network port number!"), _T("Error!"), MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
@@ -294,15 +308,15 @@ BOOL parseEmailDialogFields(HWND hwnd)
     char *tmp = NULL;
 
 
-    GetFieldText(hwnd, IDC_FROMFIELD, &tmp);
+    GetFieldTextA(hwnd, IDC_FROMFIELD, &tmp);
     if (!tmp) {
-        MessageBox(hwnd, "FROM field is empty!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("FROM field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     if (ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
-            MessageBox(hwnd, "Invalid e-mail address on FROM field!", "Error!", MB_OK | MB_ICONERROR);
+            MessageBox(hwnd, _T("Invalid e-mail address on FROM field!"), _T("Error!"), MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
@@ -312,15 +326,15 @@ BOOL parseEmailDialogFields(HWND hwnd)
     free(tmp);
     tmp = NULL;
 
-    GetFieldText(hwnd, IDC_TOFIELD, &tmp);
+    GetFieldTextA(hwnd, IDC_TOFIELD, &tmp);
     if (!tmp) {
-        MessageBox(hwnd, "TO field is empty!", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("TO field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     if (ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
-            MessageBox(hwnd, "Invalid e-mail address on TO field!", "Error!", MB_OK | MB_ICONERROR);
+            MessageBox(hwnd, _T("Invalid e-mail address on TO field!"), _T("Error!"), MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
@@ -330,11 +344,11 @@ BOOL parseEmailDialogFields(HWND hwnd)
     free(tmp);
     tmp = NULL;
 
-    GetFieldText(hwnd, IDC_CCFIELD, &tmp);
+    GetFieldTextA(hwnd, IDC_CCFIELD, &tmp);
 
     if (ValidEmailCheck && tmp) { 
         if (!isValidDomain(tmp, ';')) {
-            MessageBox(hwnd, "Invalid e-mail address on CC field!", "Error!", MB_OK | MB_ICONERROR);
+            MessageBox(hwnd, _T("Invalid e-mail address on CC field!"), _T("Error!"), MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
@@ -347,10 +361,10 @@ BOOL parseEmailDialogFields(HWND hwnd)
         tmp = NULL;
     }
 
-    GetFieldText(hwnd, IDC_SUBJECTFIELD, &tmp);
+    GetFieldTextA(hwnd, IDC_SUBJECTFIELD, &tmp);
     if (!tmp) {
-        if (MessageBox(hwnd, "Are you sure you don't want to have a Subject in your e-mail?", 
-                       "No Subject", MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBox(hwnd, _T("Are you sure you don't want to have a Subject in your e-mail?"), 
+                       _T("No Subject"), MB_YESNO | MB_ICONASTERISK) == IDYES) {
             SUBJECT = malloc(2);
             snprintf(SUBJECT, 2, "");
         } else {
@@ -363,10 +377,10 @@ BOOL parseEmailDialogFields(HWND hwnd)
         tmp = NULL;
     }
 
-    GetFieldText(hwnd, IDC_MESSAGEFIELD, &tmp);
+    GetFieldTextA(hwnd, IDC_MESSAGEFIELD, &tmp);
     if (!tmp) {
-        if (MessageBox(hwnd, "Are you sure you want to send a blank message?",
-                       "No e-mail body", MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBox(hwnd, _T("Are you sure you want to send a blank message?"),
+                       _T("No e-mail body"), MB_YESNO | MB_ICONASTERISK) == IDYES) {
             BODY = malloc(2);
             snprintf(BODY, 2, "");
         } else {
@@ -385,9 +399,9 @@ BOOL parsePwdField(HWND hwnd)
 {
     char *tmp = NULL;
 
-    GetFieldText(hwnd, IDC_PWDFIELD, &tmp);
+    GetFieldTextA(hwnd, IDC_PWDFIELD, &tmp);
     if (!tmp) {
-        MessageBox(hwnd, "No password entered", "Error!", MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, _T("No password entered"), _T("Error!"), MB_OK | MB_ICONERROR);
         return FALSE;
     } else {
         pass = realloc(NULL, strlen(tmp)+1);
@@ -402,10 +416,16 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
     LVITEM dev;
 
     if (!dev_str)
-        dev.pszText = "Unidentified vendor";
-    else
+        dev.pszText = _T("Unidentified vendor");
+    else {
+#if defined(UNICODE) || defined(_UNICODE)
+        wchar_t wc_temp[255];
+        mbstowcs(wc_temp, dev_str, strlen(dev_str) + 1);
+        dev.pszText = wc_temp;
+#else
         dev.pszText = dev_str;
-
+#endif
+    }
     dev.mask = LVIF_TEXT | LVIF_STATE;
     dev.state = 0;
     dev.stateMask = 0;
@@ -413,9 +433,15 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
     dev.iItem = usb_idx;
     ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
     if (!ven_str) {
-        ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, "Unidentified device");
+        ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, _T("Unidentified device"));
     } else {
+#if defined(UNICODE) || defined(_UNICODE)
+        wchar_t wc_temp[255];
+        mbstowcs(wc_temp, ven_str, strlen(ven_str) + 1);
+        ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, wc_temp);
+#else
         ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
+#endif
     }
     usb_idx++;
 }
@@ -475,8 +501,8 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             about_usb_icon = (HICON)LoadIcon(GetModuleHandle(NULL), 
                              MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
 
-            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, "USB2EMail Win32 "U2MWin32_VERSION_STR);
-            SetDlgItemText(hwnd, IDC_ABOUT_COMPILER,"built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR);
+            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2EMail Win32 "U2MWin32_VERSION_STR));
+            SetDlgItemText(hwnd, IDC_ABOUT_COMPILER,_T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
             SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
@@ -496,7 +522,7 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     switch (msg) {
         case WM_INITDIALOG:
             if (pass)
-                SetDlgItemText(hwnd, IDC_PWDFIELD, pass);
+                SetDlgItemTextA(hwnd, IDC_PWDFIELD, pass);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
@@ -521,11 +547,11 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     switch (msg) {
         case WM_INITDIALOG:
             if (SMTP_SERVER)
-                SetDlgItemText(hwnd, IDC_SERVERURLFIELD, SMTP_SERVER);
+                SetDlgItemTextA(hwnd, IDC_SERVERURLFIELD, SMTP_SERVER);
             if (PORT) {
                 char PORT_STR[9];
                 snprintf(PORT_STR, 9, "%u", PORT);
-                SetDlgItemText(hwnd, IDC_PORTFIELD, PORT_STR);
+                SetDlgItemTextA(hwnd, IDC_PORTFIELD, PORT_STR);
             }
             CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck)?BST_CHECKED:BST_UNCHECKED);
             CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh)?BST_CHECKED:BST_UNCHECKED);
@@ -567,12 +593,12 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     HBITMAP refresh_bitmap;
     LVCOLUMN vendCol, devcCol;
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
-    HANDLE refresh_usb_hnd ATTRIB_UNUSED = NULL;
+    HANDLE refresh_usb_hnd ATTRIB_UNUSED = NULL; //usb auto scan thread handle
     static INT temp_idx = -1;
 
     switch (msg) {
         case WM_INITDIALOG:
-            refresh_bitmap = (HBITMAP)LoadImage(g_hInst, "icons\\refreshbitmap.bmp",
+            refresh_bitmap = (HBITMAP)LoadImage(g_hInst, _T("icons\\refreshbitmap.bmp"),
                                  IMAGE_BITMAP, 0, 0,    LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
             SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
 
@@ -583,12 +609,14 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             devcCol.iSubItem = 1;
             vendCol.cx = devcCol.cx = 150;
             vendCol.fmt = LVCFMT_LEFT;
-            devcCol.fmt = LVCFMT_LEFT;
-            vendCol.pszText = "Device";
-            devcCol.pszText = "Vendor";
+            devcCol.fmt = LVCFMT_RIGHT;
+            vendCol.pszText = _T("Device");
+            devcCol.pszText = _T("Vendor");
             ListView_SetExtendedListViewStyle(GetDlgItem(hwnd, IDC_USBDEVLIST), LVS_EX_FULLROWSELECT);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
+            ListView_SetColumnWidth(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, 210);
+            ListView_SetColumnWidth(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, 150);
             CenterChild(hwnd);
             GetConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
             if (USBRefresh) {
@@ -610,7 +638,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     return (INT_PTR)TRUE;
                 case IDOK:
                     if (!GetUSBListViewSelection(hwnd)) {
-                        MessageBox(hwnd, "No USB device selected!", "Error!", MB_ICONERROR | MB_OK);
+                        MessageBox(hwnd, _T("No USB device selected!"), _T("Error!"), MB_ICONERROR | MB_OK);
                     } else {
                         DeleteScannedUSBIDs();
                         USBdev_scan = FALSE;
@@ -632,7 +660,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                             usb_idx = 0;
                             if (!GetUSBListViewSelection(hwnd)) {
                                 memset(usb_id_selection, 0, sizeof(usb_id_selection));
-                                MessageBox(hwnd, "No USB device selected!", "Error!", MB_ICONERROR | MB_OK);
+                                MessageBox(hwnd, _T("No USB device selected!"), _T("Error!"), MB_ICONERROR | MB_OK);
                             } else {
                                 USBdev_scan = FALSE;
                                 EndDialog(hwnd, wParam);
@@ -660,25 +688,25 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
     switch (msg) {
         case WM_INITDIALOG:
             FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,
-                                 "E-mail address of sender");
+                                 _T("E-mail address of sender"));
             TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd,
-                                 "E-mail address of recipient");
+                                 _T("E-mail address of recipient"));
             CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd,
-                                 "Group of addresses to send to. Multiple e-mails are seperated with ';'");
+                                 _T("Group of addresses to send to. Multiple e-mails are seperated with ';'"));
             SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, 
-                                 "Subject of the e-mail");
+                                 _T("Subject of the e-mail"));
             BODY_ttip = CreateBaloonToolTip(IDC_MESSAGEFIELD, hwnd,
-                                 "Body of the e-mail");
+                                 _T("Body of the e-mail"));
             if (FROM)
-                SetDlgItemText(hwnd, IDC_FROMFIELD, FROM);
+                SetDlgItemTextA(hwnd, IDC_FROMFIELD, FROM);
             if (TO)
-                SetDlgItemText(hwnd, IDC_TOFIELD, TO);
+                SetDlgItemTextA(hwnd, IDC_TOFIELD, TO);
             if (CC)
-                SetDlgItemText(hwnd, IDC_CCFIELD, CC);
+                SetDlgItemTextA(hwnd, IDC_CCFIELD, CC);
             if (SUBJECT)
-                SetDlgItemText(hwnd, IDC_SUBJECTFIELD, SUBJECT);
+                SetDlgItemTextA(hwnd, IDC_SUBJECTFIELD, SUBJECT);
             if (BODY)
-                SetDlgItemText(hwnd, IDC_MESSAGEFIELD, BODY);
+                SetDlgItemTextA(hwnd, IDC_MESSAGEFIELD, BODY);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
@@ -733,58 +761,58 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                 FALSE, FALSE, FALSE, //italics, underline, strikeout
                                 DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, //charset, output precision
                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, //clipping, output quality
-                                VARIABLE_PITCH, TEXT("Trebuchet MS"));
+                                VARIABLE_PITCH, _T("Trebuchet MS"));
 
                 mainwindowcontrol_font = CreateFont(18, 0, 0, 0, 550,
                                 FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-                                VARIABLE_PITCH, TEXT("Trebuchet MS"));
+                                VARIABLE_PITCH, _T("Trebuchet MS"));
 
-                USBListButton = CreateWindowEx(0, "BUTTON", "Choose USB device",
+                USBListButton = CreateWindowEx(0, _T("BUTTON"), _T("Choose USB device"),
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!USBListButton) {
-                    MessageBox(NULL, "USB list button failed!", "Error!", MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, _T("USB list button failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(USBListButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
-                EMAILButton = CreateWindowEx(0, "BUTTON", "Configure E-Mail to send",
+                EMAILButton = CreateWindowEx(0, _T("BUTTON"), _T("Configure E-Mail to send"),
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!EMAILButton) {
-                    MessageBox(NULL, "E-mail button failed!", "Error!", MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, _T("E-mail button failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(EMAILButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
-                STARTSTOP = CreateWindowEx(0, "BUTTON", "Start",
+                STARTSTOP = CreateWindowEx(0, _T("BUTTON"), _T("Start"),
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                                  300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP, 
                                  g_hInst, NULL);
                 if (!STARTSTOP) {
-                    MessageBox(NULL, "Start/Stop button failed!", "Error!", MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, _T("Start/Stop button failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(STARTSTOP, WM_SETFONT, (WPARAM)mainwindowcontrol_font_big, (LPARAM)TRUE);
 
-                time_track = CreateWindowEx(0, TRACKBAR_CLASS, "",
+                time_track = CreateWindowEx(0, TRACKBAR_CLASS, _T(""),
                                  WS_CHILD | WS_VISIBLE | TBS_TOOLTIPS | TBS_NOTICKS | TBS_HORZ,
                                  30, 200, 200, 30, hwnd, (HMENU)IDC_TIMETRACK,
                                  g_hInst, NULL);
                 if (!time_track) {
-                    MessageBox(NULL, "Trackbar failed!", "Error!", MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, _T("Trackbar failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
                     return -2;
                 }
 
-                ttrack_label = CreateWindow("STATIC", 
-                                 "Set waiting interval between each scan of all USB devices in milliseconds",
+                ttrack_label = CreateWindow(_T("STATIC"), 
+                                 _T("Set waiting interval between each scan of all USB devices in milliseconds"),
                                  WS_VISIBLE | WS_CHILD | SS_CENTER,
                                  30, 140, 200, 60, hwnd, NULL, g_hInst, NULL);
                 if (!ttrack_label) {
-                    MessageBox(NULL, "Trackbar label failed!", "Error!", MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, _T("Trackbar label failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(ttrack_label, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -816,22 +844,22 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     if (!onoff)
                         InitPreferencesDialog(hwnd);
                     else
-                        MessageBox(hwnd, "Can't change preferences while the service is running.", 
-                                   "Service is running!", MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, _T("Can't change preferences while the service is running."), 
+                                   _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDM_PASSWORD:
                     if (!onoff)
                         InitPasswordDialog(hwnd);
                     else
-                        MessageBox(hwnd, "Can't change password while the service is running.", 
-                                   "Service is running!", MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, _T("Can't change password while the service is running."), 
+                                   _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDC_CHOOSEUSBBUTTON:
                     if (!onoff)
                         InitUSBDialog(hwnd);
                     else
-                        MessageBox(hwnd, "Can't change USB device while the service is running.", 
-                                   "Service is running!", MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, _T("Can't change USB device while the service is running."), 
+                                  _T( "Service is running!"), MB_ICONEXCLAMATION | MB_OK);
 #ifdef DEBUG
                     fprintf(stderr, "USB device %04x:%04x\n\n", usb_id_selection[0], usb_id_selection[1]);
 #endif
@@ -851,14 +879,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                             EnableWindow(ttrack_label, FALSE);
                         }
                     }
-                    SetWindowText(STARTSTOP, (!onoff)?"Start":"Stop");
+                    SetWindowText(STARTSTOP, (!onoff)?_T("Start"):_T("Stop"));
                     break;
                 case IDC_EMAILBUTTON:
                     if (!onoff)
                         InitEmailDialog(hwnd);
                     else
-                        MessageBox(hwnd, "Can't change e-mail while the service is running.", 
-                                   "Service is running!", MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, _T("Can't change e-mail while the service is running."), 
+                                   _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDM_H_ELP1:
                     InitHelpDialog(hwnd);
@@ -870,14 +898,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             break;
         case WM_CLOSE:
             if (onoff) {
-                MessageBox(hwnd, "Can't close the window.", 
-                           "Service is running!", MB_ICONEXCLAMATION | MB_OK);
+                MessageBox(hwnd, _T("Can't close the window."), 
+                           _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
                 break;
             }
                 
 #ifndef DEBUG
-            if (MessageBox(hwnd, "Are you sure you want to quit?", 
-                "Quiting...", MB_ICONASTERISK | MB_YESNO) == IDNO)
+            if (MessageBox(hwnd, _T("Are you sure you want to quit?"), 
+                _T("Quiting..."), MB_ICONASTERISK | MB_YESNO) == IDNO)
                 break;
 #endif
             DeleteAll();
@@ -939,17 +967,17 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     center_y = (wrkspace_px.bottom - 350)/2;
     
     if (!RegisterClassEx(&wc)) {
-            MessageBox(NULL, "Main Window class registration Failed!", "Error!",
+            MessageBox(NULL, _T("Main Window class registration Failed!"), _T("Error!"),
                        MB_ICONERROR | MB_OK);
         return -1;
     }
 
-    hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, "USB2EMail Win32",
+    hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, _T("USB2EMail Win32"),
                           WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_EX_LAYERED,
                           center_x, center_y, 550, 350, NULL, NULL, hInstance, NULL);
 
     if (!hwnd) {
-        MessageBox(NULL, "Window creation failed!", "Error!", MB_ICONERROR | MB_OK);
+        MessageBox(NULL, _T("Window creation failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
         return -2;
     }
 
@@ -964,7 +992,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         bRet = GetMessage(&Msg, NULL, 0, 0);
 
         if (bRet == -1) {
-            MessageBox(NULL, "Message queue error", "Error!", MB_ICONERROR | MB_OK);
+            MessageBox(hwnd, _T("Message queue error"), _T("Error!"), MB_ICONERROR | MB_OK);
             return -3;
         } else if (bRet == -2) {
             return -2;
