@@ -1,4 +1,6 @@
 *.o
 *.exe
 *.conf
+*.dll
+*.a
 build/USB2EMailWin32/
