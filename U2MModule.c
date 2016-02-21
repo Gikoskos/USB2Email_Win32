@@ -13,7 +13,6 @@
 #include <quickmail.h>
 
 
-
 /*#ifdef DEFINE_GUID
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
             0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
@@ -43,20 +42,20 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 BOOL InitU2MThread(HWND hwnd)
 {
     if (!FROM) {
-        MessageBox(hwnd, _T("You have to set an e-mail to send, first."), 
-                   _T("Can't start service!"), MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, t_localized_message[53], 
+                   t_localized_message[54], MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!SMTP_SERVER) {
-        MessageBox(hwnd, _T("SMTP server domain not set."), _T("Can't start service!"), MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, t_localized_message[55], t_localized_message[54], MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!usb_id_selection[0] || !usb_id_selection[1]) {
-        MessageBox(hwnd, _T("No USB device selected."), _T("Can't start service!"), MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, t_localized_message[56], t_localized_message[54], MB_ICONERROR | MB_OK);
         return FALSE;
     }
     if (!pass) {
-        MessageBox(hwnd, _T("No password set."), _T("Can't start service!"), MB_ICONERROR | MB_OK);
+        MessageBox(hwnd, t_localized_message[57], t_localized_message[54], MB_ICONERROR | MB_OK);
         return FALSE;
     }
     onoff = TRUE;

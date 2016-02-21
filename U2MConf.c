@@ -118,5 +118,6 @@ BOOL saveConfFile(VOID)
 
     fclose(U2Mconf_file);
     cfg_free(U2MConf);
+
     return TRUE;
 }

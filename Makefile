@@ -6,36 +6,62 @@ OBJ = -o
 DBG = build/debug.exe
 RLS = build/USB2EMAILWin32.exe
 DWARF2 = -ggdb
-LINKER = -lsetupapi -lcomctl32 -lgdi32 -lconfuse -lquickmail
+
+LINKER = -L. -lU2MUsbIDs_dll -lU2MLocale_En_dll -lsetupapi -lcomctl32 -lgdi32 -lconfuse -lquickmail
 RLS_FLAGS = -mwindows -O2
+
 WINDOW_SOURCE = U2MWin32.c
 CONFIG_SOURCE = U2MConf.c
 USB2MAIL_SOURCE = U2MModule.c
 USBIDS_SOURCE = find_usb.c usb_ids.c
-USBIDS_OBJ = find_usb.o usb_ids.o
-RESOURCE = resources.rc
-RES_OBJ = res.o
+
+ICON_RES = icon_res.rc
+
+EN_SOURCE = U2MLocale_en.c
+GR_SOURCE = U2MLocale_gr.c
+EN_RES = en_resources.rc
+GR_RES = gr_resources.rc
+
 WXS = Setup.wxs
 WIXOBJ = Setup.wixobj
 
-dbg: clean compile_resource compile_usbids debug
 
-rls: clean compile_resource compile_usbids release
+dbg: $(EN_SOURCE) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) 
+	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) $^ icon_res.o $(LINKER)
 
-usb: $(USBTEST_SOURCE)
-	$(CC) $(CFLAGS) $(DEBUG) $(DWARF2) $^ $(LINKER)
+rls: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) $(USBIDS_OBJ)
+	$(CC) $(CFLAGS) $(RLS_FLAGS) $(OBJ) $(RLS) $^ icon_res.o $(LINKER)
 
-debug: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) $(USBIDS_OBJ)
-	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) $^ $(RES_OBJ) $(LINKER)
+all_extern: locale_dlls usbids_dll clean compile_icon_res
 
-release: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) $(USBIDS_OBJ)
-	$(CC) $(CFLAGS) $(RLS_FLAGS) $(OBJ) $(RLS) $^ $(RES_OBJ) $(LINKER)
-	
-compile_resource:
-	cd resources & windres $(RESOURCE) ..\$(RES_OBJ) & cd ..
+locale_dlls: compile_en_dll
+
+compile_en_dll: compile_en_U2MLocale compile_en_resources
+	$(CC) -shared -o U2MLocale_En.dll en_resources.o U2MLocale_En.o -Wl,--out-implib,libU2MLocale_En_dll.a
+
+compile_gr_dll: compile_gr_U2MLocale compile_gr_resources
+	$(CC) -shared -o U2MLocale_Gr.dll gr_resources.o $^ -Wl,--out-implib,libU2MLocale_Gr_dll.a
+
+compile_en_U2MLocale: $(EN_SOURCE)
+	$(CC) $(CFLAGS) -c $^
+
+compile_en_resources:
+	cd resources & windres $(EN_RES) ..\en_resources.o & cd ..
+
+compile_gr_U2MLocale: $(GR_SOURCE)
+	$(CC) $(CFLAGS) -c $^
+
+compile_gr_resources: 
+	cd resources & windres $(GR_RES) ..\gr_resources.o & cd ..
+
+compile_icon_res:
+	cd resources & windres $(ICON_RES) ..\icon_res.o & cd ..
 
 compile_usbids:
 	$(CC) $(CFLAGS) -c $(USBIDS_SOURCE)
+
+usbids_dll: compile_usbids
+	$(CC) -shared -o U2MUsbIDs.dll find_usb.o usb_ids.o -Wl,--out-implib,libU2MUsbIDs_dll.a
 
 installer: candle light
 

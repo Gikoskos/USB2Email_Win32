@@ -49,3 +49,5 @@
 #define IDC_SAVECONFBUTTON                      40012
 
 #define IDAPPLY                                 40013
+#define IDM_GR_LANG                             40014
+#define IDM_EN_LANG                            40015

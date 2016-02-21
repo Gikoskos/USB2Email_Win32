@@ -1,0 +1,26 @@
+/******************************************
+*               resources.rc               *
+*        George Koskeridis (C)2015         *
+ ******************************************/
+
+#pragma code_page(65001)
+
+
+#include "../U2MWin32.h"
+#include "resource.h"
+#include <richedit.h>
+
+
+1 RT_MANIFEST "USB2EMAILWin32.exe.manifest"
+
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+IDI_USB2MAILICONLARGE ICON           "..\\icons\\usb128.ico"
+
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+IDI_USB2MAILICONMEDIUM ICON           "..\\icons\\usb64.ico"
+
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+IDI_USB2MAILICONSMALL ICON           "..\\icons\\usb48.ico"

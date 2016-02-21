@@ -7,6 +7,10 @@
 #ifndef USB_IDS_H
 #define USB_IDS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
 	unsigned long VendorID;
 	unsigned long DeviceID;
@@ -14,10 +18,14 @@ typedef struct {
 	char *Device;
 } UsbDevStruct;
 
-extern UsbDevStruct UsbList[];
-extern size_t UsbLength;
+extern __declspec(dllexport) UsbDevStruct UsbList[];
+extern __declspec(dllexport) size_t UsbLength;
 
-UsbDevStruct *UsbFind(long vendor, long device);
-int UsbListIsSorted(void);
+__declspec(dllexport) UsbDevStruct *UsbFind(long vendor, long device);
+__declspec(dllexport) int UsbListIsSorted(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

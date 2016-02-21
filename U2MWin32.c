@@ -7,7 +7,7 @@
 
 const _TCHAR szClassName[] = _T("USB2EMailWin32");
 
-HINSTANCE g_hInst;
+HINSTANCE *g_hInst;
 
 /********************
 *Input field raw data*
@@ -38,6 +38,18 @@ char ttrack_tooltip_text[50];
 UINT MAX_FAILED_EMAILS = 0;
 UINT TIMEOUT;
 UINT usb_idx;
+
+
+struct dll_data {
+    TCHAR *filename;
+    HMODULE module;
+};
+
+struct {
+    struct dll_data U2MLocale_en;
+    struct dll_data U2MLocale_gr;
+} U2M_dlls = {{_T("U2MLocale_en.dll"), NULL},
+              {_T("U2MLocale_gr.dll"), NULL}};
 
 /*Trackbar limits*/
 #define T_MIN                     200
@@ -108,49 +120,79 @@ VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s)
 
 VOID InitPreferencesDialog(HWND hwnd)
 {
-    if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PREFDIALOG),
-                  hwnd, PrefDialogProcedure) == -1) {
-        MessageBox(hwnd, _T("Preferences dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
+    HRSRC PrefDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_PREFDIALOG), 
+                                       MAKEINTRESOURCE(RT_DIALOG));
+    HGLOBAL PrefDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, PrefDlgHrsrc);
+    LPCDLGTEMPLATE PrefDlgPtr = (LPCDLGTEMPLATE)LockResource(PrefDlgHandle);
+
+    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
+                                   PrefDlgPtr, hwnd, PrefDialogProcedure, (LPARAM)0)) {
+        MessageBox(hwnd, t_localized_message[52], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitPasswordDialog(HWND hwnd)
 {
-    if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PWDDIALOG),
-                  hwnd, PwdDialogProcedure) == -1) {
-        MessageBox(hwnd, _T("Password dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
+    HRSRC PwdDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_PWDDIALOG), 
+                                     MAKEINTRESOURCE(RT_DIALOG));
+    HGLOBAL PwdDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, PwdDlgHrsrc);
+    LPCDLGTEMPLATE PwdDlgPtr = (LPCDLGTEMPLATE)LockResource(PwdDlgHandle);
+
+    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
+                                   PwdDlgPtr, hwnd, PwdDialogProcedure, (LPARAM)0)) {
+        MessageBox(hwnd, t_localized_message[51], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitUSBDialog(HWND hwnd)
 {
-    if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_USBDIALOG),
-                  hwnd, USBDialogProcedure) == -1) {
-        MessageBox(hwnd, _T("USB dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
+    HRSRC USBDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_USBDIALOG), 
+                                     MAKEINTRESOURCE(RT_DIALOG));
+    HGLOBAL USBDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, USBDlgHrsrc);
+    LPCDLGTEMPLATE USBDlgPtr = (LPCDLGTEMPLATE)LockResource(USBDlgHandle);
+
+    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
+                                   USBDlgPtr, hwnd, USBDialogProcedure, (LPARAM)0)) {
+        MessageBox(hwnd, t_localized_message[50], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitAboutDialog(HWND hwnd)
 {
-    if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTDIALOG),
-                  hwnd, AboutDialogProcedure) == -1) {
-        MessageBox(hwnd, _T("About dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
+    HRSRC AboutDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_ABOUTDIALOG), 
+                                       MAKEINTRESOURCE(RT_DIALOG));
+    HGLOBAL AboutDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, AboutDlgHrsrc);
+    LPCDLGTEMPLATE AboutDlgPtr = (LPCDLGTEMPLATE)LockResource(AboutDlgHandle);
+
+    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
+                                   AboutDlgPtr, hwnd, AboutDialogProcedure, (LPARAM)0)) {
+        MessageBox(hwnd, t_localized_message[49], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitEmailDialog(HWND hwnd)
 {
-    if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAILDIALOG),
-                  hwnd, EmailDialogProcedure) == -1) {
-        MessageBox(hwnd, _T("Email dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
+    HRSRC EmailDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_EMAILDIALOG), 
+                                       MAKEINTRESOURCE(RT_DIALOG));
+    HGLOBAL EmailDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, EmailDlgHrsrc);
+    LPCDLGTEMPLATE EmailDlgPtr = (LPCDLGTEMPLATE)LockResource(EmailDlgHandle);
+
+    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
+                                   EmailDlgPtr, hwnd, EmailDialogProcedure, (LPARAM)0)) {
+        MessageBox(hwnd, t_localized_message[48], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitHelpDialog(HWND hwnd)
 {
-    if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_HELPDIALOG),
-                  hwnd, HelpDialogProcedure) == -1) {
-        MessageBox(hwnd, _T("Help dialog failed to open!"), _T("Error!"), MB_OK | MB_ICONERROR);
+    HRSRC HelpDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_HELPDIALOG), 
+                                      MAKEINTRESOURCE(RT_DIALOG));
+    HGLOBAL HelpDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, HelpDlgHrsrc);
+    LPCDLGTEMPLATE HelpDlgPtr = (LPCDLGTEMPLATE)LockResource(HelpDlgHandle);
+
+    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
+                                   HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0)) {
+        MessageBox(hwnd, t_localized_message[47], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
@@ -221,7 +263,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
                                   CW_USEDEFAULT, CW_USEDEFAULT,
                                   CW_USEDEFAULT, CW_USEDEFAULT,
                                   hDlg, NULL, 
-                                  g_hInst, NULL);
+                                  *g_hInst, NULL);
 
     if (!hwndTool || !hwndTip)
         return NULL;             
@@ -241,7 +283,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
     HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, 
                                  WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 
                                  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
-                                 hDlg, NULL, g_hInst,NULL);
+                                 hDlg, NULL, *g_hInst,NULL);
 
     if (!hwndTT)
         return NULL;
@@ -249,7 +291,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
     ttrack_struct.cbSize   = sizeof(TOOLINFO);
     ttrack_struct.uFlags   = TTF_IDISHWND | TTF_TRACK | TTF_ABSOLUTE;
     ttrack_struct.hwnd     = hDlg;
-    ttrack_struct.hinst    = g_hInst;
+    ttrack_struct.hinst    = *g_hInst;
     ttrack_struct.lpszText = pszText;
     ttrack_struct.uId      = (UINT_PTR)hDlg;
 
@@ -265,7 +307,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_SERVERURLFIELD, &tmp1);
     if (!tmp1 && !onoff) {
-        MessageBox(hwnd, _T("SMTP server field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[46], t_localized_message[0], MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
@@ -273,12 +315,12 @@ BOOL parsePrefDialogFields(HWND hwnd)
     if (!tmp2) {
         free(tmp1);
         free(tmp2);
-        MessageBox(hwnd, _T("SMTP network port field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[45], t_localized_message[0], MB_OK | MB_ICONERROR);
         return TRUE;
     } else if (strlen(tmp2) > 5) {
         free(tmp1);
         free(tmp2);
-        MessageBox(hwnd, _T("Invalid SMTP network port number!"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[44], t_localized_message[0], MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
@@ -293,7 +335,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
     if (PORT > 65535) {
         free(tmp1);
-        MessageBox(hwnd, _T("Invalid SMTP network port number!"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[44], t_localized_message[0], MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
@@ -310,13 +352,13 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_FROMFIELD, &tmp);
     if (!tmp) {
-        MessageBox(hwnd, _T("FROM field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[43], t_localized_message[0], MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     if (ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
-            MessageBox(hwnd, _T("Invalid e-mail address on FROM field!"), _T("Error!"), MB_OK | MB_ICONERROR);
+            MessageBox(hwnd, t_localized_message[42], t_localized_message[0], MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
@@ -328,13 +370,13 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_TOFIELD, &tmp);
     if (!tmp) {
-        MessageBox(hwnd, _T("TO field is empty!"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[41], t_localized_message[0], MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     if (ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
-            MessageBox(hwnd, _T("Invalid e-mail address on TO field!"), _T("Error!"), MB_OK | MB_ICONERROR);
+            MessageBox(hwnd, t_localized_message[40], t_localized_message[0], MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
@@ -348,7 +390,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     if (ValidEmailCheck && tmp) { 
         if (!isValidDomain(tmp, ';')) {
-            MessageBox(hwnd, _T("Invalid e-mail address on CC field!"), _T("Error!"), MB_OK | MB_ICONERROR);
+            MessageBox(hwnd, t_localized_message[39], t_localized_message[0], MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
@@ -363,8 +405,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_SUBJECTFIELD, &tmp);
     if (!tmp) {
-        if (MessageBox(hwnd, _T("Are you sure you don't want to have a Subject in your e-mail?"), 
-                       _T("No Subject"), MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBox(hwnd, t_localized_message[38], 
+                       t_localized_message[37], MB_YESNO | MB_ICONASTERISK) == IDYES) {
             SUBJECT = malloc(2);
             snprintf(SUBJECT, 2, "");
         } else {
@@ -379,8 +421,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_MESSAGEFIELD, &tmp);
     if (!tmp) {
-        if (MessageBox(hwnd, _T("Are you sure you want to send a blank message?"),
-                       _T("No e-mail body"), MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBox(hwnd, t_localized_message[36],
+                       t_localized_message[35], MB_YESNO | MB_ICONASTERISK) == IDYES) {
             BODY = malloc(2);
             snprintf(BODY, 2, "");
         } else {
@@ -401,7 +443,7 @@ BOOL parsePwdField(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_PWDFIELD, &tmp);
     if (!tmp) {
-        MessageBox(hwnd, _T("No password entered"), _T("Error!"), MB_OK | MB_ICONERROR);
+        MessageBox(hwnd, t_localized_message[34], t_localized_message[0], MB_OK | MB_ICONERROR);
         return FALSE;
     } else {
         pass = realloc(NULL, strlen(tmp)+1);
@@ -416,7 +458,7 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
     LVITEM dev;
 
     if (!dev_str)
-        dev.pszText = _T("Unidentified vendor");
+        dev.pszText = t_localized_message[33];
     else {
 #if defined(UNICODE) || defined(_UNICODE)
         wchar_t wc_temp[255];
@@ -433,7 +475,7 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
     dev.iItem = usb_idx;
     ListView_InsertItem(GetDlgItem(hDlg, IDC_USBDEVLIST), &dev);
     if (!ven_str) {
-        ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, _T("Unidentified device"));
+        ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, t_localized_message[32]);
     } else {
 #if defined(UNICODE) || defined(_UNICODE)
         wchar_t wc_temp[255];
@@ -501,8 +543,8 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             about_usb_icon = (HICON)LoadIcon(GetModuleHandle(NULL), 
                              MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
 
-            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2EMail Win32 "U2MWin32_VERSION_STR));
-            SetDlgItemText(hwnd, IDC_ABOUT_COMPILER,_T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
+            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, t_localized_message[31]);
+            SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, t_localized_message[30]);
             SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
@@ -598,7 +640,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     switch (msg) {
         case WM_INITDIALOG:
-            refresh_bitmap = (HBITMAP)LoadImage(g_hInst, _T("icons\\refreshbitmap.bmp"),
+            refresh_bitmap = (HBITMAP)LoadImage(*g_hInst, _T("icons\\refreshbitmap.bmp"),
                                  IMAGE_BITMAP, 0, 0,    LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
             SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
 
@@ -610,8 +652,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             vendCol.cx = devcCol.cx = 150;
             vendCol.fmt = LVCFMT_LEFT;
             devcCol.fmt = LVCFMT_RIGHT;
-            vendCol.pszText = _T("Device");
-            devcCol.pszText = _T("Vendor");
+            devcCol.pszText =  t_localized_message[29];  //vendor
+            vendCol.pszText =  t_localized_message[28];  //device
             ListView_SetExtendedListViewStyle(GetDlgItem(hwnd, IDC_USBDEVLIST), LVS_EX_FULLROWSELECT);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
             ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
@@ -638,7 +680,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     return (INT_PTR)TRUE;
                 case IDOK:
                     if (!GetUSBListViewSelection(hwnd)) {
-                        MessageBox(hwnd, _T("No USB device selected!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                        MessageBox(hwnd, t_localized_message[27], t_localized_message[0], MB_ICONERROR | MB_OK);
                     } else {
                         DeleteScannedUSBIDs();
                         USBdev_scan = FALSE;
@@ -660,7 +702,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                             usb_idx = 0;
                             if (!GetUSBListViewSelection(hwnd)) {
                                 memset(usb_id_selection, 0, sizeof(usb_id_selection));
-                                MessageBox(hwnd, _T("No USB device selected!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                                MessageBox(hwnd, t_localized_message[27], t_localized_message[0], MB_ICONERROR | MB_OK);
                             } else {
                                 USBdev_scan = FALSE;
                                 EndDialog(hwnd, wParam);
@@ -688,15 +730,15 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
     switch (msg) {
         case WM_INITDIALOG:
             FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,
-                                 _T("E-mail address of sender"));
+                                 t_localized_message[26]);
             TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd,
-                                 _T("E-mail address of recipient"));
+                                 t_localized_message[25]);
             CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd,
-                                 _T("Group of addresses to send to. Multiple e-mails are seperated with ';'"));
+                                 t_localized_message[24]);
             SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, 
-                                 _T("Subject of the e-mail"));
+                                 t_localized_message[23]);
             BODY_ttip = CreateBaloonToolTip(IDC_MESSAGEFIELD, hwnd,
-                                 _T("Body of the e-mail"));
+                                 t_localized_message[22]);
             if (FROM)
                 SetDlgItemTextA(hwnd, IDC_FROMFIELD, FROM);
             if (TO)
@@ -768,32 +810,32 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
                                 VARIABLE_PITCH, _T("Trebuchet MS"));
 
-                USBListButton = CreateWindowEx(0, _T("BUTTON"), _T("Choose USB device"),
+                USBListButton = CreateWindowEx(0, _T("BUTTON"), t_localized_message[21],
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!USBListButton) {
-                    MessageBox(NULL, _T("USB list button failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, t_localized_message[20], t_localized_message[0], MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(USBListButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
-                EMAILButton = CreateWindowEx(0, _T("BUTTON"), _T("Configure E-Mail to send"),
+                EMAILButton = CreateWindowEx(0, _T("BUTTON"), t_localized_message[19],
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                                  300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!EMAILButton) {
-                    MessageBox(NULL, _T("E-mail button failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, t_localized_message[18], t_localized_message[0], MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(EMAILButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
 
-                STARTSTOP = CreateWindowEx(0, _T("BUTTON"), _T("Start"),
+                STARTSTOP = CreateWindowEx(0, _T("BUTTON"), t_localized_message[9],
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                                  300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP, 
-                                 g_hInst, NULL);
+                                 *g_hInst, NULL);
                 if (!STARTSTOP) {
-                    MessageBox(NULL, _T("Start/Stop button failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, t_localized_message[17], t_localized_message[0], MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(STARTSTOP, WM_SETFONT, (WPARAM)mainwindowcontrol_font_big, (LPARAM)TRUE);
@@ -801,18 +843,18 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 time_track = CreateWindowEx(0, TRACKBAR_CLASS, _T(""),
                                  WS_CHILD | WS_VISIBLE | TBS_TOOLTIPS | TBS_NOTICKS | TBS_HORZ,
                                  30, 200, 200, 30, hwnd, (HMENU)IDC_TIMETRACK,
-                                 g_hInst, NULL);
+                                 *g_hInst, NULL);
                 if (!time_track) {
-                    MessageBox(NULL, _T("Trackbar failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, t_localized_message[16], t_localized_message[0], MB_ICONERROR | MB_OK);
                     return -2;
                 }
 
                 ttrack_label = CreateWindow(_T("STATIC"), 
-                                 _T("Set waiting interval between each scan of all USB devices in milliseconds"),
+                                 t_localized_message[15],
                                  WS_VISIBLE | WS_CHILD | SS_CENTER,
-                                 30, 140, 200, 60, hwnd, NULL, g_hInst, NULL);
+                                 30, 140, 200, 60, hwnd, NULL, *g_hInst, NULL);
                 if (!ttrack_label) {
-                    MessageBox(NULL, _T("Trackbar label failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, t_localized_message[14], t_localized_message[0], MB_ICONERROR | MB_OK);
                     return -2;
                 }
                 SendMessage(ttrack_label, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -844,22 +886,22 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     if (!onoff)
                         InitPreferencesDialog(hwnd);
                     else
-                        MessageBox(hwnd, _T("Can't change preferences while the service is running."), 
-                                   _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, t_localized_message[13], 
+                                   t_localized_message[1], MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDM_PASSWORD:
                     if (!onoff)
                         InitPasswordDialog(hwnd);
                     else
-                        MessageBox(hwnd, _T("Can't change password while the service is running."), 
-                                   _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, t_localized_message[12], 
+                                   t_localized_message[1], MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDC_CHOOSEUSBBUTTON:
                     if (!onoff)
                         InitUSBDialog(hwnd);
                     else
-                        MessageBox(hwnd, _T("Can't change USB device while the service is running."), 
-                                  _T( "Service is running!"), MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, t_localized_message[11], 
+                                  t_localized_message[1], MB_ICONEXCLAMATION | MB_OK);
 #ifdef DEBUG
                     fprintf(stderr, "USB device %04x:%04x\n\n", usb_id_selection[0], usb_id_selection[1]);
 #endif
@@ -879,14 +921,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                             EnableWindow(ttrack_label, FALSE);
                         }
                     }
-                    SetWindowText(STARTSTOP, (!onoff)?_T("Start"):_T("Stop"));
+                    SetWindowText(STARTSTOP, (!onoff)?t_localized_message[9]:t_localized_message[10]);
                     break;
                 case IDC_EMAILBUTTON:
                     if (!onoff)
                         InitEmailDialog(hwnd);
                     else
-                        MessageBox(hwnd, _T("Can't change e-mail while the service is running."), 
-                                   _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
+                        MessageBox(hwnd, t_localized_message[8], 
+                                   t_localized_message[1], MB_ICONEXCLAMATION | MB_OK);
                     break;
                 case IDM_H_ELP1:
                     InitHelpDialog(hwnd);
@@ -898,14 +940,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             break;
         case WM_CLOSE:
             if (onoff) {
-                MessageBox(hwnd, _T("Can't close the window."), 
-                           _T("Service is running!"), MB_ICONEXCLAMATION | MB_OK);
+                MessageBox(hwnd, t_localized_message[7], 
+                           t_localized_message[1], MB_ICONEXCLAMATION | MB_OK);
                 break;
             }
                 
 #ifndef DEBUG
-            if (MessageBox(hwnd, _T("Are you sure you want to quit?"), 
-                _T("Quiting..."), MB_ICONASTERISK | MB_YESNO) == IDNO)
+            if (MessageBox(hwnd, t_localized_message[6], 
+                t_localized_message[5], MB_ICONASTERISK | MB_YESNO) == IDNO)
                 break;
 #endif
             DeleteAll();
@@ -943,7 +985,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     memset(usb_id_selection, 0, sizeof(UINT)*2);
     TIMEOUT = 1000;
 
-    g_hInst = hInstance;
+    g_hInst = &hInstance;
+    *g_hInst = U2M_dlls.U2MLocale_en.module = LoadLibraryEx(U2M_dlls.U2MLocale_en.filename, NULL, 0);
+
     usb_idx = 0;
 
     parseConfFile();
@@ -951,7 +995,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = wc.cbClsExtra = wc.cbWndExtra = 0;
     wc.lpfnWndProc = MainWindowProcedure;
-    wc.hInstance = hInstance;
+    wc.hInstance = *g_hInst;
     wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONMEDIUM));
     wc.hIconSm = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONSMALL));
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -967,7 +1011,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     center_y = (wrkspace_px.bottom - 350)/2;
     
     if (!RegisterClassEx(&wc)) {
-            MessageBox(NULL, _T("Main Window class registration Failed!"), _T("Error!"),
+            MessageBox(NULL, t_localized_message[4], t_localized_message[0],
                        MB_ICONERROR | MB_OK);
         return -1;
     }
@@ -977,7 +1021,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                           center_x, center_y, 550, 350, NULL, NULL, hInstance, NULL);
 
     if (!hwnd) {
-        MessageBox(NULL, _T("Window creation failed!"), _T("Error!"), MB_ICONERROR | MB_OK);
+        MessageBox(NULL, t_localized_message[3], t_localized_message[0], MB_ICONERROR | MB_OK);
         return -2;
     }
 
@@ -992,7 +1036,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         bRet = GetMessage(&Msg, NULL, 0, 0);
 
         if (bRet == -1) {
-            MessageBox(hwnd, _T("Message queue error"), _T("Error!"), MB_ICONERROR | MB_OK);
+            MessageBox(hwnd, t_localized_message[2], t_localized_message[0], MB_ICONERROR | MB_OK);
             return -3;
         } else if (bRet == -2) {
             return -2;

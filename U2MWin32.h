@@ -20,6 +20,7 @@
 #include <math.h>
 #include <signal.h>
 #include <process.h> //threads
+
 #include "resources/resource.h"
 
 #define _str(x) #x
@@ -109,7 +110,13 @@ extern UINT TIMEOUT;
 extern UINT MAX_FAILED_EMAILS;
 extern UINT onoff, PORT;
 extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
+
 UINT usb_id_selection[2];
+
+extern char *cfg_filename;
+
+extern TCHAR *t_localized_message[];
+
 
 BOOL InitU2MThread(HWND hwnd);
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag);
