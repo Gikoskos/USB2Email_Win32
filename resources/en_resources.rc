@@ -1,5 +1,5 @@
 /******************************************
-*               resources.rc               *
+*             en_resources.rc              *
 *        George Koskeridis (C)2015         *
  ******************************************/
 
@@ -9,7 +9,6 @@
 #include "../U2MWin32.h"
 #include "resource.h"
 #include <richedit.h>
-#include <winnt.h>
 
 
 

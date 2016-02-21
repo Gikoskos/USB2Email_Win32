@@ -6,7 +6,7 @@
 #pragma code_page(65001)
 
 
-#include "../U2MWin32.h"
+#include "../U2MCommon.h"
 #include "resource.h"
 #include <richedit.h>
 

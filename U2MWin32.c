@@ -5,7 +5,7 @@
 
 #include "U2MWin32.h"
 
-const _TCHAR szClassName[] = _T("USB2EMailWin32");
+const _TCHAR szClassName[] = _T("USB2Email");
 
 HINSTANCE *g_hInst;
 
@@ -70,7 +70,6 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-UINT CALLBACK RefreshUSBThread(LPVOID dat);
 
 BOOL parseEmailDialogFields(HWND hwnd);
 BOOL parsePrefDialogFields(HWND hwnd);
@@ -87,8 +86,8 @@ VOID InitPreferencesDialog(HWND hwnd);
 VOID InitHelpWindow(HWND hwnd);
 VOID CenterChild(HWND hwnd);
 
+UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
-VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s);
 VOID DeleteAll();
 VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
@@ -104,7 +103,6 @@ char *ErrorCodeDlgTitles(int i)
 
 }*/
 
-
 VOID DeleteAll()
 {
     ClearEmailData();
@@ -112,89 +110,83 @@ VOID DeleteAll()
     ClearPrefs();
 }
 
-VOID DeleteDeviceFromUSBListView(HWND hDlg, int nIDDlgItem, char *s)
-{
-    if (s)
-        SendDlgItemMessage(hDlg, nIDDlgItem, LB_DELETESTRING, (WPARAM)0, (LPARAM)s);
-}
 
 VOID InitPreferencesDialog(HWND hwnd)
 {
-    HRSRC PrefDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_PREFDIALOG), 
+    HRSRC PrefDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_PREFDIALOG), 
                                        MAKEINTRESOURCE(RT_DIALOG));
-    HGLOBAL PrefDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, PrefDlgHrsrc);
+    HGLOBAL PrefDlgHandle = LoadResource(*g_hInst, PrefDlgHrsrc);
     LPCDLGTEMPLATE PrefDlgPtr = (LPCDLGTEMPLATE)LockResource(PrefDlgHandle);
 
-    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
-                                   PrefDlgPtr, hwnd, PrefDialogProcedure, (LPARAM)0)) {
+    if (!CreateDialogIndirectParam(*g_hInst, PrefDlgPtr, hwnd, PrefDialogProcedure, (LPARAM)0)) {
         MessageBox(hwnd, t_localized_message[52], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitPasswordDialog(HWND hwnd)
 {
-    HRSRC PwdDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_PWDDIALOG), 
+    HRSRC PwdDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_PWDDIALOG), 
                                      MAKEINTRESOURCE(RT_DIALOG));
-    HGLOBAL PwdDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, PwdDlgHrsrc);
+    HGLOBAL PwdDlgHandle = LoadResource(*g_hInst, PwdDlgHrsrc);
     LPCDLGTEMPLATE PwdDlgPtr = (LPCDLGTEMPLATE)LockResource(PwdDlgHandle);
 
-    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
-                                   PwdDlgPtr, hwnd, PwdDialogProcedure, (LPARAM)0)) {
+    if (!CreateDialogIndirectParam(*g_hInst, PwdDlgPtr, hwnd, PwdDialogProcedure, (LPARAM)0)) {
         MessageBox(hwnd, t_localized_message[51], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitUSBDialog(HWND hwnd)
 {
-    HRSRC USBDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_USBDIALOG), 
+    HRSRC USBDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_USBDIALOG), 
                                      MAKEINTRESOURCE(RT_DIALOG));
-    HGLOBAL USBDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, USBDlgHrsrc);
+    HGLOBAL USBDlgHandle = LoadResource(*g_hInst, USBDlgHrsrc);
     LPCDLGTEMPLATE USBDlgPtr = (LPCDLGTEMPLATE)LockResource(USBDlgHandle);
 
-    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
-                                   USBDlgPtr, hwnd, USBDialogProcedure, (LPARAM)0)) {
+    if (!CreateDialogIndirectParam(*g_hInst, USBDlgPtr, hwnd, USBDialogProcedure, (LPARAM)0)) {
         MessageBox(hwnd, t_localized_message[50], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitAboutDialog(HWND hwnd)
 {
-    HRSRC AboutDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_ABOUTDIALOG), 
+    HRSRC AboutDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_ABOUTDIALOG), 
                                        MAKEINTRESOURCE(RT_DIALOG));
-    HGLOBAL AboutDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, AboutDlgHrsrc);
+    HGLOBAL AboutDlgHandle = LoadResource(*g_hInst, AboutDlgHrsrc);
     LPCDLGTEMPLATE AboutDlgPtr = (LPCDLGTEMPLATE)LockResource(AboutDlgHandle);
 
-    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
-                                   AboutDlgPtr, hwnd, AboutDialogProcedure, (LPARAM)0)) {
+    if (!CreateDialogIndirectParam(*g_hInst, AboutDlgPtr, hwnd, AboutDialogProcedure, (LPARAM)0)) {
         MessageBox(hwnd, t_localized_message[49], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitEmailDialog(HWND hwnd)
 {
-    HRSRC EmailDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_EMAILDIALOG), 
+    HRSRC EmailDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_EMAILDIALOG), 
                                        MAKEINTRESOURCE(RT_DIALOG));
-    HGLOBAL EmailDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, EmailDlgHrsrc);
+    HGLOBAL EmailDlgHandle = LoadResource(*g_hInst, EmailDlgHrsrc);
     LPCDLGTEMPLATE EmailDlgPtr = (LPCDLGTEMPLATE)LockResource(EmailDlgHandle);
 
-    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
-                                   EmailDlgPtr, hwnd, EmailDialogProcedure, (LPARAM)0)) {
+    if (!CreateDialogIndirectParam(*g_hInst, EmailDlgPtr, hwnd, EmailDialogProcedure, (LPARAM)0)) {
         MessageBox(hwnd, t_localized_message[48], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitHelpDialog(HWND hwnd)
 {
-    HRSRC HelpDlgHrsrc = FindResource(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDD_HELPDIALOG), 
+    HRSRC HelpDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_HELPDIALOG), 
                                       MAKEINTRESOURCE(RT_DIALOG));
-    HGLOBAL HelpDlgHandle = LoadResource(U2M_dlls.U2MLocale_en.module, HelpDlgHrsrc);
+    HGLOBAL HelpDlgHandle = LoadResource(*g_hInst, HelpDlgHrsrc);
     LPCDLGTEMPLATE HelpDlgPtr = (LPCDLGTEMPLATE)LockResource(HelpDlgHandle);
 
-    if (!CreateDialogIndirectParam(U2M_dlls.U2MLocale_en.module, 
-                                   HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0)) {
+    if (!CreateDialogIndirectParam(*g_hInst, HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0)) {
         MessageBox(hwnd, t_localized_message[47], t_localized_message[0], MB_OK | MB_ICONERROR);
     }
 }
+
+/*TCHAR *GetResourceString()
+{
+    return
+}*/
 
 BOOL isValidDomain(char *str, char SEPARATOR)
 {
@@ -551,7 +543,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDUSB2MAIL:
-                    EndDialog(hwnd, IDUSB2MAIL);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
             break;
@@ -571,12 +563,12 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 case IDOK:
                     ClearPwd();
                     if (parsePwdField(hwnd))
-                        EndDialog(hwnd, wParam);
+                        DestroyWindow(hwnd);
                     else
                         ClearPwd();
                     return (INT_PTR)TRUE;
                 case IDCANCEL:
-                    EndDialog(hwnd, wParam);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
             break;
@@ -620,7 +612,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     }
                     return (INT_PTR)TRUE;
                 case IDCANCEL:
-                    EndDialog(hwnd, wParam);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
         case WM_HSCROLL:
@@ -684,13 +676,13 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     } else {
                         DeleteScannedUSBIDs();
                         USBdev_scan = FALSE;
-                        EndDialog(hwnd, wParam);
+                        DestroyWindow(hwnd);
                     }
                     return (INT_PTR)TRUE;
                 case IDCANCEL:
                     DeleteScannedUSBIDs();
                     USBdev_scan = FALSE;
-                    EndDialog(hwnd, wParam);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
             return (INT_PTR)TRUE;
@@ -705,7 +697,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                                 MessageBox(hwnd, t_localized_message[27], t_localized_message[0], MB_ICONERROR | MB_OK);
                             } else {
                                 USBdev_scan = FALSE;
-                                EndDialog(hwnd, wParam);
+                                DestroyWindow(hwnd);
                             }
                             return (INT_PTR)TRUE;                            
                         case NM_CLICK:
@@ -756,12 +748,12 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 case IDOK:
                     ClearEmailData();
                     if (parseEmailDialogFields(hwnd))
-                        EndDialog(hwnd, wParam);
+                        DestroyWindow(hwnd);
                     else
                         ClearEmailData();
                     break;
                 case IDCANCEL:
-                    EndDialog(hwnd, wParam);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
             break;
@@ -778,12 +770,12 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDOK:
-                    EndDialog(hwnd, wParam);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
             break;
         case WM_CLOSE:
-            EndDialog(hwnd, wParam);
+            DestroyWindow(hwnd);
             return (INT_PTR)TRUE;
     }
     return (INT_PTR)FALSE;
@@ -879,6 +871,12 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             break;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
+                case IDM_EN_LANG:
+                    *g_hInst = U2M_dlls.U2MLocale_en.module;
+                    break;
+                case IDM_GR_LANG:
+                    *g_hInst = U2M_dlls.U2MLocale_gr.module;
+                    break;
                 case IDM_ABOUT:
                     InitAboutDialog(hwnd);
                     break;
@@ -953,6 +951,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             DeleteAll();
             DeleteObject(mainwindowcontrol_font_big);
             DeleteObject(mainwindowcontrol_font);
+            FreeLibrary(U2M_dlls.U2MLocale_gr.module);
+            FreeLibrary(U2M_dlls.U2MLocale_en.module);
             DestroyWindow(hwnd);
             break;
         case WM_HSCROLL:
@@ -962,6 +962,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             DeleteAll();
             DeleteObject(mainwindowcontrol_font_big);
             DeleteObject(mainwindowcontrol_font);
+            FreeLibrary(U2M_dlls.U2MLocale_gr.module);
+            FreeLibrary(U2M_dlls.U2MLocale_en.module);
             PostQuitMessage(0);
             break;
         default:
@@ -979,6 +981,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     RECT wrkspace_px;
     INT center_x, center_y;
 
+
     /*** Global initializations ***/
     PORT = 0;
     pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
@@ -986,7 +989,21 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     TIMEOUT = 1000;
 
     g_hInst = &hInstance;
-    *g_hInst = U2M_dlls.U2MLocale_en.module = LoadLibraryEx(U2M_dlls.U2MLocale_en.filename, NULL, 0);
+
+    /* loading the language dlls */
+    U2M_dlls.U2MLocale_gr.module = LoadLibraryEx(U2M_dlls.U2MLocale_gr.filename, NULL, 0);
+    U2M_dlls.U2MLocale_en.module = LoadLibraryEx(U2M_dlls.U2MLocale_en.filename, NULL, 0);
+
+    WORD user_language = GetUserDefaultUILanguage(); //get the language of the system
+    switch (PRIMARYLANGID(user_language)) {
+        case LANG_GREEK:
+            *g_hInst = U2M_dlls.U2MLocale_gr.module;
+            break;
+        case LANG_ENGLISH:
+        default:
+            *g_hInst = U2M_dlls.U2MLocale_en.module;
+            break;
+    }
 
     usb_idx = 0;
 
@@ -1016,7 +1033,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return -1;
     }
 
-    hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, _T("USB2EMail Win32"),
+    hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, szClassName, _T("USB2Email"),
                           WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_EX_LAYERED,
                           center_x, center_y, 550, 350, NULL, NULL, hInstance, NULL);
 

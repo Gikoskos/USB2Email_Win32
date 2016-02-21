@@ -1,15 +1,15 @@
 /******************************************
-*              U2MLocale_en.c              *
+*              U2MLocale_gr.c              *
 *        George Koskeridis (C)2015         *
  ******************************************/
 
 #include "U2MCommon.h"
 
-//TCHAR *t_localized
+//TCHAR __declspec(dllexport) *LocalizedMessage(int idx);
 
 TCHAR __declspec(dllexport) *t_localized_message[] = {
-    _T("Error!"), //0
-    _T("Service is running!"), //1
+    _T("Σφάλμα!"), //0
+    _T("Η υπηρεσία τρέχει!"), //1
     _T("Message queue error"), //2
     _T("Window creation failed!"), //3
     _T("Main Window class registration Failed!"), //4
@@ -17,8 +17,8 @@ TCHAR __declspec(dllexport) *t_localized_message[] = {
     _T("Are you sure you want to quit?"), //6
     _T("Can't close the window."), //7
     _T("Can't change e-mail while the service is running."), //8
-    _T("Start"), //9
-    _T("Stop"), //10
+    _T("Έναρξη"), //9
+    _T("Σταματημός"), //10
     _T("Can't change USB device while the service is running."), //11
     _T("Can't change password while the service is running."), //12
     _T("Can't change preferences while the service is running."), //13
@@ -36,8 +36,8 @@ TCHAR __declspec(dllexport) *t_localized_message[] = {
     _T("E-mail address of recipient"), //25
     _T("E-mail address of sender"), //26
     _T("No USB device selected!"), //27
-    _T("Device"), //28
-    _T("Vendor"), //29
+    _T("Συσκευή"), //28
+    _T("Προμηθευτής"), //29
     _T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR), //30
     _T("USB2EMail Win32 "U2MWin32_VERSION_STR), //31
     _T("Unidentified device"), //32

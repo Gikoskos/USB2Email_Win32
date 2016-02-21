@@ -1,13 +1,13 @@
 CC = gcc
-DEBUG = -g -DDEBUG -DUNICODE -D_UNICODE
-CFLAGS = -Wall -std=c11
+DEBUG = -g -DDEBUG
+CFLAGS = -Wall -std=c11 -DUNICODE -D_UNICODE -static-libgcc
 INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
 DBG = build/debug.exe
-RLS = build/USB2EMAILWin32.exe
+RLS = build/USB2Email.exe
 DWARF2 = -ggdb
 
-LINKER = -L. -lU2MUsbIDs_dll -lU2MLocale_En_dll -lsetupapi -lcomctl32 -lgdi32 -lconfuse -lquickmail
+LINKER = -L. -lU2MUsbIDs_dll -lU2MLocale_Gr -lU2MLocale_En -lsetupapi -lcomctl32 -lgdi32 -lconfuse -lquickmail
 RLS_FLAGS = -mwindows -O2
 
 WINDOW_SOURCE = U2MWin32.c
@@ -26,21 +26,23 @@ WXS = Setup.wxs
 WIXOBJ = Setup.wixobj
 
 
-dbg: $(EN_SOURCE) $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) 
+dbg: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) 
 	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) $^ icon_res.o $(LINKER)
 
-rls: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) $(USBIDS_OBJ)
+rls: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE)
 	$(CC) $(CFLAGS) $(RLS_FLAGS) $(OBJ) $(RLS) $^ icon_res.o $(LINKER)
 
 all_extern: locale_dlls usbids_dll clean compile_icon_res
 
-locale_dlls: compile_en_dll
+locale_dlls: compile_en_dll compile_gr_dll
 
 compile_en_dll: compile_en_U2MLocale compile_en_resources
-	$(CC) -shared -o U2MLocale_En.dll en_resources.o U2MLocale_En.o -Wl,--out-implib,libU2MLocale_En_dll.a
+	$(CC) -shared -o U2MLocale_En.dll en_resources.o U2MLocale_En.o
+#    -Wl,--out-implib,libU2MLocale_En_dll.a
 
 compile_gr_dll: compile_gr_U2MLocale compile_gr_resources
-	$(CC) -shared -o U2MLocale_Gr.dll gr_resources.o $^ -Wl,--out-implib,libU2MLocale_Gr_dll.a
+	$(CC) -shared -o U2MLocale_Gr.dll gr_resources.o U2MLocale_Gr.o
+#    -Wl,--out-implib,libU2MLocale_Gr_dll.a
 
 compile_en_U2MLocale: $(EN_SOURCE)
 	$(CC) $(CFLAGS) -c $^
