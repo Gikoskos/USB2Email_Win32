@@ -8,14 +8,14 @@ RLS = build/USB2Email.exe
 DWARF2 = -ggdb
 
 LINKER = -L. -lU2MUsbIDs_dll -lsetupapi -lcomctl32 -lgdi32 -lconfuse -lquickmail
-RLS_FLAGS = -mwindows -O2
+RLS_FLAGS = -mwindows -O1
 
 WINDOW_SOURCE = U2MWin32.c
 CONFIG_SOURCE = U2MConf.c
 USB2MAIL_SOURCE = U2MModule.c
 USBIDS_SOURCE = find_usb.c usb_ids.c
 
-ICON_RES = icon_res.rc
+MAIN_RES = main_res.rc
 
 EN_RES = en_resources.rc
 GR_RES = gr_resources.rc
@@ -25,10 +25,10 @@ WIXOBJ = Setup.wixobj
 
 
 dbg: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) 
-	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) $^ icon_res.o U2MLocale_Gr.dll U2MLocale_En.dll $(LINKER)
+	$(CC) $(CFLAGS) $(OBJ) $(DBG) $(DEBUG) $(DWARF2) main_res.o $^ $(LINKER)
 
 rls: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE)
-	$(CC) $(CFLAGS) $(RLS_FLAGS) $(OBJ) $(RLS) $^ icon_res.o $(LINKER)
+	$(CC) $(CFLAGS) $(RLS_FLAGS) $(OBJ) $(RLS) main_res.o $^ $(LINKER)
 
 all_extern: locale_dlls usbids_dll clean compile_icon_res
 
@@ -47,7 +47,7 @@ compile_gr_resources:
 	cd resources & windres $(GR_RES) ..\gr_resources.o & cd ..
 
 compile_icon_res:
-	cd resources & windres $(ICON_RES) ..\icon_res.o & cd ..
+	cd resources & windres $(MAIN_RES) ..\main_res.o & cd ..
 
 compile_usbids:
 	$(CC) $(CFLAGS) -c $(USBIDS_SOURCE)
