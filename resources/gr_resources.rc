@@ -3,7 +3,7 @@
 *        George Koskeridis (C)2015         *
  ******************************************/
 
-#pragma code_page(65001)
+#pragma code_page(65001) //unicode codepage
 
 
 #include "../U2MWin32.h"
@@ -11,6 +11,67 @@
 #include <richedit.h>
 
 
+STRINGTABLE
+{
+    ID_ERR_MSG_0,   "Σφάλμα!"
+    ID_ERR_MSG_1,   "Η υπηρεσία τρέχει!"
+    ID_ERR_MSG_2,   "Αποτυχία ουράς μηνυμάτων!"
+    ID_ERR_MSG_3,   "Αποτυχία δημιουργίας παραθύρου!"
+    ID_ERR_MSG_4,   "Αποτυχία εγγραφής της κλάσης του κυρίως παραθύρου!"
+    ID_ERR_MSG_5,   "Έξοδος..."
+    ID_ERR_MSG_6,   "Σίγουρα θέλεις να σταματήσεις την εφαρμογή;"
+    ID_ERR_MSG_7,   "Αδύνατο κλείσιμο παραθύρου"
+    ID_ERR_MSG_8,   "Αδύνατη αλλαγή e-mail όσο τρέχει η υπηρεσία."
+    ID_ERR_MSG_9,   "Έναρξη"
+    ID_ERR_MSG_10,  "Σταματημός"
+    ID_ERR_MSG_11,  "Αδύνατη αλλαγή συσκευής USB όσο τρέχει η υπηρεσία."
+    ID_ERR_MSG_12,  "Αδύνατη αλλαγή κωδικού όσο τρέχει η υπηρεσία."
+    ID_ERR_MSG_13,  "Αδύνατη αλλαγή ρυθμίσεων όσο τρέχει η υπηρεσία."
+    ID_ERR_MSG_14,  "Αποτυχία τίτλου του trackbar"
+    ID_ERR_MSG_15,  "Milliseconds διαστήματος παύσης μεταξύ κάθε σάρωσης των συσκευών USB"
+    ID_ERR_MSG_16,  "Απέτυχε το trackbar!"
+    ID_ERR_MSG_17,  "Απέτυχε το κουμπί Έναρξη/Σταματημός!"
+    ID_ERR_MSG_18,  "Απέτυχε το κουμπί E-mail!"
+    ID_ERR_MSG_19,  "Ρύθμισε το E-mail προς αποστολή"
+    ID_ERR_MSG_20,  "Απέτυχε το κουμπί USB list!"
+    ID_ERR_MSG_21,  "Επέλεξε συσκευή USB"
+    ID_ERR_MSG_22,  "Κορμός του e-mail"
+    ID_ERR_MSG_23,  "Θέμα του e-mail"
+    ID_ERR_MSG_24,  "Ομάδα πολλαπλών παραληπτών. Οι διαφορετικές διευθύνσεις διαχωρίζονται με το ';'"
+    ID_ERR_MSG_25,  "Διεύθυνση e-mail του παραλήπτη"
+    ID_ERR_MSG_26,  "Διεύθυνση e-mail του αποστολέα"
+    ID_ERR_MSG_27,  "Δεν επιλέχτηκε καμία συσκευή USB!"
+    ID_ERR_MSG_28,  "Συσκευή"
+    ID_ERR_MSG_29,  "Προμηθευτής"
+    ID_ERR_MSG_30,  ""
+    ID_ERR_MSG_31,  ""
+    ID_ERR_MSG_32,  "Άγνωστος προμηθευτής"
+    ID_ERR_MSG_33,  "Άγνωστη συσκευή"
+    ID_ERR_MSG_34,  "Δεν πληκτρολογήθηκε κωδικός"
+    ID_ERR_MSG_35,  "Κενός κορμός e-mail"
+    ID_ERR_MSG_36,  "Σίγουρα θέλεις να στείλεις κενό μηνυμά?"
+    ID_ERR_MSG_37,  "Κενό θέμα e-mail"
+    ID_ERR_MSG_38,  "Σίγουρα δεν θέλεις θέμα στο e-mail?"
+    ID_ERR_MSG_39,  "Άκυρη διεύθυνση e-mail στο πεδίο CC!"
+    ID_ERR_MSG_40,  "Άκυρη διεύθυνση e-mail στο πεδίο ΠΡΟΣ!"
+    ID_ERR_MSG_41,  "Το πεδίο ΠΡΟΣ είναι κενό!"
+    ID_ERR_MSG_42,  "Άκυρη διεύθυνση e-mail στο πεδίο ΑΠΟ!"
+    ID_ERR_MSG_43,  "Το πεδίο ΑΠΟ είναι κενό!"
+    ID_ERR_MSG_44,  "Άκυρος αριθμός θύρας SMTP!"
+    ID_ERR_MSG_45,  "Το πεδίο θύρας SMTP είναι κενό!"
+    ID_ERR_MSG_46,  "Το πεδίο διακομιστή SMTP είναι κενό!"
+    ID_ERR_MSG_47,  "Το παράθυρο Βοήθεια απέτυχε να ανοίξει!"
+    ID_ERR_MSG_48,  "Το παράθυρο E-mail απέτυχε να ανοίξει!"
+    ID_ERR_MSG_49,  "Το παράθυρο Σχετικά με απέτυχε να ανοίξει!"
+    ID_ERR_MSG_50,  "Το παράθυρο USB απέτυχε να ανοίξει!"
+    ID_ERR_MSG_51,  "Το παράθυρο Κωδικός e-mail απέτυχε να ανοίξει!"
+    ID_ERR_MSG_52,  "Το παράθυρο Ρυθμίσεις απέτυχε να ανοίξει!"
+    ID_ERR_MSG_53,  "Πρέπει να ρυθμίσεις ένα e-mail προς αποστολή, πρώτα."
+    ID_ERR_MSG_54,  "Αδύνατη έναρξη υπηρεσίας!"
+    ID_ERR_MSG_55,  "Δεν δόθηκε διακομιστής SMTP."
+    ID_ERR_MSG_56,  "Δεν επιλέχτηκε συσκευή USB."
+    ID_ERR_MSG_57,  "Δεν δόθηκε ο κωδικός του e-mail."
+}
 
 //
 // Menu resources
@@ -30,9 +91,9 @@ IDR_MAINMENU MENUEX
         MENUITEM "", 0, MFT_SEPARATOR, 0
         MENUITEM "Έ&ξοδος", IDM_EXIT, 0, 0
     }
-    POPUP "&Βοήθεια", 0, 0, 0
+    POPUP "&Πληροφορίες", 0, 0, 0
     {
-        MENUITEM "Βοήθεια", IDM_H_ELP1, 0, 0
+        MENUITEM "Β&οήθεια", IDM_H_ELP1, 0, 0
         MENUITEM "&Σχετικά με", IDM_ABOUT, 0, 0
     }
 }
@@ -48,9 +109,9 @@ STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_BORDER | WS_V
 EXSTYLE WS_EX_WINDOWEDGE
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
-    LTEXT           "2016 (c) Γιώργος Κοσκερίδης", IDC_STATIC, 32, 40, 125, 9, SS_LEFT, WS_EX_LEFT
+    LTEXT           "2016 (c) Γιώργος Κοσκερίδης", IDC_STATIC, 26, 40, 125, 9, SS_LEFT, WS_EX_LEFT
     LTEXT           "", IDC_ABOUT_BUILD, 36, 31, 85, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
-    LTEXT           "", IDC_ABOUT_COMPILER, 20, 70, 95, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
+    LTEXT           "", IDC_ABOUT_COMPILER, 20, 70, 115, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
     GROUPBOX        "Σχετικά με...", IDC_STATIC, 12, 10, 127, 75, 0, WS_EX_LEFT
     DEFPUSHBUTTON   "", IDUSB2MAIL, 149, 6, 80, 81, BS_ICON, WS_EX_LEFT
 }
@@ -59,7 +120,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_HELPDIALOG DIALOG 0, 0, 247, 215
 STYLE DS_3DLOOK | DS_CENTER | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_GROUP | WS_TABSTOP | WS_POPUP | WS_THICKFRAME | WS_SYSMENU
 EXSTYLE WS_EX_OVERLAPPEDWINDOW | WS_EX_APPWINDOW
-CAPTION "Help"
+CAPTION "Βοήθεια"
 FONT 8, "Ms Shell Dlg"
 {
     LTEXT           "Help \r\n\r\n\r\n      Text\r\n\r\n\r\n             Goes\r\n\r\n\r\n                    Here", 0, 23, 18, 56, 81, SS_LEFT, WS_EX_LEFT
@@ -73,21 +134,21 @@ EXSTYLE WS_EX_OVERLAPPEDWINDOW | WS_EX_TOOLWINDOW
 CAPTION "Ρυθμίσεις"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
-    CTEXT           "Maximum number of acceptable failed e-mails sent, before stopping the service", 0, 153, 185, 101, 30, SS_CENTER, WS_EX_LEFT
-    AUTOCHECKBOX    "Reload USB devices automatically", IDC_CHECKUSBREFRESH, 37, 144, 82, 20, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
-    GROUPBOX        "USB settings", IDC_STATIC, 24, 128, 108, 43, 0, WS_EX_LEFT
-    GROUPBOX        "Misc", IDC_STATIC, 144, 128, 119, 118, 0, WS_EX_LEFT
-    AUTOCHECKBOX    "Enable checking for valid e-mail addresses", IDC_CHECKVALIDEMAIL, 156, 143, 96, 24, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
-    LTEXT           "Port:", IDC_STATIC, 173, 78, 16, 9, SS_LEFT, WS_EX_LEFT
-    GROUPBOX        "SMTP server settings", IDC_STATIC, 23, 15, 240, 101, 0, WS_EX_LEFT
-    LTEXT           "Server URL:", IDC_STATIC, 34, 48, 40, 9, SS_LEFT, WS_EX_LEFT
+    CTEXT           "Αριθμός αποτυχημένων e-mail που γίνονται αποδεκτά πριν σταματήσει η υπηρεσία", 0, 153, 185, 101, 30, SS_CENTER, WS_EX_LEFT
+    AUTOCHECKBOX    "Αυτόματη σάρωση συσκευών στο παράθυρο USB", IDC_CHECKUSBREFRESH, 37, 138, 82, 26, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
+    GROUPBOX        "Ρυθμίσεις USB", IDC_STATIC, 24, 128, 108, 43, 0, WS_EX_LEFT
+    GROUPBOX        "Διάφορα", IDC_STATIC, 144, 128, 119, 118, 0, WS_EX_LEFT
+    AUTOCHECKBOX    "Έλεγχος για σωστές διευθύνσεις e-mail στην είσοδό τους", IDC_CHECKVALIDEMAIL, 156, 143, 96, 24, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
+    LTEXT           "Θύρα:", IDC_STATIC, 165, 78, 25, 9, SS_LEFT, WS_EX_LEFT
+    GROUPBOX        "Ρυθμίσεις διακομιστή SMTP", IDC_STATIC, 23, 15, 240, 101, 0, WS_EX_LEFT
+    LTEXT           "URL διακομιστή:", IDC_STATIC, 34, 40, 40, 20, SS_LEFT, WS_EX_LEFT
     EDITTEXT        IDC_SERVERURLFIELD, 83, 46, 168, 13, ES_AUTOHSCROLL, WS_EX_LEFT
     EDITTEXT        IDC_PORTFIELD, 200, 76, 50, 13, ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
-    PUSHBUTTON      "Store user input to configuration file", IDC_SAVECONFBUTTON, 37, 181, 82, 64, BS_VCENTER | BS_MULTILINE, WS_EX_LEFT
+    PUSHBUTTON      "Αποθήκευσε τα δεδομένα εισόδου σε εφεδρικό αρχείο", IDC_SAVECONFBUTTON, 37, 181, 82, 64, BS_VCENTER | BS_MULTILINE, WS_EX_LEFT
     CONTROL         "", IDT_TRACKEMAILINTERVAL, TRACKBAR_CLASS, WS_TABSTOP | TBS_BOTH | TBS_NOTICKS | TBS_TOOLTIPS | TBS_ENABLESELRANGE, 156, 220, 94, 14, WS_EX_LEFT
-    PUSHBUTTON      "Cancel", IDCANCEL, 53, 267, 50, 14, 0, WS_EX_LEFT
-    PUSHBUTTON      "Apply", IDAPPLY, 122, 267, 41, 14, 0, WS_EX_LEFT
-    DEFPUSHBUTTON   "OK", IDOK, 183, 267, 50, 14, 0, WS_EX_LEFT
+    PUSHBUTTON      "Άκυρο", IDCANCEL, 53, 267, 50, 14, 0, WS_EX_LEFT
+    PUSHBUTTON      "Εφαρμογή", IDAPPLY, 122, 267, 41, 14, 0, WS_EX_LEFT
+    DEFPUSHBUTTON   "ΟΚ", IDOK, 183, 267, 50, 14, 0, WS_EX_LEFT
 }
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
@@ -98,15 +159,15 @@ CAPTION "Πληκτρολόγησε τον κωδικό σου"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
     EDITTEXT        IDC_PWDFIELD, 28, 22, 130, 12, NOT WS_BORDER | ES_AUTOHSCROLL | ES_PASSWORD, WS_EX_LEFT
-    PUSHBUTTON      "Cancel", IDCANCEL, 98, 57, 80, 20, 0, WS_EX_LEFT
-    DEFPUSHBUTTON   "OK", IDOK, 8, 57, 81, 21, 0, WS_EX_LEFT
+    PUSHBUTTON      "Άκυρο", IDCANCEL, 98, 57, 80, 20, 0, WS_EX_LEFT
+    DEFPUSHBUTTON   "ΟΚ", IDOK, 8, 57, 81, 21, 0, WS_EX_LEFT
 }
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_EMAILDIALOG DIALOGEX 0, 0, 225, 310
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
 EXSTYLE WS_EX_CLIENTEDGE | WS_EX_TOPMOST
-CAPTION "E-mail specifics"
+CAPTION "Ρυθμίσεις e-mail"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
     EDITTEXT        IDC_FROMFIELD, 61, 9, 155, 13, ES_AUTOHSCROLL, WS_EX_LEFT
@@ -114,27 +175,27 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
     EDITTEXT        IDC_CCFIELD, 61, 74, 155, 13, ES_AUTOHSCROLL, WS_EX_LEFT
     EDITTEXT        IDC_SUBJECTFIELD, 61, 104, 155, 13, ES_AUTOHSCROLL, WS_EX_LEFT
     EDITTEXT        IDC_MESSAGEFIELD, 25, 164, 176, 105, WS_VSCROLL | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | ES_WANTRETURN, WS_EX_DLGMODALFRAME
-    PUSHBUTTON      "Cancel", IDCANCEL, 33, 287, 50, 14, 0, WS_EX_LEFT
-    DEFPUSHBUTTON   "OK", IDOK, 142, 287, 50, 14, 0, WS_EX_LEFT
-    CTEXT           "FROM:", IDC_STATIC, 5, 9, 52, 12, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
-    CTEXT           "TO:", IDC_STATIC, 27, 44, 13, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
+    PUSHBUTTON      "Άκυρο", IDCANCEL, 33, 287, 50, 14, 0, WS_EX_LEFT
+    DEFPUSHBUTTON   "ΟΚ", IDOK, 142, 287, 50, 14, 0, WS_EX_LEFT
+    CTEXT           "ΑΠΟ:", IDC_STATIC, 5, 9, 52, 12, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
+    CTEXT           "ΠΡΟΣ:", IDC_STATIC, 17, 45, 25, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
     CTEXT           "CC:", IDC_STATIC, 26, 75, 12, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
-    CTEXT           "SUBJECT:", IDC_STATIC, 12, 105, 35, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
-    CTEXT           "MESSAGE:", IDC_STATIC, 93, 143, 38, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
+    CTEXT           "ΘΕΜΑ:", IDC_STATIC, 12, 105, 35, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
+    CTEXT           "ΜΗΝΥΜΑ:", IDC_STATIC, 93, 143, 38, 9, SS_CENTER | SS_CENTERIMAGE, WS_EX_LEFT
 }
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_USBDIALOG DIALOGEX 0, 0, 280, 351
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
 EXSTYLE WS_EX_WINDOWEDGE | WS_EX_TOPMOST
-CAPTION "USB devices"
+CAPTION "Συσκευές USB"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
     CONTROL         "", IDC_USBDEVLIST, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_SHOWSELALWAYS | LVS_SINGLESEL | LVS_REPORT, 18, 27, 244, 282, WS_EX_LEFT
-    PUSHBUTTON      "Cancel", IDCANCEL, 20, 326, 73, 14, 0, WS_EX_LEFT
-    DEFPUSHBUTTON   "OK", IDOK, 179, 326, 73, 14, 0, WS_EX_LEFT
+    PUSHBUTTON      "Άκυρο", IDCANCEL, 20, 326, 73, 14, 0, WS_EX_LEFT
+    DEFPUSHBUTTON   "ΟΚ", IDOK, 179, 326, 73, 14, 0, WS_EX_LEFT
     PUSHBUTTON      "", IDUSBREFRESH, 127, 327, 19, 16, BS_BITMAP, WS_EX_LEFT
-    GROUPBOX        "Choose your USB device", IDC_STATIC, 10, 11, 260, 305, BS_CENTER, WS_EX_LEFT
+    GROUPBOX        "Επέλεξε την συσκευή USB σου", IDC_STATIC, 10, 11, 260, 305, BS_CENTER, WS_EX_LEFT
 }
 
 

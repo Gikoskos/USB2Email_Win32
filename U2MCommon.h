@@ -38,6 +38,11 @@
 # define ATTRIB_UNUSED
 #endif
 
+#ifdef _WIN64
+#define WINARCH str(x64)
+#elif _WIN32
+#define WINARCH str(Win32)
+#endif
 
 /* versioning */
 #define U2MWin32_MAJOR 1
@@ -45,4 +50,3 @@
 #define U2MWin32_PATCH 2
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
-

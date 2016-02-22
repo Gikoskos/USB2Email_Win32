@@ -27,6 +27,7 @@ HANDLE u2mMainThread;
 UINT *thrdID;
 ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
+extern HINSTANCE *g_hInst;
 
 /*******************************************
 * Prototypes for functions with local scope *
@@ -42,20 +43,31 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 BOOL InitU2MThread(HWND hwnd)
 {
     if (!FROM) {
-        MessageBox(hwnd, t_localized_message[53], 
-                   t_localized_message[54], MB_ICONERROR | MB_OK);
+        TCHAR tmpmsg1[255], tmpmsg2[255];
+        LoadString(*g_hInst, ID_ERR_MSG_53, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     if (!SMTP_SERVER) {
-        MessageBox(hwnd, t_localized_message[55], t_localized_message[54], MB_ICONERROR | MB_OK);
+        TCHAR tmpmsg1[255], tmpmsg2[255];
+        LoadString(*g_hInst, ID_ERR_MSG_55, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     if (!usb_id_selection[0] || !usb_id_selection[1]) {
-        MessageBox(hwnd, t_localized_message[56], t_localized_message[54], MB_ICONERROR | MB_OK);
+        TCHAR tmpmsg1[255], tmpmsg2[255];
+        LoadString(*g_hInst, ID_ERR_MSG_56, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     if (!pass) {
-        MessageBox(hwnd, t_localized_message[57], t_localized_message[54], MB_ICONERROR | MB_OK);
+        TCHAR tmpmsg1[255], tmpmsg2[255];
+        LoadString(*g_hInst, ID_ERR_MSG_57, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     onoff = TRUE;

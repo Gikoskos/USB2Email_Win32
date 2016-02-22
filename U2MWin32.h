@@ -5,11 +5,6 @@
 
 #pragma once
 
-/* compile for Win7 */
-#define WINVER 0x0601
-#define _WIN32_WINNT 0x0601
-#include <SDKDDKVer.h> //API versioning
-
 #include "U2MCommon.h"
 
 #include <commctrl.h> //common controls
@@ -84,9 +79,6 @@ extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 UINT usb_id_selection[2];
 
 extern char *cfg_filename;
-
-TCHAR __declspec(dllimport) *t_localized_message[];
-
 
 BOOL InitU2MThread(HWND hwnd);
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag);

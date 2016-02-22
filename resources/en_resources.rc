@@ -3,13 +3,78 @@
 *        George Koskeridis (C)2015         *
  ******************************************/
 
-#pragma code_page(65001)
+#pragma code_page(65001) //unicode codepage
 
 
 #include "../U2MWin32.h"
 #include "resource.h"
 #include <richedit.h>
 
+
+//
+// Error Messages
+//
+STRINGTABLE
+{
+    ID_ERR_MSG_0,  "Error!"
+    ID_ERR_MSG_1,  "Service is running!"
+    ID_ERR_MSG_2,  "Message queue error"
+    ID_ERR_MSG_3,  "Window creation failed!"
+    ID_ERR_MSG_4,  "Main Window class registration Failed!"
+    ID_ERR_MSG_5,  "Quiting..."
+    ID_ERR_MSG_6,  "Are you sure you want to quit?"
+    ID_ERR_MSG_7,  "Can't close the window."
+    ID_ERR_MSG_8,  "Can't change e-mail while the service is running."
+    ID_ERR_MSG_9,  "Start"
+    ID_ERR_MSG_10,  "Stop"
+    ID_ERR_MSG_11,  "Can't change USB device while the service is running."
+    ID_ERR_MSG_12,  "Can't change password while the service is running."
+    ID_ERR_MSG_13,  "Can't change preferences while the service is running."
+    ID_ERR_MSG_14,  "Trackbar label failed!"
+    ID_ERR_MSG_15,  "Set waiting interval between each scan of all USB devices in milliseconds"
+    ID_ERR_MSG_16,  "Trackbar failed!"
+    ID_ERR_MSG_17,  "Start/Stop button failed!"
+    ID_ERR_MSG_18,  "E-mail button failed!"
+    ID_ERR_MSG_19,  "Configure E-Mail to send"
+    ID_ERR_MSG_20,  "USB list button failed!"
+    ID_ERR_MSG_21,  "Choose USB device"
+    ID_ERR_MSG_22,  "Body of the e-mail"
+    ID_ERR_MSG_23,  "Subject of the e-mail"
+    ID_ERR_MSG_24,  "Group of addresses to send to. Multiple e-mails are seperated with ';'"
+    ID_ERR_MSG_25,  "E-mail address of recipient"
+    ID_ERR_MSG_26,  "E-mail address of sender"
+    ID_ERR_MSG_27,  "No USB device selected!"
+    ID_ERR_MSG_28,  "Device"
+    ID_ERR_MSG_29,  "Vendor"
+    ID_ERR_MSG_30,  ""
+    ID_ERR_MSG_31,  ""
+    ID_ERR_MSG_32,  "Unidentified vendor"
+    ID_ERR_MSG_33,  "Unidentified device"
+    ID_ERR_MSG_34,  "No password entered"
+    ID_ERR_MSG_35,  "No e-mail body"
+    ID_ERR_MSG_36,  "Are you sure you want to send a blank message?"
+    ID_ERR_MSG_37,  "No Subject"
+    ID_ERR_MSG_38,  "Are you sure you don't want to have a Subject in your e-mail?"
+    ID_ERR_MSG_39,  "Invalid e-mail address on CC field!"
+    ID_ERR_MSG_40,  "Invalid e-mail address on TO field!"
+    ID_ERR_MSG_41,  "TO field is empty!"
+    ID_ERR_MSG_42,  "Invalid e-mail address on FROM field!"
+    ID_ERR_MSG_43,  "FROM field is empty!"
+    ID_ERR_MSG_44,  "Invalid SMTP network port number!"
+    ID_ERR_MSG_45,  "SMTP network port field is empty!"
+    ID_ERR_MSG_46,  "SMTP server field is empty!"
+    ID_ERR_MSG_47,  "Help dialog failed to open!"
+    ID_ERR_MSG_48,  "Email dialog failed to open!"
+    ID_ERR_MSG_49,  "About dialog failed to open!"
+    ID_ERR_MSG_50,  "USB dialog failed to open!"
+    ID_ERR_MSG_51,  "Password dialog failed to open!"
+    ID_ERR_MSG_52,  "Preferences dialog failed to open!"
+    ID_ERR_MSG_53,  "You have to set an e-mail to send, first."
+    ID_ERR_MSG_54,  "Can't start service!"
+    ID_ERR_MSG_55,  "SMTP server domain not set."
+    ID_ERR_MSG_56,  "No USB device selected."
+    ID_ERR_MSG_57,  "No password set."
+}
 
 
 //
@@ -50,7 +115,7 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
     LTEXT           "2016 (c) George Koskeridis", IDC_STATIC, 32, 40, 125, 9, SS_LEFT, WS_EX_LEFT
     LTEXT           "", IDC_ABOUT_BUILD, 36, 31, 85, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
-    LTEXT           "", IDC_ABOUT_COMPILER, 20, 70, 95, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
+    LTEXT           "", IDC_ABOUT_COMPILER, 20, 70, 115, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
     GROUPBOX        "About...", IDC_STATIC, 12, 10, 127, 75, 0, WS_EX_LEFT
     DEFPUSHBUTTON   "", IDUSB2MAIL, 149, 6, 80, 81, BS_ICON, WS_EX_LEFT
 }
@@ -106,7 +171,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_EMAILDIALOG DIALOGEX 0, 0, 225, 310
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
 EXSTYLE WS_EX_CLIENTEDGE | WS_EX_TOPMOST
-CAPTION "E-mail specifics"
+CAPTION "E-mail configuration"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
     EDITTEXT        IDC_FROMFIELD, 61, 9, 155, 13, ES_AUTOHSCROLL, WS_EX_LEFT
