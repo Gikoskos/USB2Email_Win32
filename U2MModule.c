@@ -149,6 +149,39 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath)
     return FALSE;
 }
 
+#ifdef DEBUG
+void __MsgBoxGetLastError(LPTSTR lpszFunction) 
+{ 
+    // Retrieve the system error message for the last-error code
+
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message and exit the process
+
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+    _sntprintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        _T("%s failed with error %lu: %s"), 
+        lpszFunction, dw, lpMsgBuf); 
+    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, _T("Error!"), MB_OK); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+}
+#endif
+
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
 {
     HDEVINFO hDevInfo;
@@ -160,14 +193,18 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
     ULONG vID, dID;
 
     hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
-        NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
+               NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
 
     if (hDevInfo != INVALID_HANDLE_VALUE) {
         DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
         dwMemberIdx = 0;
         if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
-                                    dwMemberIdx, &DevIntfData))
+             dwMemberIdx, &DevIntfData)) {
+#ifdef DEBUG
+            __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 1st call"));
+#endif
             return FALSE;
+        }
 
         while (GetLastError() != ERROR_NO_MORE_ITEMS) {
             DevData.cbSize = sizeof(DevData);
@@ -204,13 +241,37 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                         break;
                 }
                 idx++;
+            } else {
+#ifdef DEBUG
+                __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
+#endif
+                free(DevIntfDetailData);
+                SetupDiDestroyDeviceInfoList(hDevInfo);
+                return FALSE;
             }
 SKIP_DEVICE:
-            SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
-                                        ++dwMemberIdx, &DevIntfData);
+#ifdef DEBUG
+            if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
+                 ++dwMemberIdx, &DevIntfData)) {
+                if (GetLastError() != ERROR_NO_MORE_ITEMS) {
+                    __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 2nd call"));
+                    free(DevIntfDetailData);
+                    SetupDiDestroyDeviceInfoList(hDevInfo);
+                    return FALSE;
+                }
+            }
+#endif
             free(DevIntfDetailData);
         }
-        SetupDiDestroyDeviceInfoList(hDevInfo);
+        if (!SetupDiDestroyDeviceInfoList(hDevInfo)) {
+            __MsgBoxGetLastError(_T("SetupDiDestroyDeviceInfoList()"));
+            return FALSE;
+        }
+    } else {
+#ifdef DEBUG
+        __MsgBoxGetLastError(_T("hDevInfo"));
+#endif
+        return FALSE;
     }
     return FALSE;
 }

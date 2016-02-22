@@ -588,7 +588,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, tmpmsg2);
                 
             }*/
-            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2EMail "U2MWin32_VERSION_STR" "WINARCH));
+            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2Email "U2MWin32_VERSION_STR" "WINARCH));
             SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, _T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
             SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             CenterChild(hwnd);
