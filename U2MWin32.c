@@ -588,7 +588,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, tmpmsg2);
                 
             }*/
-            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2EMail "WINARCH" "U2MWin32_VERSION_STR));
+            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2EMail "U2MWin32_VERSION_STR" "WINARCH));
             SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, _T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
             SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             CenterChild(hwnd);
@@ -699,8 +699,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             devcCol.fmt = LVCFMT_RIGHT;
             {
                 TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadString(*g_hInst, ID_ERR_MSG_28, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-                LoadString(*g_hInst, ID_ERR_MSG_29, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+                LoadString(*g_hInst, ID_ERR_MSG_29, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+                LoadString(*g_hInst, ID_ERR_MSG_28, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
                 devcCol.pszText = tmpmsg1;  //vendor
                 vendCol.pszText = tmpmsg2;  //device
                 ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, &vendCol);
@@ -793,8 +793,7 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 LoadString(*g_hInst, ID_ERR_MSG_23, tmpmsg4, sizeof(tmpmsg4)/sizeof(tmpmsg4[0]));
                 LoadString(*g_hInst, ID_ERR_MSG_22, tmpmsg5, sizeof(tmpmsg5)/sizeof(tmpmsg5[0]));
 
-                if (!(FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,tmpmsg1)))
-                    printf("Y THO\n");
+                FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,tmpmsg1);
                 TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd, tmpmsg2);
                 CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd, tmpmsg3);
                 SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, tmpmsg4);
