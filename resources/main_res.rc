@@ -1,5 +1,5 @@
 /******************************************
-*               resources.rc               *
+*               main_res.rc                *
 *        George Koskeridis (C)2015         *
  ******************************************/
 
@@ -24,3 +24,9 @@ IDI_USB2MAILICONMEDIUM ICON           "..\\icons\\usb64.ico"
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDI_USB2MAILICONSMALL ICON           "..\\icons\\usb48.ico"
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+IDI_REFRESHICON ICON                 "..\\icons\\refresh_icon.ico"
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+IDI_EMAILICON ICON                   "..\\icons\\email_icon.ico"

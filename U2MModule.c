@@ -152,14 +152,11 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath)
 #ifdef DEBUG
 void __MsgBoxGetLastError(LPTSTR lpszFunction) 
 { 
-    // Retrieve the system error message for the last-error code
-
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;
     DWORD dw = GetLastError(); 
 
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
@@ -168,13 +165,11 @@ void __MsgBoxGetLastError(LPTSTR lpszFunction)
         (LPTSTR) &lpMsgBuf,
         0, NULL );
 
-    // Display the error message and exit the process
-
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-    _sntprintf((LPTSTR)lpDisplayBuf, 
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        _T("%s failed with error %lu: %s"), 
-        lpszFunction, dw, lpMsgBuf); 
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+                   (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+    _sntprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+               _T("%s failed with error %lu: %s"),
+               lpszFunction, dw, lpMsgBuf);
     MessageBox(NULL, (LPCTSTR)lpDisplayBuf, _T("Error!"), MB_OK); 
 
     LocalFree(lpMsgBuf);
@@ -184,7 +179,7 @@ void __MsgBoxGetLastError(LPTSTR lpszFunction)
 
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
 {
-    HDEVINFO hDevInfo;
+    HDEVINFO hUSBDevInfo, hUSBHUBInfo;
     SP_DEVICE_INTERFACE_DATA DevIntfData;
     PSP_DEVICE_INTERFACE_DETAIL_DATA DevIntfDetailData;
     SP_DEVINFO_DATA DevData;
@@ -192,86 +187,96 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
     UINT idx = 0;
     ULONG vID, dID;
 
-    hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
+    hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
                NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
 
-    if (hDevInfo != INVALID_HANDLE_VALUE) {
-        DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-        dwMemberIdx = 0;
-        if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
-             dwMemberIdx, &DevIntfData)) {
-#ifdef DEBUG
-            __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 1st call"));
-#endif
-            return FALSE;
-        }
-
-        while (GetLastError() != ERROR_NO_MORE_ITEMS) {
-            DevData.cbSize = sizeof(DevData);
-            SetupDiGetDeviceInterfaceDetail(hDevInfo, &DevIntfData, NULL, 0, &dwSize, NULL);
-
-            DevIntfDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(dwSize);
-            memset(DevIntfDetailData, 0, dwSize - sizeof(ULONG_PTR)); //don't zero out Reserved
-            DevIntfDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-
-            if (SetupDiGetDeviceInterfaceDetail(hDevInfo, &DevIntfData,
-                DevIntfDetailData, dwSize, &dwSize, &DevData)) {
-
-                if (!GetDevIDs(&vID, &dID, DevIntfDetailData->DevicePath)) goto SKIP_DEVICE;
-
-                switch (flag) {
-                    case FILL_USB_LISTVIEW:
-                        if (hDlg != NULL) {
-                            UsbDevStruct *new = UsbFind((ULONG)vID, (ULONG)dID);
-                            scanned_usb_ids[idx][0] = vID;
-                            scanned_usb_ids[idx][1] = dID;
-                            AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
-                        }
-                        break;
-                    case IS_USB_CONNECTED:
-                        if ((usb_id_selection[0] == vID && usb_id_selection[1] == dID) ||
-                            (usb_id_selection[0] == vID && usb_id_selection[1] == 0xabcd)) {
-                            free(DevIntfDetailData);
-                            SetupDiEnumDeviceInterfaces(hDevInfo, NULL, 
-                                                        &GUID_DEVINTERFACE_USB_DEVICE, 
-                                                        ++dwMemberIdx, &DevIntfData);
-                            SetupDiDestroyDeviceInfoList(hDevInfo);
-                            return TRUE;
-                        }
-                        break;
-                }
-                idx++;
-            } else {
-#ifdef DEBUG
-                __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
-#endif
-                free(DevIntfDetailData);
-                SetupDiDestroyDeviceInfoList(hDevInfo);
-                return FALSE;
-            }
-SKIP_DEVICE:
-#ifdef DEBUG
-            if (!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
-                 ++dwMemberIdx, &DevIntfData)) {
-                if (GetLastError() != ERROR_NO_MORE_ITEMS) {
-                    __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 2nd call"));
-                    free(DevIntfDetailData);
-                    SetupDiDestroyDeviceInfoList(hDevInfo);
-                    return FALSE;
-                }
-            }
-#endif
-            free(DevIntfDetailData);
-        }
-        if (!SetupDiDestroyDeviceInfoList(hDevInfo)) {
-            __MsgBoxGetLastError(_T("SetupDiDestroyDeviceInfoList()"));
-            return FALSE;
-        }
-    } else {
+    if (hUSBDevInfo == INVALID_HANDLE_VALUE) {
 #ifdef DEBUG
         __MsgBoxGetLastError(_T("hDevInfo"));
 #endif
         return FALSE;
     }
+
+    
+    DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+    dwMemberIdx = 0;
+    if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
+         dwMemberIdx, &DevIntfData)) {
+#ifdef DEBUG
+        __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 1st call"));
+#endif
+        return FALSE;
+    }
+
+    while (GetLastError() != ERROR_NO_MORE_ITEMS) {
+        DevData.cbSize = sizeof(DevData);
+        SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &DevIntfData, NULL, 0, &dwSize, NULL);
+
+        DevIntfDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(dwSize);
+        memset(DevIntfDetailData, 0, dwSize - sizeof(ULONG_PTR)); //don't zero out Reserved
+        DevIntfDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+        if (SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &DevIntfData,
+            DevIntfDetailData, dwSize, &dwSize, &DevData)) {
+
+            if (!GetDevIDs(&vID, &dID, DevIntfDetailData->DevicePath)) goto SKIP_DEVICE;
+
+            switch (flag) {
+                case FILL_USB_LISTVIEW:
+                    if (hDlg != NULL) {
+                        UsbDevStruct *new = UsbFind((ULONG)vID, (ULONG)dID);
+                        scanned_usb_ids[idx][0] = vID;
+                        scanned_usb_ids[idx][1] = dID;
+#ifdef DEBUG
+                        fprintf(stderr, "%04lx:%04lx found\n", vID, dID);
+#endif
+                        AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
+                    }
+                    break;
+                case IS_USB_CONNECTED:
+                    if ((usb_id_selection[0] == vID && usb_id_selection[1] == dID) ||
+                        (usb_id_selection[0] == vID && usb_id_selection[1] == 0xabcd)) {
+                        free(DevIntfDetailData);
+                        SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, 
+                                                    &GUID_DEVINTERFACE_USB_DEVICE, 
+                                                    ++dwMemberIdx, &DevIntfData);
+                        SetupDiDestroyDeviceInfoList(hUSBDevInfo);
+                        return TRUE;
+                    }
+                    break;
+            }
+            idx++;
+        } else {
+#ifdef DEBUG
+            __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
+#endif
+            free(DevIntfDetailData);
+            SetupDiDestroyDeviceInfoList(hUSBDevInfo);
+            return FALSE;
+        }
+SKIP_DEVICE:
+#ifdef DEBUG
+        if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
+             ++dwMemberIdx, &DevIntfData)) {
+            if (GetLastError() != ERROR_NO_MORE_ITEMS) {
+                __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 2nd call"));
+                free(DevIntfDetailData);
+                SetupDiDestroyDeviceInfoList(hUSBDevInfo);
+                return FALSE;
+            }
+        }
+#else
+        SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
+             ++dwMemberIdx, &DevIntfData);
+        free(DevIntfDetailData);
+#endif
+    }
+#ifdef DEBUG
+    if (!SetupDiDestroyDeviceInfoList(hUSBDevInfo)) {
+        __MsgBoxGetLastError(_T("SetupDiDestroyDeviceInfoList()"));
+    }
+#else
+    SetupDiDestroyDeviceInfoList(hUSBDevInfo);
+#endif
     return FALSE;
 }

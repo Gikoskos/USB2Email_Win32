@@ -81,7 +81,6 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText);
 BOOL isValidDomain(char *str, char SEPARATOR);
 BOOL GetUSBListViewSelection(HWND hwnd);
 VOID ResetMainWindowLanguage(HWND hwnd);
-BOOL SetMenuItemText(HMENU main_menu, UINT uID);
 
 VOID InitEmailDialog(HWND hwnd);
 VOID InitAboutDialog(HWND hwnd);
@@ -174,13 +173,6 @@ VOID InitHelpDialog(HWND hwnd)
         MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
     }
 }
-
-/*BOOL SetMenuItemText(HMENU main_menu, UINT uID)
-{
-    MENUITEMINFO *menu_info;
-
-    GetMenuItemInfo
-}*/
 
 VOID ResetMainWindowLanguage(HWND hwnd)
 {
@@ -574,12 +566,16 @@ UINT CALLBACK RefreshUSBThread(LPVOID dat)
 
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    HICON about_usb_icon;
-
     switch (msg) {
         case WM_INITDIALOG:
-            about_usb_icon = (HICON)LoadIcon(GetModuleHandle(NULL), 
-                             MAKEINTRESOURCE(IDI_USB2MAILICONLARGE));
+            {
+                HICON about_usb_icon = (HICON)LoadImage(GetModuleHandle(NULL), 
+                                        MAKEINTRESOURCE(IDI_USB2MAILICONLARGE),
+                                        IMAGE_ICON, 128, 128, 0);
+                if (about_usb_icon)
+                    SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, 
+                                      (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
+            }
             /*{
                 TCHAR tmpmsg1[255], tmpmsg2[255];
                 LoadString(*g_hInst, ID_ERR_MSG_31, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -590,7 +586,6 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             }*/
             SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2Email "U2MWin32_VERSION_STR" "WINARCH));
             SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, _T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
-            SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
@@ -677,20 +672,32 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
 INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    HBITMAP refresh_bitmap;
     LVCOLUMN vendCol, devcCol;
-    INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
     HANDLE refresh_usb_hnd ATTRIB_UNUSED = NULL; //usb auto scan thread handle
     static INT temp_idx = -1;
 
     switch (msg) {
         case WM_INITDIALOG:
-            refresh_bitmap = (HBITMAP)LoadImage(*g_hInst, _T("icons\\refreshbitmap.bmp"),
-                                 IMAGE_BITMAP, 0, 0,    LR_DEFAULTSIZE | LR_LOADFROMFILE | LR_LOADTRANSPARENT);
-            SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)refresh_bitmap);
+            {
+                HICON refreshDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
+                                                 MAKEINTRESOURCE(IDI_REFRESHICON),
+                                                 IMAGE_ICON, 18, 16, LR_LOADTRANSPARENT);
+                if (refreshDlgIco) {
+                    SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE,
+                                      (WPARAM)IMAGE_ICON, (LPARAM)refreshDlgIco);
+                }
+
+                HICON usbDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
+                                                 MAKEINTRESOURCE(IDI_USB2MAILICONMEDIUM),
+                                                 IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
+                                                 GetSystemMetrics(SM_CYSMICON), 0);
+                if (usbDlgIco) {
+                    SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)usbDlgIco);
+                }
+                
+            }
 
             temp_idx = -1;
-            InitCommonControlsEx(&columnControlClass);
             vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
             vendCol.iSubItem = 0;
             devcCol.iSubItem = 1;
@@ -786,6 +793,14 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
     switch (msg) {
         case WM_INITDIALOG:
             {
+                HICON emailDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
+                                                 MAKEINTRESOURCE(IDI_EMAILICON),
+                                                 IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
+                                                 GetSystemMetrics(SM_CYSMICON), 0);
+                if (emailDlgIco) {
+                    SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)emailDlgIco);
+                }
+
                 TCHAR tmpmsg1[255], tmpmsg2[255], tmpmsg3[255], tmpmsg4[255], tmpmsg5[255];
                 LoadString(*g_hInst, ID_ERR_MSG_26, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                 LoadString(*g_hInst, ID_ERR_MSG_25, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
@@ -832,7 +847,13 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg) {
-        case WM_INITDIALOG:
+        case WM_INITDIALOG: 
+            {
+                HICON helpDlgIco = LoadIcon(NULL, IDI_QUESTION);
+                if (helpDlgIco) {
+                    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)helpDlgIco);
+                }
+            }
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
@@ -1096,6 +1117,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     BOOL bRet = TRUE;
     RECT wrkspace_px;
     INT center_x, center_y;
+    INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
 
 
     /*** Global initializations ***/
@@ -1135,6 +1157,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             break;
     }
 
+    InitCommonControlsEx(&columnControlClass);
     usb_idx = 0;
 
     parseConfFile();

@@ -110,3 +110,6 @@
 #define ID_ERR_MSG_55                           40155
 #define ID_ERR_MSG_56                           40156
 #define ID_ERR_MSG_57                           40157
+
+#define IDI_REFRESHICON                         40158
+#define IDI_EMAILICON                           40159
