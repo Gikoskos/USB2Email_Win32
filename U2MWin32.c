@@ -21,6 +21,7 @@ UINT PORT;
 BOOL ValidEmailCheck = FALSE;
 BOOL USBRefresh = FALSE;
 BOOL USBdev_scan = FALSE;
+BOOL HlpDlg_open = FALSE;
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -166,11 +167,20 @@ VOID InitEmailDialog(HWND hwnd)
 
 VOID InitHelpDialog(HWND hwnd)
 {
-    if (!DialogBoxParam(*g_hInst, MAKEINTRESOURCE(IDD_HELPDIALOG), hwnd, HelpDialogProcedure, (LPARAM)0)) {
-        TCHAR tmp1[255], tmp2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_47, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-        MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+    if (!HlpDlg_open) {
+        HRSRC HelpDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_HELPDIALOG), 
+                                          MAKEINTRESOURCE(RT_DIALOG));
+        HGLOBAL HelpDlgHandle = LoadResource(*g_hInst, HelpDlgHrsrc);
+        LPCDLGTEMPLATE HelpDlgPtr = (LPCDLGTEMPLATE)LockResource(HelpDlgHandle);
+
+        if (!CreateDialogIndirectParam(*g_hInst, HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0)) {
+            TCHAR tmp1[255], tmp2[255];
+            LoadString(*g_hInst, ID_ERR_MSG_47, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
+            LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
+            MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+        }
+    } else {
+        SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
     }
 }
 
@@ -847,7 +857,8 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg) {
-        case WM_INITDIALOG: 
+        case WM_INITDIALOG:
+            HlpDlg_open = TRUE;
             {
                 HICON helpDlgIco = LoadIcon(NULL, IDI_QUESTION);
                 if (helpDlgIco) {
@@ -859,11 +870,13 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDOK:
+                    HlpDlg_open = FALSE;
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
             }
             break;
         case WM_CLOSE:
+            HlpDlg_open = FALSE;
             EndDialog(hwnd, (INT_PTR)TRUE);
             return (INT_PTR)TRUE;
     }
