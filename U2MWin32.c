@@ -615,6 +615,7 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_INITDIALOG:
             if (pass)
                 SetDlgItemTextA(hwnd, IDC_PWDFIELD, pass);
+            CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
