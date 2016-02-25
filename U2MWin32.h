@@ -15,12 +15,15 @@
 #include <signal.h>
 #include <process.h> //threads
 #include <winnt.h> //lanugage macros
+#include <objbase.h> //for CoCreateGuid()
+#include <shellapi.h>
 
 #include "resources/resource.h"
 
 #define MAX_CONNECTED_USB 20
 
 #define WM_ENABLE_STARTSTOP WM_USER + 0x00dd
+#define WM_U2M_NOTIF_ICON WM_USER + 0x000e
 
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10
@@ -65,6 +68,16 @@ while (1) {                                      \
         }                                        \
     }                                            \
     break;                                       \
+}
+
+#define DeleteU2MTrayIcon()                                  \
+while (1) {                                                  \
+    if (TrayIsInitialized) {                                 \
+        DestroyIcon(U2MTrayData.hIcon);                      \
+        Shell_NotifyIcon(NIM_DELETE, &U2MTrayData);          \
+    }                                                        \
+    if (TrayIconMenu != NULL) DestroyMenu(TrayIconMenu);     \
+    break;                                                   \
 }
 
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;

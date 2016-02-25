@@ -46,8 +46,8 @@ STRINGTABLE
     ID_ERR_MSG_27,  "Δεν επιλέχτηκε καμία συσκευή USB!"
     ID_ERR_MSG_28,  "Συσκευή"
     ID_ERR_MSG_29,  "Προμηθευτής"
-    ID_ERR_MSG_30,  ""
-    ID_ERR_MSG_31,  ""
+    ID_ERR_MSG_30,  "Το εικονίδιο ειδοποιήσεων USB2Email δεν δημιουργήθηκε!"
+    ID_ERR_MSG_31,  "Κάτι συνέβη!"
     ID_ERR_MSG_32,  "Άγνωστος προμηθευτής"
     ID_ERR_MSG_33,  "Άγνωστη συσκευή"
     ID_ERR_MSG_34,  "Δεν πληκτρολογήθηκε κωδικός"
@@ -74,6 +74,10 @@ STRINGTABLE
     ID_ERR_MSG_55,  "Δεν δόθηκε διακομιστής SMTP."
     ID_ERR_MSG_56,  "Δεν επιλέχτηκε συσκευή USB."
     ID_ERR_MSG_57,  "Δεν δόθηκε ο κωδικός του e-mail."
+    ID_ERR_MSG_58,  "Το USB2Email είναι σταματημένο"
+    ID_ERR_MSG_59,  "Το USB2Email είναι ενεργό"
+    ID_ERR_MSG_60,  "Έξοδος"
+    ID_ERR_MSG_61,  "Άνοιγμα USB2Email"    
 }
 
 

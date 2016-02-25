@@ -25,6 +25,7 @@ BOOL USBRefresh = FALSE; //for the USB refresh check control
 BOOL TrayIcon = FALSE; //for the Tray Icon check control
 BOOL USBdev_scan = FALSE; //helper global for the USB reload thread
 BOOL HlpDlg_open = FALSE; //bool to check whether Help dialog has already been opened
+BOOL TrayIsInitialized = FALSE; //saves memory by initializing the tray icon once at any point
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -32,13 +33,12 @@ PAINTSTRUCT ps;
 /*Is TRUE when the service is running and FALSE when it's not*/
 UINT onoff = FALSE;
 
-/********************
-*Main Window controls*
- ********************/
+/*Main Window controls*/
 WNDCLASSEX wc; //window class
 HWND USBListButton, EMAILButton, STARTSTOP, time_track, ttrack_tooltip, ttrack_label;
 TOOLINFO ttrack_struct;
-HMENU MainMenu;
+HMENU MainMenu, TrayIconMenu; //to menu sto kyrio parathyro kai to menu tou tray icon
+NOTIFYICONDATA U2MTrayData = {0}; //tray area icon
 
 UINT MAX_FAILED_EMAILS = 0;
 UINT TIMEOUT;
@@ -95,7 +95,8 @@ VOID InitPasswordDialog(HWND hwnd);
 VOID InitPreferencesDialog(HWND hwnd);
 VOID InitHelpWindow(HWND hwnd);
 VOID CenterChild(HWND hwnd);
-VOID EnableU2MTray(VOID);
+VOID InitU2MTray(HWND hwnd);
+BOOL InitU2MTrayMenu(VOID);
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
@@ -104,21 +105,13 @@ VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
 
 //@TODO: Implement ErrorCodes function
-/*void ErrorCodes(int i)
-{
-
-}
-
-char *ErrorCodeDlgTitles(int i)
-{
-
-}*/
 
 VOID DeleteAll(VOID)
 {
     ClearEmailData();
     ClearPwd();
     ClearPrefs();
+    DeleteU2MTrayIcon();
 }
 
 VOID InitPreferencesDialog(HWND hwnd)
@@ -567,9 +560,45 @@ VOID CenterChild(HWND hwnd)
     SetWindowPos(hwnd, HWND_TOP, final_x, final_y, 0, 0, SWP_NOSIZE);
 }
 
-VOID EnableU2MTray(VOID)
+VOID InitU2MTray(HWND hwnd)
 {
-    
+    BOOL success = TRUE;
+
+    if (!TrayIsInitialized) {
+    //stupid bug in mingw-w64 toolchain doesn't link against high DPI LoadIconMetric function
+#ifndef __MINGW32__ 
+        if (LoadIconMetric(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONSMALL), 
+                       LIM_SMALL, &(U2MTrayData.hIcon)) != S_OK) success = FALSE;
+#else //RIP open-source compilers
+        U2MTrayData.hIcon = LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCEW(IDI_USB2MAILICONSMALL),
+                                      IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
+                                      GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+#endif
+        if (!U2MTrayData.hIcon) success = FALSE;
+        //note: GUID breaks compatibility, this only works on Win7 and up
+        if (CoCreateGuid(&(U2MTrayData.guidItem)) != S_OK) success = FALSE;
+
+        U2MTrayData.cbSize = sizeof(U2MTrayData); //Win Svista and later
+        U2MTrayData.hWnd = hwnd;
+        //U2MTrayData.dwState = U2MTrayData.dwStateMask = NIS_SHAREDICON;
+        U2MTrayData.uCallbackMessage = WM_U2M_NOTIF_ICON;
+        U2MTrayData.uVersion = NOTIFYICON_VERSION_4;
+        U2MTrayData.uFlags = NIF_ICON | NIF_GUID | NIF_SHOWTIP | NIF_TIP | NIF_MESSAGE;
+        TrayIsInitialized = TRUE;
+    }
+
+    if (success) {
+        TCHAR tmpmsg1[50];
+        LoadString(*g_hInst, ID_ERR_MSG_58, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        _tcscpy(U2MTrayData.szTip, tmpmsg1);
+        Shell_NotifyIcon(NIM_ADD, &U2MTrayData);
+        Shell_NotifyIcon(NIM_SETVERSION, &U2MTrayData);
+    } else {
+        TCHAR tmpmsg1[255], tmpmsg2[255];
+        LoadString(*g_hInst, ID_ERR_MSG_30, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        LoadString(*g_hInst, ID_ERR_MSG_31, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);            
+    }
 }
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat)
@@ -682,7 +711,10 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         MAX_FAILED_EMAILS = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, 
                                                   TBM_GETPOS, (WPARAM)0, (LPARAM)0);
                         if (TrayIcon) {
-                            EnableU2MTray();
+                            InitU2MTray(GetParent(hwnd));
+                        } else {
+                            DeleteU2MTrayIcon();
+                            TrayIsInitialized = FALSE;
                         }
                         if (LOWORD(wParam) == IDOK) {
                             EndDialog(hwnd, (INT_PTR)TRUE);
@@ -908,6 +940,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
     switch (msg) {
         case WM_CREATE:
+            if (TrayIcon) InitU2MTray(hwnd);
             {
                 TCHAR tmp1[255], tmp2[255], tmp3[255], tmp4[255];
                 LoadString(*g_hInst, ID_ERR_MSG_21, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
@@ -1030,10 +1063,9 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     InitAboutDialog(hwnd);
                     break;
                 case IDM_PREF:
-                    if (!onoff) {
+                    if (!onoff)
                         InitPreferencesDialog(hwnd);
-                        //if (TrayIcon)
-                    } else {
+                    else {
                         TCHAR tmpmsg1[255], tmpmsg2[255];
                         LoadString(*g_hInst, ID_ERR_MSG_13, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                         LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
@@ -1062,6 +1094,12 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     break;
                 case IDC_STARTSTOP:
                     if (onoff) {
+                        if (TrayIcon) {
+                            TCHAR tmpmsg1[50];
+                            LoadString(*g_hInst, ID_ERR_MSG_58, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+                            _tcscpy(U2MTrayData.szTip, tmpmsg1);
+                            Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
+                        }
                         EnableWindow(USBListButton, TRUE);
                         EnableWindow(EMAILButton, TRUE);
                         EnableWindow(time_track, TRUE);
@@ -1069,6 +1107,12 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         onoff = FALSE;
                     } else {
                         if (InitU2MThread(hwnd)) {
+                            if (TrayIcon) {
+                                TCHAR tmpmsg1[50];
+                                LoadString(*g_hInst, ID_ERR_MSG_59, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+                                _tcscpy(U2MTrayData.szTip, tmpmsg1);
+                                Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
+                            }
                             EnableWindow(USBListButton, FALSE);
                             EnableWindow(EMAILButton, FALSE);
                             EnableWindow(time_track, FALSE);
@@ -1095,8 +1139,60 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 case IDM_H_ELP1:
                     InitHelpDialog(hwnd);
                     break;
+                case IDM_TRAY_OPENWINDOW:
+                    if (!IsWindowVisible(hwnd)) {
+                        ShowWindow(hwnd, SW_SHOW);
+                    }
+                    SetFocus(hwnd);
+                    break;
+                case IDM_TRAY_QUIT:
                 case IDM_EXIT:
                     PostMessage(hwnd, WM_CLOSE, wParam, lParam);
+                    break;
+            }
+            break;
+        case WM_SYSCOMMAND:
+            switch (wParam) {
+                case SC_MINIMIZE:
+                    if (TrayIcon) {
+                        ShowWindow(hwnd, SW_HIDE);
+                    } else {
+                        ShowWindow(hwnd, SW_MINIMIZE);
+                    }
+                    break;
+                case SC_CLOSE:
+                    PostMessage(hwnd, WM_CLOSE, wParam, lParam);
+                    break;
+                default:
+                    return DefWindowProc(hwnd, msg, wParam, lParam);
+            }
+            break;
+        case WM_U2M_NOTIF_ICON:
+            switch (lParam) {
+                case WM_RBUTTONUP:
+                    {
+                        POINT cursor_pos;
+                        TCHAR tmpmsg1[255], tmpmsg2[255];
+
+                        LoadString(*g_hInst, ID_ERR_MSG_60, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+                        LoadString(*g_hInst, ID_ERR_MSG_61, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+                        TrayIconMenu = CreatePopupMenu();
+                        AppendMenu(TrayIconMenu, MF_STRING, IDM_TRAY_OPENWINDOW, tmpmsg2);
+                        AppendMenu(TrayIconMenu, MF_STRING | MF_SEPARATOR, 0, NULL);
+                        AppendMenu(TrayIconMenu, MF_STRING, IDM_TRAY_QUIT, tmpmsg1);
+
+                        GetCursorPos(&cursor_pos);
+                        SetForegroundWindow(hwnd);
+                        if (!TrackPopupMenuEx(TrayIconMenu,
+                                 TPM_RIGHTALIGN | TPM_BOTTOMALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION,
+                                 cursor_pos.x, cursor_pos.y, hwnd, NULL)) printf("TRACKPOPUPMENUEX() FAILED\n");
+                    }
+                    break;
+                case WM_LBUTTONUP:
+                    if (!IsWindowVisible(hwnd)) {
+                        ShowWindow(hwnd, SW_SHOW);
+                        SetFocus(hwnd);
+                    } else ShowWindow(hwnd, SW_HIDE);
                     break;
             }
             break;
@@ -1108,7 +1204,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                 break;
             }
-                
 #ifndef DEBUG
             {
                 TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -1156,6 +1251,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /*** Global initializations ***/
     PORT = 0;
     pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
+    TrayIconMenu = NULL;
     memset(usb_id_selection, 0, sizeof(UINT)*2);
     TIMEOUT = 1000;
 
@@ -1242,6 +1338,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SetActiveWindow(hwnd);
 #else
     AnimateWindow(hwnd, 200, AW_CENTER | AW_ACTIVATE);
+    SetForegroundWindow(hwnd);
 #endif
     while (bRet) {
         bRet = GetMessage(&Msg, NULL, 0, 0);

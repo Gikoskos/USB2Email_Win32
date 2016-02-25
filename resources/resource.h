@@ -114,3 +114,13 @@
 #define IDI_REFRESHICON                         40158
 #define IDI_EMAILICON                           40159
 #define IDC_CHECKMINTOTRAY                      40160
+#define IDI_USB2MAILICONTINY                    40161
+
+#define ID_ERR_MSG_58                           40162
+#define ID_ERR_MSG_59                           40163
+#define ID_ERR_MSG_60                           40164
+#define ID_ERR_MSG_61                           40165
+#define ID_ERR_MSG_62                           40166
+
+#define IDM_TRAY_OPENWINDOW                     40167
+#define IDM_TRAY_QUIT                           40168

@@ -46,8 +46,8 @@ STRINGTABLE
     ID_ERR_MSG_27,  "No USB device selected!"
     ID_ERR_MSG_28,  "Device"
     ID_ERR_MSG_29,  "Vendor"
-    ID_ERR_MSG_30,  ""
-    ID_ERR_MSG_31,  ""
+    ID_ERR_MSG_30,  "USB2Email tray icon failed to appear!"
+    ID_ERR_MSG_31,  "Something happened!"
     ID_ERR_MSG_32,  "Unidentified vendor"
     ID_ERR_MSG_33,  "Unidentified device"
     ID_ERR_MSG_34,  "No password entered"
@@ -74,6 +74,10 @@ STRINGTABLE
     ID_ERR_MSG_55,  "SMTP server domain not set."
     ID_ERR_MSG_56,  "No USB device selected."
     ID_ERR_MSG_57,  "No password set."
+    ID_ERR_MSG_58,  "USB2Email is stopped"
+    ID_ERR_MSG_59,  "USB2Email is running"
+    ID_ERR_MSG_60,  "Quit"
+    ID_ERR_MSG_61,  "Open USB2Email"
 }
 
 
