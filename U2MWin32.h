@@ -70,15 +70,44 @@ while (1) {                                      \
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
+extern BOOL TrayIcon;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern UINT MAX_FAILED_EMAILS;
 extern UINT onoff, PORT;
 extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
-UINT usb_id_selection[2];
+extern ULONG usb_id_selection[2];
 
-extern char *cfg_filename;
+extern char *cfg_filename; //the filename of the configuration file
+
+extern WORD currentLangID; //the ID of the current language used
+
+
+#ifdef DEBUG
+static inline void __MsgBoxGetLastError(LPTSTR lpszFunction) 
+{ 
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, dw, currentLangID, (LPTSTR)&lpMsgBuf, 0, NULL);
+
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+                   (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+    _sntprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+               _T("%s EC %lu: %s"),
+               lpszFunction, dw, lpMsgBuf);
+    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, _T("Error!"), MB_OK); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+}
+#endif
+
 
 BOOL InitU2MThread(HWND hwnd);
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag);
@@ -86,3 +115,5 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 
 BOOL parseConfFile(VOID);
 BOOL saveConfFile(VOID);
+BOOL WriteDataToU2MReg(VOID);
+BOOL GetU2MRegData(VOID);

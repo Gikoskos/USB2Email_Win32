@@ -7,7 +7,12 @@
 #include <confuse.h>
 
 char *cfg_filename = "U2M.conf";
+TCHAR *registry_path = _T("Software\\USB2Email");
+TCHAR *reg_subkeys[] = {
+    _T("TrayIcon"), _T("VendorID"), _T("DeviceID")
+};
 
+/* functions for handling the configuration file */
 BOOL parseConfFile(VOID)
 {
     cfg_opt_t email_opts[] = {
@@ -119,5 +124,53 @@ BOOL saveConfFile(VOID)
     fclose(U2Mconf_file);
     cfg_free(U2MConf);
 
+    return TRUE;
+}
+
+/* functions for handling data in the registry */
+
+BOOL WriteDataToU2MReg(VOID)
+{
+    HKEY U2MRegkey = NULL;
+
+    if (RegCreateKeyEx(HKEY_CURRENT_USER, registry_path, 0, NULL,
+                       REG_OPTION_NON_VOLATILE, KEY_CREATE_SUB_KEY | KEY_SET_VALUE, NULL,
+                       &U2MRegkey, NULL) != ERROR_SUCCESS) return FALSE;
+
+    RegSetValueEx(U2MRegkey, reg_subkeys[0], 0, REG_DWORD, (BYTE*)&TrayIcon, sizeof(TrayIcon));
+    RegSetValueEx(U2MRegkey, reg_subkeys[1], 0, REG_DWORD, (BYTE*)&usb_id_selection[0], sizeof(usb_id_selection[0]));
+    RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&usb_id_selection[1], sizeof(usb_id_selection[1]));
+    if (RegCloseKey(U2MRegkey) != ERROR_SUCCESS) return FALSE;
+    return TRUE;
+}
+
+BOOL GetU2MRegData(VOID)
+{
+    HKEY U2MRegkey = NULL;
+    DWORD RegDisposition;
+
+    if (RegCreateKeyEx(HKEY_CURRENT_USER, registry_path, 0, NULL,
+                       REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL,
+                       &U2MRegkey, &RegDisposition) != ERROR_SUCCESS) return FALSE;
+
+    if (RegDisposition == REG_CREATED_NEW_KEY) {
+        RegSetValueEx(U2MRegkey, reg_subkeys[0], 0, REG_DWORD, (BYTE*)&TrayIcon, sizeof(TrayIcon));
+        RegSetValueEx(U2MRegkey, reg_subkeys[1], 0, REG_DWORD, (BYTE*)&usb_id_selection[0], sizeof(usb_id_selection[0]));
+        RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&usb_id_selection[1], sizeof(usb_id_selection[1]));        
+    } else if (RegDisposition == REG_OPENED_EXISTING_KEY) {
+        DWORD sub_data[3];
+        DWORD data_size = (DWORD)sizeof(DWORD);
+
+        for (int i = 0; i < 3; i++) {
+            if (RegQueryValueEx(U2MRegkey, reg_subkeys[i], NULL, NULL, 
+                                (BYTE*)&sub_data[i], &data_size) != ERROR_SUCCESS) goto CLOSE_KEY;
+        }
+        TrayIcon = (BOOL)(sub_data[0] | 0x0);
+        usb_id_selection[0] = sub_data[1];
+        usb_id_selection[1] = sub_data[2];
+    }
+
+CLOSE_KEY:
+    if (RegCloseKey(U2MRegkey) != ERROR_SUCCESS) return FALSE;
     return TRUE;
 }

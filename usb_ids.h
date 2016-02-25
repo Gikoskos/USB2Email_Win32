@@ -21,7 +21,7 @@ typedef struct {
 extern __declspec(dllexport) UsbDevStruct UsbList[];
 extern __declspec(dllexport) size_t UsbLength;
 
-__declspec(dllexport) UsbDevStruct *UsbFind(long vendor, long device);
+__declspec(dllexport) UsbDevStruct *UsbFind(unsigned long vendor, unsigned long device);
 __declspec(dllexport) int UsbListIsSorted(void);
 
 #ifdef __cplusplus

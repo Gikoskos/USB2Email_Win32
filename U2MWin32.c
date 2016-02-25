@@ -9,6 +9,8 @@ const _TCHAR szClassName[] = _T("USB2Email");
 
 HINSTANCE *g_hInst;
 
+ULONG usb_id_selection[2];
+
 /********************
 *Input field raw data*
  ********************/
@@ -18,10 +20,11 @@ UINT PORT;
 /*******************************
 *Bools to check enabled controls*
  *******************************/
-BOOL ValidEmailCheck = FALSE;
-BOOL USBRefresh = FALSE;
-BOOL USBdev_scan = FALSE;
-BOOL HlpDlg_open = FALSE;
+BOOL ValidEmailCheck = FALSE; //for the valid e-mail check control
+BOOL USBRefresh = FALSE; //for the USB refresh check control
+BOOL TrayIcon = FALSE; //for the Tray Icon check control
+BOOL USBdev_scan = FALSE; //helper global for the USB reload thread
+BOOL HlpDlg_open = FALSE; //bool to check whether Help dialog has already been opened
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -53,6 +56,9 @@ struct {
     struct dll_data U2MLocale_gr;
 } U2M_dlls = {{_T("U2MLocale_en.dll"), NULL, NULL},
               {_T("U2MLocale_gr.dll"), NULL, NULL}};
+
+WORD currentLangID;
+
 
 /*Trackbar limits*/
 #define T_MIN                     200
@@ -89,10 +95,11 @@ VOID InitPasswordDialog(HWND hwnd);
 VOID InitPreferencesDialog(HWND hwnd);
 VOID InitHelpWindow(HWND hwnd);
 VOID CenterChild(HWND hwnd);
+VOID EnableU2MTray(VOID);
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
-VOID DeleteAll();
+VOID DeleteAll(VOID);
 VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
 
@@ -107,13 +114,12 @@ char *ErrorCodeDlgTitles(int i)
 
 }*/
 
-VOID DeleteAll()
+VOID DeleteAll(VOID)
 {
     ClearEmailData();
     ClearPwd();
     ClearPrefs();
 }
-
 
 VOID InitPreferencesDialog(HWND hwnd)
 {
@@ -121,7 +127,7 @@ VOID InitPreferencesDialog(HWND hwnd)
         TCHAR tmp1[255], tmp2[255];
         LoadString(*g_hInst, ID_ERR_MSG_52, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-        MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
     }
 }
 
@@ -131,7 +137,7 @@ VOID InitPasswordDialog(HWND hwnd)
         TCHAR tmp1[255], tmp2[255];
         LoadString(*g_hInst, ID_ERR_MSG_51, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-        MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
     }
 }
 
@@ -141,7 +147,7 @@ VOID InitUSBDialog(HWND hwnd)
         TCHAR tmp1[255], tmp2[255];
         LoadString(*g_hInst, ID_ERR_MSG_50, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-        MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
     }
 }
 
@@ -151,7 +157,7 @@ VOID InitAboutDialog(HWND hwnd)
         TCHAR tmp1[255], tmp2[255];
         LoadString(*g_hInst, ID_ERR_MSG_49, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-        MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
     }
 }
 
@@ -161,7 +167,7 @@ VOID InitEmailDialog(HWND hwnd)
         TCHAR tmp1[255], tmp2[255];
         LoadString(*g_hInst, ID_ERR_MSG_48, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-        MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
     }
 }
 
@@ -177,7 +183,7 @@ VOID InitHelpDialog(HWND hwnd)
             TCHAR tmp1[255], tmp2[255];
             LoadString(*g_hInst, ID_ERR_MSG_47, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
-            MessageBox(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR);
+            MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
         }
     } else {
         SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
@@ -313,7 +319,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_46, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
 
@@ -324,7 +330,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_45, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return TRUE;
     } else if (strlen(tmp2) > 5) {
         free(tmp1);
@@ -332,7 +338,8 @@ BOOL parsePrefDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);        return FALSE;
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        return FALSE;
     }
 
     PORT = 0;
@@ -349,7 +356,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
 
@@ -369,7 +376,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_43, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
 
@@ -378,7 +385,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
             TCHAR tmpmsg1[255], tmpmsg2[255];
             LoadString(*g_hInst, ID_ERR_MSG_42, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-            MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
             free(tmp);
             return FALSE;
         }
@@ -393,7 +400,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_41, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
 
@@ -403,7 +410,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
             TCHAR tmpmsg1[255], tmpmsg2[255];
             LoadString(*g_hInst, ID_ERR_MSG_40, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-            MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
             return FALSE;
         }
     }
@@ -420,7 +427,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
             TCHAR tmpmsg1[255], tmpmsg2[255];
             LoadString(*g_hInst, ID_ERR_MSG_39, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-            MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
             return FALSE;
         }
     } else if (!tmp) {
@@ -437,7 +444,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_38, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_37, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        if (MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
             SUBJECT = malloc(2);
             snprintf(SUBJECT, 2, "");
         } else {
@@ -455,7 +462,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_36, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_35, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        if (MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
             BODY = malloc(2);
             snprintf(BODY, 2, "");
         } else {
@@ -479,7 +486,7 @@ BOOL parsePwdField(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_34, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     } else {
         pass = realloc(NULL, strlen(tmp)+1);
@@ -558,6 +565,11 @@ VOID CenterChild(HWND hwnd)
     if (final_x < 0) final_x = 0;
     if (final_y < 0) final_y = 0;
     SetWindowPos(hwnd, HWND_TOP, final_x, final_y, 0, 0, SWP_NOSIZE);
+}
+
+VOID EnableU2MTray(VOID)
+{
+    
 }
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat)
@@ -648,6 +660,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             }
             CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck)?BST_CHECKED:BST_UNCHECKED);
             CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh)?BST_CHECKED:BST_UNCHECKED);
+            CheckDlgButton(hwnd, IDC_CHECKMINTOTRAY, (TrayIcon)?BST_CHECKED:BST_UNCHECKED);
             SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 50));
             SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)0);
             CenterChild(hwnd);
@@ -659,10 +672,18 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     return (INT_PTR)TRUE;
                 case IDAPPLY:
                 case IDOK:
-                    ValidEmailCheck = IsDlgButtonChecked(hwnd, IDC_CHECKVALIDEMAIL);
-                    USBRefresh = IsDlgButtonChecked(hwnd, IDC_CHECKUSBREFRESH);
                     ClearPrefs();
                     if (parsePrefDialogFields(hwnd)) {
+                        // i'm storing the check controls' values only if the 
+                        // data entered on the input fields was valid
+                        ValidEmailCheck = IsDlgButtonChecked(hwnd, IDC_CHECKVALIDEMAIL);
+                        USBRefresh = IsDlgButtonChecked(hwnd, IDC_CHECKUSBREFRESH);
+                        TrayIcon = IsDlgButtonChecked(hwnd, IDC_CHECKMINTOTRAY);
+                        MAX_FAILED_EMAILS = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, 
+                                                  TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+                        if (TrayIcon) {
+                            EnableU2MTray();
+                        }
                         if (LOWORD(wParam) == IDOK) {
                             EndDialog(hwnd, (INT_PTR)TRUE);
                         }
@@ -674,9 +695,6 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
             }
-        case WM_HSCROLL:
-            MAX_FAILED_EMAILS = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
-            break;
     }
     return (INT_PTR)FALSE;
 }
@@ -751,7 +769,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                         TCHAR tmpmsg1[255], tmpmsg2[255];
                         LoadString(*g_hInst, ID_ERR_MSG_27, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                     } else {
                         DeleteScannedUSBIDs();
                         USBdev_scan = FALSE;
@@ -776,7 +794,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                                 TCHAR tmpmsg1[255], tmpmsg2[255];
                                 LoadString(*g_hInst, ID_ERR_MSG_27, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                                 LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                                MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                             } else {
                                 USBdev_scan = FALSE;
                                 EndDialog(hwnd, (INT_PTR)TRUE);
@@ -919,7 +937,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     TCHAR tmpmsg1[255], tmpmsg2[255];
                     LoadString(*g_hInst, ID_ERR_MSG_20, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                     LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                    MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                     return -2;
                 }
                 SendMessage(USBListButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -932,7 +950,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     TCHAR tmpmsg1[255], tmpmsg2[255];
                     LoadString(*g_hInst, ID_ERR_MSG_18, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                     LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                    MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                     return -2;
                 }
                 SendMessage(EMAILButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -945,7 +963,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     TCHAR tmpmsg1[255], tmpmsg2[255];
                     LoadString(*g_hInst, ID_ERR_MSG_17, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                     LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                    MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                     return -2;
                 }
                 SendMessage(STARTSTOP, WM_SETFONT, (WPARAM)mainwindowcontrol_font_big, (LPARAM)TRUE);
@@ -958,7 +976,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     TCHAR tmpmsg1[255], tmpmsg2[255];
                     LoadString(*g_hInst, ID_ERR_MSG_16, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                     LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                    MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                     return -2;
                 }
 
@@ -969,7 +987,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     TCHAR tmpmsg1[255], tmpmsg2[255];
                     LoadString(*g_hInst, ID_ERR_MSG_14, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                     LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                    MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                     return -2;
                 }
                 SendMessage(ttrack_label, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -996,12 +1014,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             switch (LOWORD(wParam)) {
                 case IDM_EN_LANG:
                     *g_hInst = U2M_dlls.U2MLocale_en.module;
+                    currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
                     ResetMainWindowLanguage(hwnd);
                     MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
                     SetMenu(hwnd, MainMenu);
                     break;
                 case IDM_GR_LANG:
                     *g_hInst = U2M_dlls.U2MLocale_gr.module;
+                    currentLangID = MAKELANGID(LANG_GREEK, SUBLANG_GREEK_GREECE);
                     ResetMainWindowLanguage(hwnd);
                     MainMenu = U2M_dlls.U2MLocale_gr.locale_menu;
                     SetMenu(hwnd, MainMenu);
@@ -1010,13 +1030,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     InitAboutDialog(hwnd);
                     break;
                 case IDM_PREF:
-                    if (!onoff)
+                    if (!onoff) {
                         InitPreferencesDialog(hwnd);
-                    else {
+                        //if (TrayIcon)
+                    } else {
                         TCHAR tmpmsg1[255], tmpmsg2[255];
                         LoadString(*g_hInst, ID_ERR_MSG_13, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                         LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK);
+                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                     }
                     break;
                 case IDM_PASSWORD:
@@ -1026,7 +1047,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         TCHAR tmpmsg1[255], tmpmsg2[255];
                         LoadString(*g_hInst, ID_ERR_MSG_12, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                         LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK);
+                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                     }
                     break;
                 case IDC_CHOOSEUSBBUTTON:
@@ -1036,11 +1057,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         TCHAR tmpmsg1[255], tmpmsg2[255];
                         LoadString(*g_hInst, ID_ERR_MSG_11, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                         LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK);
+                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                     }
-#ifdef DEBUG
-                    fprintf(stderr, "USB device %04x:%04x\n\n", usb_id_selection[0], usb_id_selection[1]);
-#endif
                     break;
                 case IDC_STARTSTOP:
                     if (onoff) {
@@ -1071,7 +1089,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         TCHAR tmpmsg1[255], tmpmsg2[255];
                         LoadString(*g_hInst, ID_ERR_MSG_8, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                         LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK);
+                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                     }
                     break;
                 case IDM_H_ELP1:
@@ -1087,7 +1105,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 TCHAR tmpmsg1[255], tmpmsg2[255];
                 LoadString(*g_hInst, ID_ERR_MSG_7, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                 LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK);
+                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                 break;
             }
                 
@@ -1096,7 +1114,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 TCHAR tmpmsg1[255], tmpmsg2[255];
                 LoadString(*g_hInst, ID_ERR_MSG_6, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                 LoadString(*g_hInst, ID_ERR_MSG_5, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                if (MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_ICONASTERISK | MB_YESNO) == IDNO)
+                if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONASTERISK | MB_YESNO, currentLangID) == IDNO)
                     break;
             }
 #endif
@@ -1105,6 +1123,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             DeleteObject(mainwindowcontrol_font);
             FreeLibrary(U2M_dlls.U2MLocale_gr.module);
             FreeLibrary(U2M_dlls.U2MLocale_en.module);
+            WriteDataToU2MReg();
             DestroyWindow(hwnd);
             break;
         case WM_HSCROLL:
@@ -1140,7 +1159,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     memset(usb_id_selection, 0, sizeof(UINT)*2);
     TIMEOUT = 1000;
 
-    g_hInst = &hInstance;
+    GetU2MRegData();
+
+    g_hInst = &hInstance; //possibly a bad decision
 
     /* loading the language dlls */
     U2M_dlls.U2MLocale_gr.module = LoadLibraryEx(U2M_dlls.U2MLocale_gr.filename, NULL, 0);
@@ -1155,18 +1176,19 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                        _T("One or more language packages were not found. ")
                        _T("The application might malfunction. ")
                        _T("Are you sure you want to continue?"),
-                       _T("Failed loading localization resources!"), 
+                       _T("Failed loading localization libraries!"), 
                        MB_ICONASTERISK | MB_YESNO) == IDNO)
             return 1;
     }
 
-    WORD user_language = GetUserDefaultUILanguage(); //get the language of the system
-    switch (PRIMARYLANGID(user_language)) {
+    currentLangID = GetUserDefaultUILanguage(); //get the language of the system
+    switch (PRIMARYLANGID(currentLangID)) {
         case LANG_GREEK:
             *g_hInst = U2M_dlls.U2MLocale_gr.module;
             break;
         case LANG_ENGLISH:
         default:
+            currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
             *g_hInst = U2M_dlls.U2MLocale_en.module;
             break;
     }
@@ -1198,7 +1220,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_4, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
         return -1;
     }
 
@@ -1210,7 +1232,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_3, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
         return -2;
     }
 
@@ -1228,7 +1250,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             TCHAR tmpmsg1[255], tmpmsg2[255];
             LoadString(*g_hInst, ID_ERR_MSG_2, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-            MessageBox(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK);
+            MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
             return -3;
         } else if (bRet == -2) {
             return -2;

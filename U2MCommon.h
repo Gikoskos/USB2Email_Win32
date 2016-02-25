@@ -13,6 +13,7 @@
 
 #include <windows.h>
 #include <tchar.h> //unicode
+#include <winerror.h> //error messages
 
 #define _str(x) #x
 #define str(x) _str(x)
@@ -29,7 +30,7 @@
 /* options for MinGW/GCC */
 #elif defined(__MINGW32__)
 # define COMPILER_VERSION_STR ver_str(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
-# define COMPILER_NAME_STR str(GCC(MinGW))
+# define COMPILER_NAME_STR str(GCC(MinGW-w64))
 # define ATTRIB_UNUSED __attribute__((unused))
 /* options for Intel C/C++ compiler */
 #elif defined(__INTEL_COMPILER)
@@ -46,7 +47,7 @@
 
 /* versioning */
 #define U2MWin32_MAJOR 2
-#define U2MWin32_MINOR 1
-#define U2MWin32_PATCH 3
+#define U2MWin32_MINOR 2
+#define U2MWin32_PATCH 0
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)

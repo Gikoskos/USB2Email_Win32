@@ -113,3 +113,4 @@
 
 #define IDI_REFRESHICON                         40158
 #define IDI_EMAILICON                           40159
+#define IDC_CHECKMINTOTRAY                      40160

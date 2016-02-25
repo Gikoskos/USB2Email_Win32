@@ -141,7 +141,7 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
     CTEXT           "Αριθμός αποτυχημένων e-mail που γίνονται αποδεκτά πριν σταματήσει η υπηρεσία", 0, 153, 185, 101, 30, SS_CENTER, WS_EX_LEFT
     AUTOCHECKBOX    "Αυτόματη σάρωση συσκευών στο παράθυρο USB", IDC_CHECKUSBREFRESH, 37, 138, 82, 26, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
     GROUPBOX        "Ρυθμίσεις USB", IDC_STATIC, 24, 128, 108, 43, 0, WS_EX_LEFT
-    GROUPBOX        "Διάφορα", IDC_STATIC, 144, 128, 119, 118, 0, WS_EX_LEFT
+    GROUPBOX        "Διάφορα", IDC_STATIC, 144, 128, 119, 135, 0, WS_EX_LEFT
     AUTOCHECKBOX    "Έλεγχος για σωστές διευθύνσεις e-mail στην είσοδό τους", IDC_CHECKVALIDEMAIL, 156, 143, 96, 24, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
     LTEXT           "Θύρα:", IDC_STATIC, 165, 78, 25, 9, SS_LEFT, WS_EX_LEFT
     GROUPBOX        "Ρυθμίσεις διακομιστή SMTP", IDC_STATIC, 23, 15, 240, 101, 0, WS_EX_LEFT
@@ -150,9 +150,10 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
     EDITTEXT        IDC_PORTFIELD, 200, 76, 50, 13, ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
     PUSHBUTTON      "Αποθήκευσε τα δεδομένα εισόδου σε εφεδρικό αρχείο", IDC_SAVECONFBUTTON, 37, 181, 82, 64, BS_VCENTER | BS_MULTILINE, WS_EX_LEFT
     CONTROL         "", IDT_TRACKEMAILINTERVAL, TRACKBAR_CLASS, WS_TABSTOP | TBS_BOTH | TBS_NOTICKS | TBS_TOOLTIPS | TBS_ENABLESELRANGE, 156, 220, 94, 14, WS_EX_LEFT
-    PUSHBUTTON      "Άκυρο", IDCANCEL, 53, 267, 50, 14, 0, WS_EX_LEFT
-    PUSHBUTTON      "Εφαρμογή", IDAPPLY, 122, 267, 41, 14, 0, WS_EX_LEFT
-    DEFPUSHBUTTON   "ΟΚ", IDOK, 183, 267, 50, 14, 0, WS_EX_LEFT
+    AUTOCHECKBOX    "Εικονίδιο στην περιοχή ειδοποιήσεων", IDC_CHECKMINTOTRAY, 156, 236, 96, 24, BS_CENTER | BS_MULTILINE, WS_EX_LEFT
+    PUSHBUTTON      "Άκυρο", IDCANCEL, 53, 276, 50, 14, 0, WS_EX_LEFT
+    PUSHBUTTON      "Εφαρμογή", IDAPPLY, 122, 276, 41, 14, 0, WS_EX_LEFT
+    DEFPUSHBUTTON   "ΟΚ", IDOK, 183, 276, 50, 14, 0, WS_EX_LEFT
 }
 
 LANGUAGE LANG_GREEK, SUBLANG_GREEK_GREECE

@@ -3,8 +3,8 @@
 
 static int cmp(const void *vp, const void *vq)
 {
-	const UsbDevStruct *p = vp;
-	const UsbDevStruct *q = vq;
+	const UsbDevStruct *p = (UsbDevStruct*)vp;
+	const UsbDevStruct *q = (UsbDevStruct*)vq;
 
 	if (p->VendorID < q->VendorID)
 		return -1;
@@ -17,7 +17,7 @@ static int cmp(const void *vp, const void *vq)
 	return 0;
 }
 
-UsbDevStruct *UsbFind(long vendor, long device)
+UsbDevStruct *UsbFind(unsigned long vendor, unsigned long device)
 {
 	UsbDevStruct key;
 

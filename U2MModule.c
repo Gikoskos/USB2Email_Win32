@@ -6,7 +6,6 @@
 #include "U2MWin32.h"
 #include "usb_ids.h"
 #include <setupapi.h>
-//#include <devguid.h>
 #include <initguid.h>
 #include <usbiodef.h> //for GUID_DEVINTERFACE_USB_DEVICE
 #include <regstr.h>
@@ -46,28 +45,28 @@ BOOL InitU2MThread(HWND hwnd)
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_53, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     if (!SMTP_SERVER) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_55, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     if (!usb_id_selection[0] || !usb_id_selection[1]) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_56, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     if (!pass) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_57, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBox(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR);
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     onoff = TRUE;
@@ -149,34 +148,6 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath)
     return FALSE;
 }
 
-#ifdef DEBUG
-void __MsgBoxGetLastError(LPTSTR lpszFunction) 
-{ 
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError(); 
-
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
-
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
-                   (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-    _sntprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-               _T("%s failed with error %lu: %s"),
-               lpszFunction, dw, lpMsgBuf);
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, _T("Error!"), MB_OK); 
-
-    LocalFree(lpMsgBuf);
-    LocalFree(lpDisplayBuf);
-}
-#endif
-
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
 {
     HDEVINFO hUSBDevInfo, hUSBHUBInfo;
@@ -188,7 +159,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
     ULONG vID, dID;
 
     hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
-               NULL, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_ALLCLASSES);
+               NULL, NULL, DIGCF_PRESENT | DIGCF_ALLCLASSES | DIGCF_DEVICEINTERFACE);
 
     if (hUSBDevInfo == INVALID_HANDLE_VALUE) {
 #ifdef DEBUG
@@ -224,13 +195,14 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
             switch (flag) {
                 case FILL_USB_LISTVIEW:
                     if (hDlg != NULL) {
-                        UsbDevStruct *new = UsbFind((ULONG)vID, (ULONG)dID);
+                        UsbDevStruct *new = UsbFind(vID, dID);
                         scanned_usb_ids[idx][0] = vID;
                         scanned_usb_ids[idx][1] = dID;
 #ifdef DEBUG
                         fprintf(stderr, "%04lx:%04lx found\n", vID, dID);
 #endif
                         AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
+                        idx++;
                     }
                     break;
                 case IS_USB_CONNECTED:
@@ -244,8 +216,9 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                         return TRUE;
                     }
                     break;
+                default:
+                    break;
             }
-            idx++;
         } else {
 #ifdef DEBUG
             __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
@@ -255,21 +228,9 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
             return FALSE;
         }
 SKIP_DEVICE:
-#ifdef DEBUG
-        if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
-             ++dwMemberIdx, &DevIntfData)) {
-            if (GetLastError() != ERROR_NO_MORE_ITEMS) {
-                __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 2nd call"));
-                free(DevIntfDetailData);
-                SetupDiDestroyDeviceInfoList(hUSBDevInfo);
-                return FALSE;
-            }
-        }
-#else
         SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
              ++dwMemberIdx, &DevIntfData);
         free(DevIntfDetailData);
-#endif
     }
 #ifdef DEBUG
     if (!SetupDiDestroyDeviceInfoList(hUSBDevInfo)) {
