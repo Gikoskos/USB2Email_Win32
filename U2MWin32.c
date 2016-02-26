@@ -318,40 +318,43 @@ BOOL parsePrefDialogFields(HWND hwnd)
     }
 
     GetFieldTextA(hwnd, IDC_PORTFIELD, &tmp2);
-    if (!tmp2) {
-        free(tmp1);
+
+    if (tmp2) {
+        if (strlen(tmp2) > 5) {
+            free(tmp1);
+            free(tmp2);
+            TCHAR tmpmsg1[255], tmpmsg2[255];
+            LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+            LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+            return FALSE;
+        }
+
+        PORT = 0;
+        UINT c;
+        DOUBLE temp_len = (DOUBLE)strlen(tmp2);
+        for (size_t i = 0; i < strlen(tmp2) ; i++) {
+            c = tmp2[i] - '0';
+            PORT = c*((UINT)pow(10, (temp_len - (i + 1)))) + PORT;
+        }
+        free(tmp2);
+
+        if (PORT > 65535) {
+            free(tmp1);
+            TCHAR tmpmsg1[255], tmpmsg2[255];
+            LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+            LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+            return FALSE;
+        }
+    } else {
+        PORT = 0;
+        /*free(tmp1);
         free(tmp2);
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_45, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
-        return TRUE;
-    } else if (strlen(tmp2) > 5) {
-        free(tmp1);
-        free(tmp2);
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
-        return FALSE;
-    }
-
-    PORT = 0;
-    UINT c;
-    DOUBLE temp_len = (DOUBLE)strlen(tmp2);
-    for (size_t i = 0; i < strlen(tmp2) ; i++) {
-        c = tmp2[i] - '0';
-        PORT = c*((UINT)pow(10, (temp_len - (i + 1)))) + PORT;
-    }
-    free(tmp2);
-
-    if (PORT > 65535) {
-        free(tmp1);
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
-        return FALSE;
+        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);*/
     }
 
     SMTP_SERVER = realloc(NULL, strlen(tmp1)+1);
@@ -933,6 +936,10 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 if (helpDlgIco) {
                     SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)helpDlgIco);
                 }
+
+                TCHAR tmp1[3000];
+                LoadString(*g_hInst, ID_HELP_MSG, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
+                SetDlgItemText(hwnd, IDC_HELP_TEXT, tmp1);
             }
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
@@ -1033,7 +1040,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
                 ttrack_label = CreateWindow(_T("STATIC"), tmp4,
                                  WS_VISIBLE | WS_CHILD | SS_CENTER,
-                                 30, 140, 200, 60, hwnd, NULL, *g_hInst, NULL);
+                                 30, 160, 200, 40, hwnd, NULL, *g_hInst, NULL);
                 if (!ttrack_label) {
                     TCHAR tmpmsg1[255], tmpmsg2[255];
                     LoadString(*g_hInst, ID_ERR_MSG_14, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -1060,16 +1067,17 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         /* custom message to use from the U2MThread */
         case WM_ENABLE_STARTSTOP:
             EnableWindow(STARTSTOP, !IsWindowEnabled(STARTSTOP));
+            SetU2MNotifyTip();
             break;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDM_EN_LANG:
-                    *g_hInst = U2M_dlls.U2MLocale_en.module;
-                    currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-                    ResetMainWindowLanguage(hwnd);
-                    MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
-                    SetMenu(hwnd, MainMenu);
-                    SetU2MNotifyTip();
+                        *g_hInst = U2M_dlls.U2MLocale_en.module;
+                        currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+                        ResetMainWindowLanguage(hwnd);
+                        MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
+                        SetMenu(hwnd, MainMenu);
+                        SetU2MNotifyTip();
                     break;
                 case IDM_GR_LANG:
                     *g_hInst = U2M_dlls.U2MLocale_gr.module;
@@ -1200,7 +1208,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 case WM_LBUTTONUP:
                     if (!IsWindowVisible(hwnd)) {
                         ShowWindow(hwnd, SW_SHOW);
-                        SetFocus(hwnd);
+                        SetForegroundWindow(hwnd);
                     } else ShowWindow(hwnd, SW_HIDE);
                     break;
             }

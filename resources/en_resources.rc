@@ -31,7 +31,7 @@ STRINGTABLE
     ID_ERR_MSG_12,  "Can't change password while the service is running."
     ID_ERR_MSG_13,  "Can't change preferences while the service is running."
     ID_ERR_MSG_14,  "Trackbar label failed!"
-    ID_ERR_MSG_15,  "Set waiting interval between each scan of all USB devices in milliseconds"
+    ID_ERR_MSG_15,  "USB device scan pausing interval"
     ID_ERR_MSG_16,  "Trackbar failed!"
     ID_ERR_MSG_17,  "Start/Stop button failed!"
     ID_ERR_MSG_18,  "E-mail button failed!"
@@ -80,6 +80,40 @@ STRINGTABLE
     ID_ERR_MSG_61,  "Open USB2Email"
 }
 
+STRINGTABLE
+{
+    ID_HELP_MSG,  "[Choose USB device]: A list of all USB devices currently attached to your PC. \
+Pick the device you want either by double clicking it, or clicking it once and hitting the 'OK' button. \
+The 'Refresh' button re-scans the PC's USB ports and shows the new USB devices.\
+\r\n \r\n \r\n\
+[Configure E-Mail to send]: The details of the e-mail you want to send.\
+\r\n \r\n \r\n\
+[USB device scan pausing interval]: When the service is running, it pauses for some fractions of a second \
+before scanning the PC for USB devices each time. This is done for performance purposes. You can set \
+the milliseconds of that pause with this trackbar. Values range from 200-2000 milliseconds (0.2-2 seconds).\
+\r\n \r\n \r\n\
+[Start/Stop]: Starts/Stops the service. Before the service is initiated, there are checks to see \
+if certain info has been given yet, otherwise it fails to start. Necessary fields to fill are \
+SMTP server, FROM field, TO field and E-mail password field. The service also fails to start if the user \
+hasn't picked a USB device from the list. \r\n While the service is running the button text changes to 'Stop' \
+and you can stop the service at any moment except for when the e-mail is being sent. During that time the button \
+is disabled.\
+\r\n \r\n \r\n\
+[Menu -> E-mail Password]: The password for the e-mail address entered on the 'FROM' field is entered here.\
+\r\n \r\n \r\n\
+[Menu -> Preferences] \r\n \r\n\
+[Server URL]: The URL address of the server (e.g. smtp-mail.outlook.com, smtp.gmail.com). \r\n \r\n\
+[Port]: The port number (e.g. 465, 587). Not a necessary field. \r\n \r\n\
+[Reload USB devices automatically]: Refreshes the USB devices automatically on the 'Choose USB device' dialog. \r\n \r\n\
+[Enable checking for valid e-mail addresses]: (ALPHA)Non-RFC compliant. Doesn't work as well. \r\n \r\n\
+[Maximum number of acceptable failed e-mails sent, before stopping the service]: If the service fails to send an e-mail \
+once it will stop running. You can set here a number of failed e-mails to be accepted before stopping the service. \r\n \r\n\
+[System tray icon]: Enables a notification area icon allowing USB2Email to be minimized to the tray. \r\n \r\n\
+[Store user input to configuration file]: Stores the current given data from input fields to a backup file. USB2Email reads this file \
+every time it's opened. Also the password will be stored on that file; don't enter your password before pressing this button if \
+you don't want it to be stolen."
+}
+
 
 //
 // Menu resources
@@ -107,7 +141,6 @@ IDR_MAINMENU MENUEX
 }
 
 
-
 //
 // Dialog resources
 //
@@ -129,10 +162,9 @@ IDD_HELPDIALOG DIALOG 0, 0, 248, 250
 STYLE DS_3DLOOK | DS_CENTER | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_GROUP | WS_POPUP | WS_SYSMENU
 EXSTYLE WS_EX_OVERLAPPEDWINDOW | WS_EX_APPWINDOW
 CAPTION "Using USB2Email"
-FONT 10, "Ms Shell Dlg"
+FONT 11, "Arial", 500, 0, 1
 {
-    LTEXT           "",
-                    0, 18, 10, 215, 140, SS_CENTER, WS_EX_LEFT
+    EDITTEXT        IDC_HELP_TEXT, 14, 10, 221, 175, ES_READONLY | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL
     PUSHBUTTON      "OK", IDOK, 15, 190, 217, 44, 0, WS_EX_DLGMODALFRAME
 }
 
