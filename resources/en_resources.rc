@@ -21,7 +21,7 @@ STRINGTABLE
     ID_ERR_MSG_2,   "Message queue error"
     ID_ERR_MSG_3,   "Window creation failed!"
     ID_ERR_MSG_4,   "Main Window class registration Failed!"
-    ID_ERR_MSG_5,   "Quiting..."
+    ID_ERR_MSG_5,   "Exiting USB2Email..."
     ID_ERR_MSG_6,   "Are you sure you want to quit?"
     ID_ERR_MSG_7,   "Can't close the window."
     ID_ERR_MSG_8,   "Can't change e-mail while the service is running."

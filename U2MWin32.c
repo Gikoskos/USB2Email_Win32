@@ -97,6 +97,7 @@ VOID InitHelpWindow(HWND hwnd);
 VOID CenterChild(HWND hwnd);
 VOID InitU2MTray(HWND hwnd);
 BOOL InitU2MTrayMenu(VOID);
+VOID SetU2MNotifyTip(VOID);
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
@@ -601,6 +602,23 @@ VOID InitU2MTray(HWND hwnd)
     }
 }
 
+VOID SetU2MNotifyTip(VOID)
+{
+    if (TrayIsInitialized && TrayIcon) {
+        if (onoff) {
+            TCHAR tmpmsg1[50];
+            LoadString(*g_hInst, ID_ERR_MSG_59, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+            _tcscpy(U2MTrayData.szTip, tmpmsg1);
+            Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData);
+        } else {
+            TCHAR tmpmsg1[50];
+            LoadString(*g_hInst, ID_ERR_MSG_58, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+            _tcscpy(U2MTrayData.szTip, tmpmsg1);
+            Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
+        }
+    }
+}
+
 UINT CALLBACK RefreshUSBThread(LPVOID dat)
 {
     HWND hwnd = (HWND)dat;
@@ -1051,6 +1069,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     ResetMainWindowLanguage(hwnd);
                     MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
                     SetMenu(hwnd, MainMenu);
+                    SetU2MNotifyTip();
                     break;
                 case IDM_GR_LANG:
                     *g_hInst = U2M_dlls.U2MLocale_gr.module;
@@ -1058,6 +1077,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     ResetMainWindowLanguage(hwnd);
                     MainMenu = U2M_dlls.U2MLocale_gr.locale_menu;
                     SetMenu(hwnd, MainMenu);
+                    SetU2MNotifyTip();
                     break;
                 case IDM_ABOUT:
                     InitAboutDialog(hwnd);
@@ -1094,12 +1114,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     break;
                 case IDC_STARTSTOP:
                     if (onoff) {
-                        if (TrayIcon) {
-                            TCHAR tmpmsg1[50];
-                            LoadString(*g_hInst, ID_ERR_MSG_58, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-                            _tcscpy(U2MTrayData.szTip, tmpmsg1);
-                            Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
-                        }
                         EnableWindow(USBListButton, TRUE);
                         EnableWindow(EMAILButton, TRUE);
                         EnableWindow(time_track, TRUE);
@@ -1107,12 +1121,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         onoff = FALSE;
                     } else {
                         if (InitU2MThread(hwnd)) {
-                            if (TrayIcon) {
-                                TCHAR tmpmsg1[50];
-                                LoadString(*g_hInst, ID_ERR_MSG_59, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-                                _tcscpy(U2MTrayData.szTip, tmpmsg1);
-                                Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
-                            }
                             EnableWindow(USBListButton, FALSE);
                             EnableWindow(EMAILButton, FALSE);
                             EnableWindow(time_track, FALSE);
@@ -1125,6 +1133,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         LoadString(*g_hInst, uID, tmp, sizeof(tmp)/sizeof(tmp[0]));
                         SetWindowText(STARTSTOP, tmp);
                     }
+                    SetU2MNotifyTip();
                     break;
                 case IDC_EMAILBUTTON:
                     if (!onoff)
@@ -1230,6 +1239,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             DeleteObject(mainwindowcontrol_font);
             FreeLibrary(U2M_dlls.U2MLocale_gr.module);
             FreeLibrary(U2M_dlls.U2MLocale_en.module);
+            DestroyWindow(hwnd);
             PostQuitMessage(0);
             break;
         default:
@@ -1333,12 +1343,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     InitCommonControls();
+
 #ifdef DEBUG
     ShowWindow(hwnd, SW_SHOW);
     SetActiveWindow(hwnd);
-#else
+#else //GDI usage errors with AnimateWindow!?
     AnimateWindow(hwnd, 200, AW_CENTER | AW_ACTIVATE);
-    SetForegroundWindow(hwnd);
+    //PrintWindow(hwnd, GetWindowDC(hwnd), 0);
 #endif
     while (bRet) {
         bRet = GetMessage(&Msg, NULL, 0, 0);
