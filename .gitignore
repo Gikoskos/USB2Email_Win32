@@ -3,4 +3,4 @@
 *.conf
 *.dll
 *.a
-build/USB2EMailWin32/
+build/*/
