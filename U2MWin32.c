@@ -31,7 +31,7 @@ HDC hdc;
 PAINTSTRUCT ps;
 
 /*Is TRUE when the service is running and FALSE when it's not*/
-UINT onoff = FALSE;
+BOOL onoff;
 
 /*Main Window controls*/
 WNDCLASSEX wc; //window class
@@ -1057,8 +1057,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
                 UpdateWindow(hwnd);
             }
-        case WM_MOUSEMOVE:
-            break;
         case WM_PAINT:
             if ((hdc = BeginPaint(hwnd, &ps))) {
                 EndPaint(hwnd, &ps);
@@ -1121,20 +1119,12 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     }
                     break;
                 case IDC_STARTSTOP:
-                    if (onoff) {
-                        EnableWindow(USBListButton, TRUE);
-                        EnableWindow(EMAILButton, TRUE);
-                        EnableWindow(time_track, TRUE);
-                        EnableWindow(ttrack_label, TRUE);
-                        onoff = FALSE;
-                    } else {
-                        if (InitU2MThread(hwnd)) {
-                            EnableWindow(USBListButton, FALSE);
-                            EnableWindow(EMAILButton, FALSE);
-                            EnableWindow(time_track, FALSE);
-                            EnableWindow(ttrack_label, FALSE);
-                        }
-                    }
+                    onoff = InitU2MThread(hwnd);
+                    printf("%u \n", onoff);
+                    EnableWindow(USBListButton, !onoff);
+                    EnableWindow(EMAILButton, !onoff);
+                    EnableWindow(time_track, !onoff);
+                    EnableWindow(ttrack_label, !onoff);
                     {
                         TCHAR tmp[255];
                         UINT uID = (!onoff)?ID_ERR_MSG_9:ID_ERR_MSG_10;
@@ -1269,6 +1259,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /*** Global initializations ***/
     PORT = 0;
     pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
+    onoff = FALSE;
     TrayIconMenu = NULL;
     memset(usb_id_selection, 0, sizeof(UINT)*2);
     TIMEOUT = 1000;

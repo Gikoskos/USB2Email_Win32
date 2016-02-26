@@ -87,7 +87,8 @@ extern BOOL TrayIcon;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern UINT MAX_FAILED_EMAILS;
-extern UINT onoff, PORT;
+extern BOOL onoff;
+extern UINT PORT;
 extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
 extern ULONG usb_id_selection[2];

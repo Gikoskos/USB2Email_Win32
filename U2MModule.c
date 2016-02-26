@@ -41,6 +41,8 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 
 BOOL InitU2MThread(HWND hwnd)
 {
+    if (onoff) return FALSE;
+
     if (!FROM) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_53, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -69,7 +71,6 @@ BOOL InitU2MThread(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
-    onoff = TRUE;
     u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)hwnd, 0, thrdID);
 
     return TRUE;
@@ -80,7 +81,7 @@ UINT CALLBACK U2MThread(LPVOID dat)
     HWND hwnd ATTRIB_UNUSED = (HWND)dat;
     UINT failed_emails = 0;
 
-    while (onoff && failed_emails <= MAX_FAILED_EMAILS) {
+    while (onoff && (failed_emails <= MAX_FAILED_EMAILS)) {
         Sleep((DWORD)TIMEOUT);
         if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
@@ -90,9 +91,9 @@ UINT CALLBACK U2MThread(LPVOID dat)
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
         }
     }
-    SendMessageTimeout(HWND_BROADCAST, WM_COMMAND, 
+    /*SendMessageTimeout(HWND_BROADCAST, WM_COMMAND, 
                        MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
-                       (LPARAM)0, SMTO_NORMAL, 0, NULL);
+                       (LPARAM)0, SMTO_NORMAL, 0, NULL);*/
     return 0;
 }
 
@@ -107,10 +108,9 @@ BOOL SendEmail(VOID)
     if (CC)
         quickmail_add_cc(mailobj, CC);
 
-
-    quickmail_add_header(mailobj, "Importance: Low");
-    quickmail_add_header(mailobj, "X-Priority: 5");
-    quickmail_add_header(mailobj, "X-MSMail-Priority: Low");
+    quickmail_add_header(mailobj, "Importance: High");
+    /*quickmail_add_header(mailobj, "X-Priority: 5");
+    quickmail_add_header(mailobj, "X-MSMail-Priority: Low");*/
     quickmail_set_body(mailobj, BODY);
 
     const char* errmsg;
