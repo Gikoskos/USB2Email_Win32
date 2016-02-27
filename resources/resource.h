@@ -120,10 +120,14 @@
 #define ID_ERR_MSG_59                           40163
 #define ID_ERR_MSG_60                           40164
 #define ID_ERR_MSG_61                           40165
-#define ID_ERR_MSG_62                           40166
+//#define RESERVED                           40166
 
 #define IDM_TRAY_OPENWINDOW                     40167
 #define IDM_TRAY_QUIT                           40168
 
 #define ID_HELP_MSG                             40169
 #define IDC_HELP_TEXT                           40170
+#define IDM_AUTOSTART                           40171
+
+#define ID_ERR_MSG_62                           40172
+#define ID_ERR_MSG_63                           40173

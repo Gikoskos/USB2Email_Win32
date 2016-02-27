@@ -84,6 +84,7 @@ extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
 extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
 extern BOOL TrayIcon;
+extern BOOL Autostart;
 extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern UINT MAX_FAILED_EMAILS;

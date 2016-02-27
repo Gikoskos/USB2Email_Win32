@@ -9,7 +9,7 @@
 char *cfg_filename = "U2M.conf";
 TCHAR *registry_path = _T("Software\\USB2Email");
 TCHAR *reg_subkeys[] = {
-    _T("TrayIcon"), _T("VendorID"), _T("DeviceID")
+    _T("TrayIcon"), _T("VendorID"), _T("DeviceID"), _T("Autostart")
 };
 
 /* functions for handling the configuration file */
@@ -131,7 +131,8 @@ BOOL saveConfFile(VOID)
 
 BOOL WriteDataToU2MReg(VOID)
 {
-    HKEY U2MRegkey = NULL;
+    HKEY U2MRegkey = NULL, WinAuto = NULL;
+    TCHAR U2MPath[1024];
 
     if (RegCreateKeyEx(HKEY_CURRENT_USER, registry_path, 0, NULL,
                        REG_OPTION_NON_VOLATILE, KEY_CREATE_SUB_KEY | KEY_SET_VALUE, NULL,
@@ -140,7 +141,21 @@ BOOL WriteDataToU2MReg(VOID)
     RegSetValueEx(U2MRegkey, reg_subkeys[0], 0, REG_DWORD, (BYTE*)&TrayIcon, sizeof(TrayIcon));
     RegSetValueEx(U2MRegkey, reg_subkeys[1], 0, REG_DWORD, (BYTE*)&usb_id_selection[0], sizeof(usb_id_selection[0]));
     RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&usb_id_selection[1], sizeof(usb_id_selection[1]));
+    RegSetValueEx(U2MRegkey, reg_subkeys[3], 0, REG_DWORD, (BYTE*)&Autostart, sizeof(Autostart));
     if (RegCloseKey(U2MRegkey) != ERROR_SUCCESS) return FALSE;
+
+    if (!GetModuleFileName(0, U2MPath, 1024)) return FALSE;
+
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 
+                     0, KEY_ALL_ACCESS, &WinAuto) != ERROR_SUCCESS) return FALSE;
+
+    if (Autostart) {
+        RegSetValueEx(WinAuto, _T("USB2Email"), 0, REG_SZ, (LPBYTE)U2MPath, sizeof(TCHAR)*(_tcslen(U2MPath) + 1));
+    } else {
+        RegDeleteKeyValue(WinAuto, NULL, _T("USB2Email"));
+    }
+
+    if (RegCloseKey(WinAuto) != ERROR_SUCCESS) return FALSE;
     return TRUE;
 }
 
@@ -156,16 +171,18 @@ BOOL GetU2MRegData(VOID)
     if (RegDisposition == REG_CREATED_NEW_KEY) {
         RegSetValueEx(U2MRegkey, reg_subkeys[0], 0, REG_DWORD, (BYTE*)&TrayIcon, sizeof(TrayIcon));
         RegSetValueEx(U2MRegkey, reg_subkeys[1], 0, REG_DWORD, (BYTE*)&usb_id_selection[0], sizeof(usb_id_selection[0]));
-        RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&usb_id_selection[1], sizeof(usb_id_selection[1]));        
+        RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&usb_id_selection[1], sizeof(usb_id_selection[1]));
+        RegSetValueEx(U2MRegkey, reg_subkeys[3], 0, REG_DWORD, (BYTE*)&Autostart, sizeof(Autostart));
     } else if (RegDisposition == REG_OPENED_EXISTING_KEY) {
-        DWORD sub_data[3];
+        DWORD sub_data[4];
         DWORD data_size = (DWORD)sizeof(DWORD);
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             if (RegQueryValueEx(U2MRegkey, reg_subkeys[i], NULL, NULL, 
                                 (BYTE*)&sub_data[i], &data_size) != ERROR_SUCCESS) goto CLOSE_KEY;
         }
         TrayIcon = (BOOL)(sub_data[0] | 0x0);
+        Autostart = (BOOL)(sub_data[3] | 0x0);
         usb_id_selection[0] = sub_data[1];
         usb_id_selection[1] = sub_data[2];
     }

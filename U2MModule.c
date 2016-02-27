@@ -32,7 +32,8 @@ extern HINSTANCE *g_hInst;
 * Prototypes for functions with local scope *
  *******************************************/
 BOOL USBisConnected();
-UINT CALLBACK U2MThread(LPVOID dat);
+UINT CALLBACK U2MThreadSingle(LPVOID dat);
+//UINT CALLBACK U2MThreadMulti(LPVOID dat);
 BOOL SendEmail(VOID);
 int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
@@ -71,12 +72,48 @@ BOOL InitU2MThread(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
-    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThread, (LPVOID)hwnd, 0, thrdID);
+    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThreadSingle, (LPVOID)hwnd, 0, thrdID);
 
     return TRUE;
 }
 
-UINT CALLBACK U2MThread(LPVOID dat)
+/*sends a single e-mail when the device is detected and waits
+ *it's removed*/
+UINT CALLBACK U2MThreadSingle(LPVOID dat)
+{
+    HWND hwnd ATTRIB_UNUSED = (HWND)dat;
+    UINT failed_emails = 0;
+
+    while (onoff && (failed_emails <= MAX_FAILED_EMAILS)) {
+        Sleep((DWORD)TIMEOUT);
+        if (!onoff) break;
+
+        if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
+            SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
+                               (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
+            if (!SendEmail()) failed_emails++;
+            SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
+                               (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
+
+            if (failed_emails > MAX_FAILED_EMAILS) break; //bad logic but it works
+
+            while (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
+                Sleep(900);
+                if (!onoff) 
+                    return 0; //if onoff is FALSE, it means that the STARTSTOP button has
+            }                 //been already pushed and there's no need to risk sending the 
+        }                     //message in line 104, thus disabling the button
+    }
+
+    if (failed_emails > MAX_FAILED_EMAILS) 
+        SendMessageTimeout(hwnd, WM_COMMAND, 
+                           MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
+                           (LPARAM)0, SMTO_NORMAL, 0, NULL);
+    return 0;
+}
+
+/* sends e-mails nonstop before the device is removed
+UINT CALLBACK U2MThreadMulti(LPVOID dat)
 {
     HWND hwnd ATTRIB_UNUSED = (HWND)dat;
     UINT failed_emails = 0;
@@ -97,7 +134,7 @@ UINT CALLBACK U2MThread(LPVOID dat)
                            MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
                            (LPARAM)0, SMTO_NORMAL, 0, NULL);
     return 0;
-}
+}*/
 
 BOOL SendEmail(VOID)
 {

@@ -78,6 +78,8 @@ STRINGTABLE
     ID_ERR_MSG_59,  "USB2Email is running"
     ID_ERR_MSG_60,  "Quit"
     ID_ERR_MSG_61,  "Open USB2Email"
+    ID_ERR_MSG_62,  "Restart the application for the option's effect to take place."
+    ID_ERR_MSG_63,  "Alert!"
 }
 
 STRINGTABLE
@@ -119,24 +121,25 @@ you don't want it to be stolen."
 // Menu resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDR_MAINMENU MENUEX
+IDR_MAINMENU MENU
 {
-    POPUP "Menu", 0, 0, 0
+    POPUP "Menu"
     {
-        MENUITEM "E-mail Passw&ord", IDM_PASSWORD, 0, 0
-        MENUITEM "&Preferences", IDM_PREF, 0, 0
-        POPUP "L&anguages", 0, 0, 0
+        MENUITEM "E-mail Passw&ord", IDM_PASSWORD
+        MENUITEM "&Preferences", IDM_PREF
+        MENUITEM "A&utostart", IDM_AUTOSTART
+        POPUP "L&anguages"
         {
-            MENUITEM "English", IDM_EN_LANG, 0, 0
-            MENUITEM "Ελληνικά", IDM_GR_LANG, 0, 0
+            MENUITEM "English", IDM_EN_LANG
+            MENUITEM "Ελληνικά", IDM_GR_LANG
         }
-        MENUITEM "", 0, MFT_SEPARATOR, 0
-        MENUITEM "E&xit", IDM_EXIT, 0, 0
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit", IDM_EXIT
     }
-    POPUP "&Help", 0, 0, 0
+    POPUP "&Help"
     {
-        MENUITEM "H&elp", IDM_H_ELP1, 0, 0
-        MENUITEM "&About", IDM_ABOUT, 0, 0
+        MENUITEM "H&elp", IDM_H_ELP1, HELP
+        MENUITEM "&About", IDM_ABOUT
     }
 }
 

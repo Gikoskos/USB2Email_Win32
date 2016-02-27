@@ -26,6 +26,7 @@ BOOL TrayIcon = FALSE; //for the Tray Icon check control
 BOOL USBdev_scan = FALSE; //helper global for the USB reload thread
 BOOL HlpDlg_open = FALSE; //bool to check whether Help dialog has already been opened
 BOOL TrayIsInitialized = FALSE; //saves memory by initializing the tray icon once at any point
+BOOL Autostart = FALSE; //when TRUE the application autostarts on boot
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -1056,8 +1057,15 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 SendMessage(time_track, TBM_SETPAGESIZE, (WPARAM)0, (LPARAM)4);
                 SendMessage(time_track, TBM_SETSEL, (WPARAM)FALSE, (LPARAM)MAKELONG(T_MIN, T_MAX));
                 SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
-                UpdateWindow(hwnd);
-                //SendMessage(hwnd, WM_COMMAND, MAKEWPARAM((WORD)IDC_STARTSTOP, 0), (LPARAM)0);
+
+                if (!Autostart) {
+                    UpdateWindow(hwnd);
+                } else {
+                    SendMessage(hwnd, WM_COMMAND, MAKEWPARAM((WORD)IDC_STARTSTOP, 0), (LPARAM)0);
+                }
+                CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
+                              (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                DrawMenuBar(hwnd);
             }
         case WM_PAINT:
             if ((hdc = BeginPaint(hwnd, &ps))) {
@@ -1072,12 +1080,15 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDM_EN_LANG:
-                        *g_hInst = U2M_dlls.U2MLocale_en.module;
-                        currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-                        ResetMainWindowLanguage(hwnd);
-                        MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
-                        SetMenu(hwnd, MainMenu);
-                        SetU2MNotifyTip();
+                    *g_hInst = U2M_dlls.U2MLocale_en.module;
+                    currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+                    ResetMainWindowLanguage(hwnd);
+                    MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
+                    SetMenu(hwnd, MainMenu);
+                    SetU2MNotifyTip();
+                    CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
+                                  (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                    DrawMenuBar(hwnd);
                     break;
                 case IDM_GR_LANG:
                     *g_hInst = U2M_dlls.U2MLocale_gr.module;
@@ -1086,6 +1097,9 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     MainMenu = U2M_dlls.U2MLocale_gr.locale_menu;
                     SetMenu(hwnd, MainMenu);
                     SetU2MNotifyTip();
+                    CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
+                                  (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                    DrawMenuBar(hwnd);
                     break;
                 case IDM_ABOUT:
                     InitAboutDialog(hwnd);
@@ -1099,6 +1113,12 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         LoadString(*g_hInst, ID_ERR_MSG_1, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
                         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
                     }
+                    break;
+                case IDM_AUTOSTART:
+                    Autostart = !Autostart;
+                    CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
+                                  (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                    DrawMenuBar(hwnd);
                     break;
                 case IDM_PASSWORD:
                     if (!onoff)
@@ -1168,9 +1188,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         ShowWindow(hwnd, SW_MINIMIZE);
                     }
                     break;
-                case SC_CLOSE:
-                    PostMessage(hwnd, WM_CLOSE, wParam, lParam);
-                    break;
                 default:
                     return DefWindowProc(hwnd, msg, wParam, lParam);
             }
@@ -1233,12 +1250,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             TIMEOUT = (UINT)SendMessage(time_track, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
             break;
         case WM_DESTROY:
-            DeleteAll();
-            DeleteObject(mainwindowcontrol_font_big);
-            DeleteObject(mainwindowcontrol_font);
-            FreeLibrary(U2M_dlls.U2MLocale_gr.module);
-            FreeLibrary(U2M_dlls.U2MLocale_en.module);
-            DestroyWindow(hwnd);
             PostQuitMessage(0);
             break;
         default:
@@ -1266,6 +1277,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     TIMEOUT = 1000;
 
     GetU2MRegData();
+    if (Autostart) TrayIcon = TRUE;
 
     g_hInst = &hInstance; //possibly a bad decision
 
@@ -1344,6 +1356,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     InitCommonControls();
 
+    if (!Autostart) {
 #ifdef DEBUG
     ShowWindow(hwnd, SW_SHOW);
     SetActiveWindow(hwnd);
@@ -1351,6 +1364,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     AnimateWindow(hwnd, 200, AW_CENTER | AW_ACTIVATE);
     //PrintWindow(hwnd, GetWindowDC(hwnd), 0);
 #endif
+    }
+
     while (bRet) {
         bRet = GetMessage(&Msg, NULL, 0, 0);
 

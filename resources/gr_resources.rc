@@ -77,7 +77,9 @@ STRINGTABLE
     ID_ERR_MSG_58,  "Το USB2Email είναι σταματημένο"
     ID_ERR_MSG_59,  "Το USB2Email είναι ενεργό"
     ID_ERR_MSG_60,  "Έξοδος"
-    ID_ERR_MSG_61,  "Άνοιγμα USB2Email"    
+    ID_ERR_MSG_61,  "Άνοιγμα USB2Email"
+    ID_ERR_MSG_62,  "Αυτή η επιλογή απαιτεί επανεκκίνηση της εφαρμογής για να δουλέψει."
+    ID_ERR_MSG_63,  "Ειδοποίηση!"
 }
 
 STRINGTABLE
@@ -121,24 +123,25 @@ STRINGTABLE
 // Initial Menu resource
 //
 LANGUAGE LANG_GREEK, SUBLANG_GREEK_GREECE
-IDR_MAINMENU MENUEX
+IDR_MAINMENU MENU
 {
-    POPUP "Μενού", 0, 0, 0
+    POPUP "Μενού"
     {
-        MENUITEM "Κωδικός e-mail", IDM_PASSWORD, 0, 0
-        MENUITEM "&Ρυθμίσεις", IDM_PREF, 0, 0
-        POPUP "Γ&λώσσες", 0, 0, 0
+        MENUITEM "Κωδικός e-mail", IDM_PASSWORD
+        MENUITEM "&Ρυθμίσεις", IDM_PREF
+        MENUITEM "Α&υτόματη εκκίνηση", IDM_AUTOSTART
+        POPUP "Γ&λώσσες"
         {
-            MENUITEM "English", IDM_EN_LANG, 0, 0
-            MENUITEM "Ελληνικά", IDM_GR_LANG, 0, 0
+            MENUITEM "English", IDM_EN_LANG
+            MENUITEM "Ελληνικά", IDM_GR_LANG
         }
-        MENUITEM "", 0, MFT_SEPARATOR, 0
-        MENUITEM "Έ&ξοδος", IDM_EXIT, 0, 0
+        MENUITEM SEPARATOR
+        MENUITEM "Έ&ξοδος", IDM_EXIT
     }
-    POPUP "&Πληροφορίες", 0, 0, 0
+    POPUP "&Πληροφορίες"
     {
-        MENUITEM "Β&οήθεια", IDM_H_ELP1, 0, 0
-        MENUITEM "&Σχετικά με", IDM_ABOUT, 0, 0
+        MENUITEM "Β&οήθεια", IDM_H_ELP1, HELP
+        MENUITEM "&Σχετικά με", IDM_ABOUT
     }
 }
 
