@@ -1,15 +1,50 @@
-﻿<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" UpgradeCode="12345678-1234-1234-1234-111111111111" 
-            Name="Example Product Name" Version="0.0.1" Manufacturer="Example Company Name" Language="1033">
-      <Package InstallerVersion="200" Compressed="yes" Comments="Windows Installer Package"/>
-      <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
- 
-      <Directory Id="TARGETDIR" Name="SourceDir">
-         <Component Id="ApplicationFiles" Guid="12345678-1234-1234-1234-222222222222"/>
-      </Directory>
- 
-      <Feature Id="DefaultFeature" Level="1">
-         <ComponentRef Id="ApplicationFiles"/>
-      </Feature>
-   </Product>
+﻿<?xml version='1.0' encoding='utf-8'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product Name='USB2Email' Manufacturer='George Koskeridis'
+        Id='7211379C-89A7-4238-B226-86CE033F2D92' 
+        UpgradeCode='1640A12F-E858-4342-A563-CDBDE2EFCC05'
+        Language='1033' Codepage='1252' Version='2.6.0'>
+
+        <Package Id='*' Keywords='Installer' Description="USB2Email 2.6.0 Installer"
+            Comments='Test1' Manufacturer='George Koskeridis'
+            InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+        <Media Id='1' Cabinet='U2Mdata.cab' EmbedCab='yes'/>
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='ProgramFilesFolder' Name='PFiles'>
+                <Directory Id='INSTALLDIR' Name='USB2Email'>
+
+                    <Component Id='U2M_nolang' Guid='3DF1F8D0-8068-4F1D-9095-AEC18FED608D'>
+                        <File Id='USB2EmailEXE' Name='USB2Email.exe' Source='USB2Email.exe' KeyPath='yes'>
+                            <Shortcut Id="startmenuU2M" Directory="ProgramMenuDir" Name="USB2Email" WorkingDirectory='INSTALLDIR' Icon="Foobar10.exe" IconIndex="0" Advertise="yes" />
+                            <Shortcut Id="desktopU2M" Directory="DesktopFolder" Name="USB2Email" WorkingDirectory='INSTALLDIR' Icon="Foobar10.exe" IconIndex="0" Advertise="yes" />
+                        </File>
+                        <File Id='U2MUSBIDsDLL' Name='U2MUsbIDs.dll' Source='U2MUsbIDs.dll' KeyPath='yes' />
+                        <File Id='libcurlDLL' Name='libcurl-4.dll' Source='libcurl-4.dll' KeyPath='yes' />
+                        <File Id='ssleayDLL' Name='ssleay32.dll' Source='ssleay32.dll' KeyPath='yes' />
+                        <File Id='libeayDLL' Name='libeay32.dll' Source='libeay32.dll' KeyPath='yes' />
+                        <File Id='libquickmailDLL' Name='libquickmail-0.dll' Source='libquickmail-0.dll' KeyPath='yes' />
+                    </Component>
+
+                    <Component Id='localelibs' Guid='75408B48-6AB6-4568-B5D7-D7054150CF6B'>
+                        <File Id='en_localeDLL' Name='U2MLocale_En.dll' Source='U2MLocale_En.dll' KeyPath='yes' />
+                        <File Id='gr_localeDLL' Name='U2MLocale_Gr.dll' Source='U2MLocale_Gr.dll' KeyPath='yes' />
+                    </Component>
+
+                    <Component Id='LicenseFiles' Guid='36054D1D-6A08-4E4A-9CF5-38A1A0C66797'>
+                        <File Id='CurlLicense' Name='LICENSE-MIXING' Source='LICENSE-MIXING' KeyPath='yes' />
+                    </Component>
+                </Directory>
+            </Directory>
+                    
+            <Directory Id="DesktopFolder" Name="Desktop" />
+        </Directory>
+        <Feature Id='Complete' Level='1'>
+            <ComponentRef Id='U2M_nolang' />
+            <ComponentRef Id='localelibs' />
+            <ComponentRef Id='LicenseFiles' />
+        </Feature>
+        <Icon Id='USB2Email.exe' SourceFile='USB2Email.exe' />
+    </Product>
 </Wix>

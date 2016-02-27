@@ -826,6 +826,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     } else {
                         DeleteScannedUSBIDs();
                         USBdev_scan = FALSE;
+                        //fprintf(stderr, "\nselected %04lx:%04lx\n", usb_id_selection[0], usb_id_selection[1]);
                         EndDialog(hwnd, (INT_PTR)TRUE);
                     }
                     return (INT_PTR)TRUE;
@@ -1120,7 +1121,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     break;
                 case IDC_STARTSTOP:
                     onoff = InitU2MThread(hwnd);
-                    printf("%u \n", onoff);
                     EnableWindow(USBListButton, !onoff);
                     EnableWindow(EMAILButton, !onoff);
                     EnableWindow(time_track, !onoff);

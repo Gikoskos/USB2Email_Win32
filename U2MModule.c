@@ -91,9 +91,9 @@ UINT CALLBACK U2MThread(LPVOID dat)
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
         }
     }
-    /*SendMessageTimeout(HWND_BROADCAST, WM_COMMAND, 
+    SendMessageTimeout(hwnd, WM_COMMAND, 
                        MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
-                       (LPARAM)0, SMTO_NORMAL, 0, NULL);*/
+                       (LPARAM)0, SMTO_NORMAL, 0, NULL);
     return 0;
 }
 
@@ -196,6 +196,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                 case FILL_USB_LISTVIEW:
                     if (hDlg != NULL) {
                         UsbDevStruct *new = UsbFind(vID, dID);
+                        if (!new) goto SKIP_DEVICE;
                         scanned_usb_ids[idx][0] = vID;
                         scanned_usb_ids[idx][1] = dID;
 #ifdef DEBUG
@@ -222,6 +223,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
         } else {
 #ifdef DEBUG
             __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
+            printf("SetupDiGetDeviceInterfaceDetail() failed\n\n");
 #endif
             free(DevIntfDetailData);
             SetupDiDestroyDeviceInfoList(hUSBDevInfo);
