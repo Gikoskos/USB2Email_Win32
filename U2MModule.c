@@ -83,6 +83,7 @@ UINT CALLBACK U2MThread(LPVOID dat)
 
     while (onoff && (failed_emails <= MAX_FAILED_EMAILS)) {
         Sleep((DWORD)TIMEOUT);
+        if (!onoff) break;
         if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
@@ -91,9 +92,10 @@ UINT CALLBACK U2MThread(LPVOID dat)
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
         }
     }
-    SendMessageTimeout(hwnd, WM_COMMAND, 
-                       MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
-                       (LPARAM)0, SMTO_NORMAL, 0, NULL);
+    if (failed_emails > MAX_FAILED_EMAILS) 
+        SendMessageTimeout(hwnd, WM_COMMAND, 
+                           MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
+                           (LPARAM)0, SMTO_NORMAL, 0, NULL);
     return 0;
 }
 

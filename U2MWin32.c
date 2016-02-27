@@ -1057,6 +1057,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 SendMessage(time_track, TBM_SETSEL, (WPARAM)FALSE, (LPARAM)MAKELONG(T_MIN, T_MAX));
                 SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
                 UpdateWindow(hwnd);
+                //SendMessage(hwnd, WM_COMMAND, MAKEWPARAM((WORD)IDC_STARTSTOP, 0), (LPARAM)0);
             }
         case WM_PAINT:
             if ((hdc = BeginPaint(hwnd, &ps))) {
