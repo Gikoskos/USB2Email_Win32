@@ -10,15 +10,18 @@
 #include <commctrl.h> //common controls
 #include <windowsx.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include <signal.h>
 #include <process.h> //threads
 #include <winnt.h> //lanugage macros
 #include <objbase.h> //for CoCreateGuid()
 #include <shellapi.h>
 
+#undef __CRT__NO_INLINE
+#include <strsafe.h> //win32 native string handling
+#define __CRT__NO_INLINE
+
 #include "resources/resource.h"
+#define ERR_ID(x) ID_ERR_MSG_##x
 
 #define MAX_CONNECTED_USB 20
 
@@ -29,56 +32,60 @@
 #define FILL_USB_LISTVIEW 10
 #define IS_USB_CONNECTED 20
 
+/* wrappers for freestanding .exe */
+//this one isn't actually a standard wrapper for malloc since malloc doesn't 0 out the allocated bytes
+#define malloc(x) HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)
+#define realloc(NULL, x) malloc(x)
+#define calloc(x, y) malloc(x * y)
+#define free(x) HeapFree(GetProcessHeap(), 0, x)
+
+
 
 /********************************************
 *Macros to clear all data entered by the user*
  ********************************************/
 #define ClearEmailData()                         \
-while (1) {                                      \
+do {                                             \
     if (FROM) free(FROM);                        \
     if (TO) free(TO);                            \
     if (CC) free(CC);                            \
     if (SUBJECT) free(SUBJECT);                  \
     if (BODY) free(BODY);                        \
     FROM = TO = CC = SUBJECT = BODY = NULL;      \
-    break;                                       \
-}
+} while (0)
 
 #define ClearPwd()                               \
-while (1) {                                      \
+do {                                             \
     if (pass) free(pass);                        \
     pass = NULL;                                 \
-    break;                                       \
-}
+} while (0)
 
 #define ClearPrefs()                             \
-while (1) {                                      \
+do {                                             \
     if (SMTP_SERVER) free(SMTP_SERVER);          \
     SMTP_SERVER = NULL;                          \
     PORT = 0;                                    \
     break;                                       \
-}
+} while (0)
 
 #define DeleteScannedUSBIDs()                    \
-while (1) {                                      \
+do {                                             \
     int i, j;                                    \
     for (i = 0; i < MAX_CONNECTED_USB; i++) {    \
         for (j = 0; j < 2; j++) {                \
             scanned_usb_ids[i][j] = 0;           \
         }                                        \
     }                                            \
-    break;                                       \
-}
+} while (0)
 
 #define DeleteU2MTrayIcon()                                  \
-while (1) {                                                  \
+do {                                                         \
     if (TrayIsInitialized) {                                 \
         DestroyIcon(U2MTrayData.hIcon);                      \
         Shell_NotifyIcon(NIM_DELETE, &U2MTrayData);          \
     }                                                        \
     if (TrayIconMenu != NULL) DestroyMenu(TrayIconMenu);     \
-    break;                                                   \
-}
+} while (0)
 
 extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
 extern BOOL ValidEmailCheck;
@@ -113,9 +120,9 @@ static inline void __MsgBoxGetLastError(LPTSTR lpszFunction)
 
     lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
                    (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-    _sntprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-               _T("%s EC %lu: %s"),
-               lpszFunction, dw, lpMsgBuf);
+    StringCchPrintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+                    _T("%s EC %lu: %s"),
+                    lpszFunction, dw, lpMsgBuf);
     MessageBox(NULL, (LPCTSTR)lpDisplayBuf, _T("Error!"), MB_OK); 
 
     LocalFree(lpMsgBuf);

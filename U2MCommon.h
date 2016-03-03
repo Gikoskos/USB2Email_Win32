@@ -27,10 +27,16 @@
 # define snprintf _snprintf
 # define strdup _strdup
 # define ATTRIB_UNUSED
-/* options for MinGW/GCC */
+/* options for MinGW */
 #elif defined(__MINGW32__)
-# define COMPILER_VERSION_STR ver_str(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
-# define COMPILER_NAME_STR str(GCC(MinGW-w64))
+# pragma GCC diagnostic ignored "-Wreturn-local-addr"
+# ifdef __MINGW64_VERSION_STR //mingw-w64
+#  define COMPILER_VERSION_STR __MINGW64_VERSION_STR
+#  define COMPILER_NAME_STR str(GCC(MinGW-w64))
+# else //mingw
+#  define COMPILER_VERSION_STR ver_str(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
+#  define COMPILER_NAME_STR str(GCC(MinGW))
+# endif
 # define ATTRIB_UNUSED __attribute__((unused))
 /* options for Intel C/C++ compiler */
 #elif defined(__INTEL_COMPILER)
@@ -48,6 +54,6 @@
 /* versioning */
 #define U2MWin32_MAJOR 2
 #define U2MWin32_MINOR 8
-#define U2MWin32_PATCH 1
+#define U2MWin32_PATCH 2
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)

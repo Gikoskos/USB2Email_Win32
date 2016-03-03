@@ -6,6 +6,7 @@
 #include "U2MWin32.h"
 #include <confuse.h>
 
+
 char *cfg_filename = "U2M.conf";
 TCHAR *registry_path = _T("Software\\USB2Email");
 TCHAR *reg_subkeys[] = {
@@ -26,12 +27,6 @@ BOOL parseConfFile(VOID)
         CFG_INT("Port_number", 0, CFGF_NONE),
         CFG_END()
     };
-    /*HANDLE ProcHeap = GetProcessHeap();
-    if (!ProcHeap)
-        return FALSE;
-
-#define HEAP_ALLOCEX(x) \
-HeapAlloc(ProcHeap, HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)*/
 
     cfg_t *U2MConf;
     U2MConf = cfg_init(email_opts, CFGF_NONE);
@@ -66,31 +61,31 @@ HeapAlloc(ProcHeap, HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)*/
 
     if (temp[0]) {
         FROM = malloc(sizeof(temp[0])*strlen(temp[0]) + 1);
-        strcpy(FROM, temp[0]);
+        StringCchCopyA(FROM, 255, temp[0]);
     }
     if (temp[1]) {
         TO = malloc(sizeof(temp[1])*strlen(temp[1]) + 1);
-        strcpy(TO, temp[1]);
+        StringCchCopyA(TO, 255, temp[1]);
     }
     if (temp[2]) {
         CC = malloc(sizeof(temp[2])*strlen(temp[2]) + 1);
-        strcpy(CC, temp[2]);
+        StringCchCopyA(CC, 255, temp[2]);
     }
     if (temp[3]) {
         SUBJECT = malloc(sizeof(temp[3])*strlen(temp[3]) + 1);
-        strcpy(SUBJECT, temp[3]);
+        StringCchCopyA(SUBJECT, 255, temp[3]);
     }
     if (temp[4]) {
         BODY = malloc(sizeof(temp[4])*strlen(temp[4]) + 1);
-        strcpy(BODY, temp[4]);
+        StringCchCopyA(BODY, 255, temp[4]);
     }
     if (temp[5]) {
         pass = malloc(sizeof(temp[5])*strlen(temp[5]) + 1);
-        strcpy(pass, temp[5]);
+        StringCchCopyA(pass, 255, temp[5]);
     }
     if (temp[6]) {
         SMTP_SERVER = malloc(sizeof(temp[6])*strlen(temp[6]) + 1);
-        strcpy(SMTP_SERVER, temp[6]);
+        StringCchCopyA(SMTP_SERVER, 255, temp[6]);
     }
 
     int signed_port = cfg_getint(U2MConf, "Port_number");

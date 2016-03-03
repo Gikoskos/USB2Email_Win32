@@ -7,6 +7,8 @@
 #ifndef USB_IDS_H
 #define USB_IDS_H
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

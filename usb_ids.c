@@ -1,4 +1,3 @@
-#include <stddef.h>
 #include "usb_ids.h"
 
 /* About 16687 entries; when Device is NULL, only the Vendor is known for that device.

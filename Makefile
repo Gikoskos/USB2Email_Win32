@@ -1,6 +1,6 @@
 CC = gcc
 DEBUG = -g -DDEBUG
-CFLAGS = -Wall -std=c11 -DUNICODE -D_UNICODE -static-libgcc
+CFLAGS = -Wall -DUNICODE -D_UNICODE -ffreestanding
 INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
 DBG = build/debug.exe

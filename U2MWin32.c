@@ -38,8 +38,8 @@ BOOL onoff;
 WNDCLASSEX wc; //window class
 HWND USBListButton, EMAILButton, STARTSTOP, time_track, ttrack_tooltip, ttrack_label;
 TOOLINFO ttrack_struct;
-HMENU MainMenu, TrayIconMenu; //to menu sto kyrio parathyro kai to menu tou tray icon
-NOTIFYICONDATA U2MTrayData = {0}; //tray area icon
+HMENU MainMenu, TrayIconMenu;
+NOTIFYICONDATA U2MTrayData = { 0 }; //tray area icon
 
 UINT MAX_FAILED_EMAILS = 0;
 UINT TIMEOUT;
@@ -69,9 +69,9 @@ WORD currentLangID;
 #define NO_SEPARATOR              '\0'
 
 
-/*******************************************
-* Prototypes for functions with local scope *
- *******************************************/
+/***************************************************
+* Prototypes for functions in this compilation unit *
+ ***************************************************/
 LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -89,6 +89,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText);
 BOOL isValidDomain(char *str, char SEPARATOR);
 BOOL GetUSBListViewSelection(HWND hwnd);
 VOID ResetMainWindowLanguage(HWND hwnd);
+TCHAR *GetLocaleStr(UINT iD);
 
 VOID InitEmailDialog(HWND hwnd);
 VOID InitAboutDialog(HWND hwnd);
@@ -99,6 +100,7 @@ VOID CenterChild(HWND hwnd);
 VOID InitU2MTray(HWND hwnd);
 BOOL InitU2MTrayMenu(VOID);
 VOID SetU2MNotifyTip(VOID);
+UINT PowerOf10(UINT x);
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
@@ -106,7 +108,25 @@ VOID DeleteAll(VOID);
 VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
 
-//@TODO: Implement ErrorCodes function
+UINT PowerOf10(UINT x)
+{
+    if (!x) return 1;
+
+    UINT retvalue = 1;
+    while (x--) {
+        retvalue*=10;
+    }
+
+    return retvalue;
+}
+
+TCHAR *GetLocaleStr(UINT iD) //only to be used for printing a single string
+{
+    TCHAR tmp[255];
+
+    LoadString(*g_hInst, iD, tmp, sizeof(tmp)/sizeof(tmp));
+    return tmp;
+}
 
 VOID DeleteAll(VOID)
 {
@@ -266,11 +286,11 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
                                   WS_POPUP |TTS_ALWAYSTIP | TTS_BALLOON,
                                   CW_USEDEFAULT, CW_USEDEFAULT,
                                   CW_USEDEFAULT, CW_USEDEFAULT,
-                                  hDlg, NULL, 
+                                  hDlg, NULL,
                                   *g_hInst, NULL);
 
     if (!hwndTool || !hwndTip)
-        return NULL;             
+        return NULL;
 
     TOOLINFO toolInfo = { 0 };
     toolInfo.cbSize = sizeof(toolInfo) - sizeof(void*);
@@ -308,6 +328,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
 BOOL parsePrefDialogFields(HWND hwnd)
 {
     char *tmp1 = NULL, *tmp2 = NULL;
+    size_t tmp1_len, tmp2_len;
 
     GetFieldTextA(hwnd, IDC_SERVERURLFIELD, &tmp1);
     if (!tmp1 && !onoff) {
@@ -317,11 +338,14 @@ BOOL parsePrefDialogFields(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
+    if (FAILED(StringCchLengthA(tmp1, 255, &tmp1_len))) return FALSE;
 
     GetFieldTextA(hwnd, IDC_PORTFIELD, &tmp2);
 
     if (tmp2) {
-        if (strlen(tmp2) > 5) {
+        if (FAILED(StringCchLengthA(tmp2, 255, &tmp2_len))) return FALSE;
+
+        if (tmp2_len > 5) {
             free(tmp1);
             free(tmp2);
             TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -333,10 +357,9 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
         PORT = 0;
         UINT c;
-        DOUBLE temp_len = (DOUBLE)strlen(tmp2);
-        for (size_t i = 0; i < strlen(tmp2) ; i++) {
+        for (size_t i = 0; i < tmp2_len ; i++) {
             c = tmp2[i] - '0';
-            PORT = c*((UINT)pow(10, (temp_len - (i + 1)))) + PORT;
+            PORT = c*(PowerOf10(tmp2_len - (i + 1))) + PORT;
         }
         free(tmp2);
 
@@ -358,8 +381,8 @@ BOOL parsePrefDialogFields(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);*/
     }
 
-    SMTP_SERVER = realloc(NULL, strlen(tmp1)+1);
-    snprintf(SMTP_SERVER, strlen(tmp1)+1, "%s", tmp1);
+    SMTP_SERVER = realloc(NULL, tmp1_len + 1);
+    StringCchPrintfA(SMTP_SERVER, tmp1_len + 1, "%s", tmp1);
     free(tmp1);
     return TRUE;
 }
@@ -367,7 +390,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
 BOOL parseEmailDialogFields(HWND hwnd)
 {
     char *tmp = NULL;
-
+    size_t tmp_len = 0;
 
     GetFieldTextA(hwnd, IDC_FROMFIELD, &tmp);
     if (!tmp) {
@@ -388,10 +411,12 @@ BOOL parseEmailDialogFields(HWND hwnd)
             return FALSE;
         }
     }
-    FROM = realloc(NULL, strlen(tmp)+1);
-    snprintf(FROM, strlen(tmp)+1, "%s", tmp);
+    if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
+    FROM = realloc(NULL, tmp_len + 1);
+    StringCchPrintfA(FROM, tmp_len + 1, "%s", tmp);
     free(tmp);
     tmp = NULL;
+    tmp_len = 0;
 
     GetFieldTextA(hwnd, IDC_TOFIELD, &tmp);
     if (!tmp) {
@@ -412,10 +437,12 @@ BOOL parseEmailDialogFields(HWND hwnd)
             return FALSE;
         }
     }
-    TO = realloc(NULL, strlen(tmp)+1);
-    snprintf(TO, strlen(tmp)+1, "%s", tmp);
+    if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
+    TO = realloc(NULL, tmp_len + 1);
+    StringCchPrintfA(TO, tmp_len + 1, "%s", tmp);
     free(tmp);
     tmp = NULL;
+    tmp_len = 0;
 
     GetFieldTextA(hwnd, IDC_CCFIELD, &tmp);
 
@@ -431,10 +458,12 @@ BOOL parseEmailDialogFields(HWND hwnd)
     } else if (!tmp) {
         CC = NULL;
     } else {
-        CC = realloc(NULL, strlen(tmp)+1);
-        strncpy(CC, tmp, strlen(tmp)+1);
+        if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
+        CC = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(CC, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
         tmp = NULL;
+        tmp_len = 0;
     }
 
     GetFieldTextA(hwnd, IDC_SUBJECTFIELD, &tmp);
@@ -444,15 +473,17 @@ BOOL parseEmailDialogFields(HWND hwnd)
         LoadString(*g_hInst, ID_ERR_MSG_37, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
             SUBJECT = malloc(2);
-            snprintf(SUBJECT, 2, "");
+            StringCchPrintfA(SUBJECT, 2, "");
         } else {
             return FALSE;
         }
     } else {
-        SUBJECT = realloc(NULL, strlen(tmp)+1);
-        strncpy(SUBJECT, tmp, strlen(tmp)+1);
+        if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
+        SUBJECT = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(SUBJECT, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
         tmp = NULL;
+        tmp_len = 0;
     }
 
     GetFieldTextA(hwnd, IDC_MESSAGEFIELD, &tmp);
@@ -462,13 +493,14 @@ BOOL parseEmailDialogFields(HWND hwnd)
         LoadString(*g_hInst, ID_ERR_MSG_35, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
             BODY = malloc(2);
-            snprintf(BODY, 2, "");
+            StringCchPrintfA(BODY, 2, "");
         } else {
             return FALSE;
         }
     } else {
-        BODY = realloc(NULL, strlen(tmp)+1);
-        strncpy(BODY, tmp, strlen(tmp)+1);
+        if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
+        BODY = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(BODY, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
     }
 
@@ -478,6 +510,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 BOOL parsePwdField(HWND hwnd)
 {
     char *tmp = NULL;
+    size_t tmp_len = 0;
 
     GetFieldTextA(hwnd, IDC_PWDFIELD, &tmp);
     if (!tmp) {
@@ -487,8 +520,9 @@ BOOL parsePwdField(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     } else {
-        pass = realloc(NULL, strlen(tmp)+1);
-        strncpy(pass, tmp, strlen(tmp)+1);
+        if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
+        pass = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(pass, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
     }
     return TRUE;
@@ -595,7 +629,7 @@ VOID InitU2MTray(HWND hwnd)
     if (success) {
         TCHAR tmpmsg1[50];
         LoadString(*g_hInst, ID_ERR_MSG_58, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        _tcscpy(U2MTrayData.szTip, tmpmsg1);
+        StringCchCopy(U2MTrayData.szTip, 50, tmpmsg1);
         Shell_NotifyIcon(NIM_ADD, &U2MTrayData);
         Shell_NotifyIcon(NIM_SETVERSION, &U2MTrayData);
     } else {
@@ -612,12 +646,12 @@ VOID SetU2MNotifyTip(VOID)
         if (onoff) {
             TCHAR tmpmsg1[50];
             LoadString(*g_hInst, ID_ERR_MSG_59, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-            _tcscpy(U2MTrayData.szTip, tmpmsg1);
+            StringCchCopy(U2MTrayData.szTip, 50, tmpmsg1);
             Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData);
         } else {
             TCHAR tmpmsg1[50];
             LoadString(*g_hInst, ID_ERR_MSG_58, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-            _tcscpy(U2MTrayData.szTip, tmpmsg1);
+            StringCchCopy(U2MTrayData.szTip, 50, tmpmsg1);
             Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
         }
     }
@@ -706,7 +740,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 SetDlgItemTextA(hwnd, IDC_SERVERURLFIELD, SMTP_SERVER);
             if (PORT) {
                 char PORT_STR[9];
-                snprintf(PORT_STR, 9, "%u", PORT);
+                StringCchPrintfA(PORT_STR, 9, "%u", PORT);
                 SetDlgItemTextA(hwnd, IDC_PORTFIELD, PORT_STR);
             }
             CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck)?BST_CHECKED:BST_UNCHECKED);
@@ -892,7 +926,7 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 LoadString(*g_hInst, ID_ERR_MSG_23, tmpmsg4, sizeof(tmpmsg4)/sizeof(tmpmsg4[0]));
                 LoadString(*g_hInst, ID_ERR_MSG_22, tmpmsg5, sizeof(tmpmsg5)/sizeof(tmpmsg5[0]));
 
-                FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd,tmpmsg1);
+                FROM_ttip = CreateBaloonToolTip(IDC_FROMFIELD, hwnd, tmpmsg1);
                 TO_ttip = CreateBaloonToolTip(IDC_TOFIELD, hwnd, tmpmsg2);
                 CC_ttip = CreateBaloonToolTip(IDC_CCFIELD, hwnd, tmpmsg3);
                 SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, tmpmsg4);
@@ -1358,11 +1392,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     if (!Autostart) {
 #ifdef DEBUG
-    ShowWindow(hwnd, SW_SHOW);
-    SetActiveWindow(hwnd);
+        ShowWindow(hwnd, SW_SHOW);
+        SetActiveWindow(hwnd);
 #else //GDI usage errors with AnimateWindow!?
-    AnimateWindow(hwnd, 200, AW_CENTER | AW_ACTIVATE);
-    //PrintWindow(hwnd, GetWindowDC(hwnd), 0);
+        AnimateWindow(hwnd, 200, AW_CENTER | AW_ACTIVATE);
+        //PrintWindow(hwnd, GetWindowDC(hwnd), 0);
 #endif
     }
 
