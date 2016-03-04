@@ -752,6 +752,9 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 case IDOK:
                     LibVisible = FALSE;
                     DeleteObject(DlgFont);
+                    DestroyWindow(lquick_link);
+                    DestroyWindow(lconf_link);
+                    DestroyWindow(lcurl_link);
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
                 case IDUSB2MAILLIBS:
@@ -1325,9 +1328,9 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
                         GetCursorPos(&cursor_pos);
                         SetForegroundWindow(hwnd);
-                        if (!TrackPopupMenuEx(TrayIconMenu,
+                        TrackPopupMenuEx(TrayIconMenu,
                                  TPM_RIGHTALIGN | TPM_BOTTOMALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION,
-                                 cursor_pos.x, cursor_pos.y, hwnd, NULL)) printf("TRACKPOPUPMENUEX() FAILED\n");
+                                 cursor_pos.x, cursor_pos.y, hwnd, NULL);
                     }
                     break;
                 case WM_LBUTTONUP:
