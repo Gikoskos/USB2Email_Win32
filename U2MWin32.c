@@ -767,6 +767,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                         width = DlgRect.right - DlgRect.left;
                         height = DlgRect.bottom - DlgRect.top;
                         for (i = 1; i <= 35; i++) {
+                            Sleep(1);
                             if (LibVisible) {
                                 SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height + i,
                                              SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
