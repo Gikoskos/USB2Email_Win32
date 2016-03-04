@@ -11,7 +11,44 @@
 #include <richedit.h>
 
 
+#define PROD_VER_C ver_commas(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
+#define PROD_VER_STR_D str(ver_dots(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH))
+
+
 1 RT_MANIFEST "USB2EMAILWin32.exe.manifest"
+
+
+//
+// USB2Email.exe versioning
+//
+1       VERSIONINFO
+FILEVERSION     PROD_VER_C
+PRODUCTVERSION  PROD_VER_C
+FILEFLAGSMASK   0X3FL
+FILEFLAGS       0L
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004B0"
+        BEGIN
+            VALUE "FileDescription", "USB2Email Application"
+            VALUE "FileVersion", PROD_VER_STR_D
+            VALUE "InternalName", "USB2Email.exe"
+            VALUE "ProductVersion", PROD_VER_STR_D
+            VALUE "OriginalFilename", "USB2Email.exe"
+            VALUE "CompanyName", " "
+            VALUE "LegalCopyright", "Copyright (c) 2016 George Koskeridis, The MIT License"
+            VALUE "ProductName", "USB2Email"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0000, 0x04B0
+    END
+END
 
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL

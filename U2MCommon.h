@@ -19,6 +19,8 @@
 #define str(x) _str(x)
 #define _ver_str(x,y,z) str(x)"."str(y)"."str(z)
 #define ver_str(x,y,z) _ver_str(x,y,z)
+#define ver_commas(x,y,z) x,y,z
+#define ver_dots(x,y,z) x.y.z
 
 /* options for Microsoft VC++ compiler */
 #ifdef _MSC_VER

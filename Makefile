@@ -1,13 +1,13 @@
 CC = gcc
 DEBUG = -g -DDEBUG
-CFLAGS = -Wall -DUNICODE -D_UNICODE -ffreestanding
+CFLAGS = -Wall -DUNICODE -D_UNICODE -static-libgcc -ffreestanding
 INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
 DBG = build/debug.exe
 RLS = build/USB2Email.exe
 DWARF2 = -ggdb
 
-LINKER = -L. -lU2MUsbIDs_dll -lsetupapi -lgdi32 -lole32 -ladvapi32 -lshell32 -lcomctl32 -lconfuse -lquickmail
+LINKER = -L. -lU2MUsbIDs_dll -lsetupapi -lgdi32 -lole32 -ladvapi32 -lshell32 -lcomctl32 -lquickmail -lconfuse
 RLS_FLAGS = -mwindows -O1
 
 WINDOW_SOURCE = U2MWin32.c
@@ -20,8 +20,8 @@ MAIN_RES = main_res.rc
 EN_RES = en_resources.rc
 GR_RES = gr_resources.rc
 
-WXS = Setup.wxs
-WIXOBJ = Setup.wixobj
+WXS = U2MInstaller.wxs
+WIXOBJ = U2MInstaller.wixobj
 
 
 dbg: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE) 
@@ -58,10 +58,10 @@ usbids_dll: compile_usbids
 installer: candle light
 
 candle: $(WXS)
-	candle.exe <
+	candle.exe $^
 
 light: $(WIXOBJ)
-	light.exe <
+	light.exe $^
 
 ml: smtp-tls.c
 	$(CC) $(CFLAGS) $^ -lcurl

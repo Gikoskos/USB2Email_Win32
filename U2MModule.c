@@ -157,7 +157,6 @@ BOOL SendEmail(VOID)
     quickmail_set_debug_log(mailobj, stderr);
 #endif
     if ((errmsg = quickmail_send(mailobj, SMTP_SERVER, PORT, FROM, pass)) != NULL) {
-        fprintf(stderr, "Error sending e-mail: %s\n", errmsg);
         retvalue = FALSE;
     }
     quickmail_destroy(mailobj);
@@ -238,9 +237,6 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                         if (!new) goto SKIP_DEVICE;
                         scanned_usb_ids[idx][0] = vID;
                         scanned_usb_ids[idx][1] = dID;
-#ifdef DEBUG
-                        fprintf(stderr, "%04lx:%04lx found\n", vID, dID);
-#endif
                         AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
                         idx++;
                     }
@@ -262,7 +258,6 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
         } else {
 #ifdef DEBUG
             __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
-            printf("SetupDiGetDeviceInterfaceDetail() failed\n\n");
 #endif
             free(DevIntfDetailData);
             SetupDiDestroyDeviceInfoList(hUSBDevInfo);
