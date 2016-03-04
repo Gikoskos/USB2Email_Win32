@@ -29,9 +29,6 @@ BOOL TrayIsInitialized = FALSE; //saves memory by initializing the tray icon onc
 BOOL Autostart = FALSE; //when TRUE the application autostarts on boot
 BOOL AutostartWarning = TRUE; //when TRUE the warning dialog will be shown on autostart click
 
-HDC hdc;
-PAINTSTRUCT ps;
-
 /*Is TRUE when the service is running and FALSE when it's not*/
 BOOL onoff;
 
@@ -678,6 +675,10 @@ UINT CALLBACK RefreshUSBThread(LPVOID dat)
 
 INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    static BOOL LibVisible = FALSE;
+    static HFONT DlgFont = NULL;
+    static HWND lconf_link = NULL, lquick_link = NULL, lcurl_link = NULL;
+
     switch (msg) {
         case WM_INITDIALOG:
             {
@@ -685,7 +686,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                                         MAKEINTRESOURCE(IDI_USB2MAILICONLARGE),
                                         IMAGE_ICON, 128, 128, 0);
                 if (about_usb_icon)
-                    SendDlgItemMessage(hwnd, IDUSB2MAIL, BM_SETIMAGE, 
+                    SendDlgItemMessage(hwnd, IDOK, BM_SETIMAGE, 
                                       (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             }
             /*{
@@ -696,14 +697,82 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, tmpmsg2);
                 
             }*/
+            DlgFont = CreateFont(12, 0, 0, 0, 400,
+                                 FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
+                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                                 VARIABLE_PITCH, _T("Ms Shell Dlg"));
+
+            lquick_link = CreateWindowEx(0, WC_LINK, 
+                                         _T("<a href=\"https://sourceforge.net/projects/libquickmail/\">libquickmail 0.1.21</a>")
+                                         _T(" which depends on"),
+                                         WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
+                                         10, 150, 180, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
+            if (lquick_link)
+                SendMessage(lquick_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
+
+            lconf_link = CreateWindowEx(0, WC_LINK, 
+                                        _T("<a href=\"https://github.com/martinh/libconfuse/\">libconfuse 3.0</a>"),
+                                        WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
+                                        10, 164, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
+            if (lconf_link)
+                SendMessage(lconf_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
+
+            lcurl_link = CreateWindowEx(0, WC_LINK, 
+                                        _T("<a href=\"https://curl.haxx.se/libcurl/\">libcurl</a>")
+                                        _T(" and ")
+                                        _T("<a href=\"https://www.openssl.org/\">OpenSSL</a>"),
+                                        WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
+                                        190, 150, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
+            if (lcurl_link)
+                SendMessage(lcurl_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
+
             SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2Email "U2MWin32_VERSION_STR" "WINARCH));
             SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, _T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
+        case WM_NOTIFY:
+            switch (((LPNMHDR)lParam)->code) {
+                case NM_CLICK:
+                case NM_RETURN:
+                    {
+                        PNMLINK pNMLink = (PNMLINK)lParam;
+                        LITEM item = pNMLink->item;
+
+                        if (((LPNMHDR)lParam)->hwndFrom == lquick_link ||
+                            ((LPNMHDR)lParam)->hwndFrom == lconf_link ||
+                            ((LPNMHDR)lParam)->hwndFrom == lcurl_link) {
+                            ShellExecute(NULL, L"open", item.szUrl, NULL, NULL, SW_SHOW);
+                        }
+                    }
+                    break;
+            }
+            return (INT_PTR)TRUE;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
-                case IDUSB2MAIL:
+                case IDOK:
+                    LibVisible = FALSE;
+                    DeleteObject(DlgFont);
                     EndDialog(hwnd, (INT_PTR)TRUE);
+                    return (INT_PTR)TRUE;
+                case IDUSB2MAILLIBS:
+                    LibVisible = !LibVisible;
+                    {
+                        int i, width, height;
+                        RECT DlgRect;
+
+                        if (!GetWindowRect(hwnd, &DlgRect)) return (INT_PTR)TRUE;
+                        width = DlgRect.right - DlgRect.left;
+                        height = DlgRect.bottom - DlgRect.top;
+                        for (i = 1; i <= 35; i++) {
+                            if (LibVisible) {
+                                SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height + i,
+                                             SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+                            } else {
+                                SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height - i,
+                                             SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+                            }
+                        }
+                    }
                     return (INT_PTR)TRUE;
             }
             break;
@@ -1003,6 +1072,8 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static HFONT mainwindowcontrol_font_big, mainwindowcontrol_font;
+    HDC hdc;
+    PAINTSTRUCT ps;
 
     switch (msg) {
         case WM_CREATE:
@@ -1311,8 +1382,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     BOOL bRet = TRUE;
     RECT wrkspace_px;
     INT center_x, center_y;
-    INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
+    INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES | ICC_LINK_CLASS};
 
+
+    InitCommonControlsEx(&columnControlClass);
+    //InitCommonControls();
 
     /*** Global initializations ***/
     PORT = 0;
@@ -1357,7 +1431,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             break;
     }
 
-    InitCommonControlsEx(&columnControlClass);
     usb_idx = 0;
 
     parseConfFile();
@@ -1400,7 +1473,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return -2;
     }
 
-    InitCommonControls();
 
     if (!Autostart) {
 #ifdef DEBUG

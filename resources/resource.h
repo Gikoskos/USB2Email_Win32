@@ -9,6 +9,7 @@
 #define IDC_STATIC (-1)
 #endif
 
+
 #define IDD_ABOUTDIALOG                         103
 #define IDD_USBDIALOG                           104
 #define IDD_EMAILDIALOG                         106
@@ -22,7 +23,7 @@
 #define IDC_FROMFIELD                           40000
 #define IDC_PORTFIELD                           40000
 #define IDM_PASSWORD                            40000
-#define IDUSB2MAIL                              40000
+#define IDUSB2MAILLIBS                          40000
 #define IDUSBREFRESH                            40000
 #define IDC_PWDFIELD                            40001
 #define IDC_USBDEVLIST                          40001

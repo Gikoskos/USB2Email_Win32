@@ -15,7 +15,7 @@
 #define PROD_VER_STR_D str(ver_dots(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH))
 
 
-1 RT_MANIFEST "USB2EMAILWin32.exe.manifest"
+1 RT_MANIFEST "USB2Email.exe.manifest"
 
 
 //
