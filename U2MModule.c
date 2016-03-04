@@ -196,6 +196,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
     UINT idx = 0;
     ULONG vID, dID;
 
+    (VOID)hUSBHUBInfo;
     hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
                NULL, NULL, DIGCF_PRESENT | DIGCF_ALLCLASSES | DIGCF_DEVICEINTERFACE);
 

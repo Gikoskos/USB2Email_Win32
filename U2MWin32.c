@@ -973,7 +973,7 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)helpDlgIco);
                 }
 
-                TCHAR tmp1[3000];
+                TCHAR tmp1[5000];
                 LoadString(*g_hInst, ID_HELP_MSG, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
                 SetDlgItemText(hwnd, IDC_HELP_TEXT, tmp1);
             }
