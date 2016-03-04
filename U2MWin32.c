@@ -706,14 +706,14 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                                          _T("<a href=\"https://sourceforge.net/projects/libquickmail/\">libquickmail 0.1.21</a>")
                                          _T(" which depends on"),
                                          WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
-                                         10, 150, 180, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                                         10, 152, 180, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
             if (lquick_link)
                 SendMessage(lquick_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
 
             lconf_link = CreateWindowEx(0, WC_LINK, 
                                         _T("<a href=\"https://github.com/martinh/libconfuse/\">libconfuse 3.0</a>"),
                                         WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
-                                        10, 164, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                                        10, 166, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
             if (lconf_link)
                 SendMessage(lconf_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
 
@@ -722,7 +722,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                                         _T(" and ")
                                         _T("<a href=\"https://www.openssl.org/\">OpenSSL</a>"),
                                         WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
-                                        190, 150, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                                        190, 152, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
             if (lcurl_link)
                 SendMessage(lcurl_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
 
