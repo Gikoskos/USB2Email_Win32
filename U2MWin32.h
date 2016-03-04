@@ -18,7 +18,7 @@
 
 #undef __CRT__NO_INLINE
 #include <strsafe.h> //win32 native string handling
-#define __CRT__NO_INLINE
+
 
 #include "resources/resource.h"
 #define ERR_ID(x) ID_ERR_MSG_##x
@@ -33,11 +33,11 @@
 #define IS_USB_CONNECTED 20
 
 /* wrappers for freestanding .exe */
-//this one isn't actually a standard wrapper for malloc since malloc doesn't 0 out the allocated bytes
+#define free(x) HeapFree(GetProcessHeap(), 0, x)
+//this one isn't actually a wrapper for stdlib malloc since malloc doesn't 0 out the allocated bytes
 #define malloc(x) HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)
 #define realloc(NULL, x) malloc(x)
 #define calloc(x, y) malloc(x * y)
-#define free(x) HeapFree(GetProcessHeap(), 0, x)
 
 
 
@@ -92,7 +92,6 @@ extern BOOL ValidEmailCheck;
 extern BOOL USBRefresh;
 extern BOOL TrayIcon;
 extern BOOL Autostart;
-extern HANDLE u2mMainThread;
 extern UINT TIMEOUT;
 extern UINT MAX_FAILED_EMAILS;
 extern BOOL onoff;

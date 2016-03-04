@@ -35,7 +35,6 @@ BOOL USBisConnected();
 UINT CALLBACK U2MThreadSingle(LPVOID dat);
 //UINT CALLBACK U2MThreadMulti(LPVOID dat);
 BOOL SendEmail(VOID);
-int cmp(const void *vp, const void *vq);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 
@@ -112,7 +111,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
     return 0;
 }
 
-/* sends e-mails nonstop before the device is removed
+/*sends e-mails nonstop before the device is removed
 UINT CALLBACK U2MThreadMulti(LPVOID dat)
 {
     HWND hwnd ATTRIB_UNUSED = (HWND)dat;

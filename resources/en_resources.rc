@@ -30,7 +30,7 @@ BEGIN
     BEGIN
         BLOCK "000004B0"
         BEGIN
-            VALUE "FileDescription", "USB2Email English language"
+            VALUE "FileDescription", "USB2Email English language pack"
             VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "U2MLocale_En.dll"
             VALUE "ProductVersion", PROD_VER_STR_D
@@ -114,7 +114,7 @@ STRINGTABLE
     ID_ERR_MSG_60,  "Quit"
     ID_ERR_MSG_61,  "Open USB2Email"
     ID_ERR_MSG_62,  "Restart the application for Autostart to take place."
-    ID_ERR_MSG_63,  "Alert!"
+    ID_ERR_MSG_63,  "Don't forget!"
 }
 
 STRINGTABLE
@@ -257,7 +257,7 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_EMAILDIALOG DIALOGEX 0, 0, 225, 310
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-EXSTYLE WS_EX_CLIENTEDGE | WS_EX_TOPMOST
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_OVERLAPPEDWINDOW
 CAPTION "E-mail configuration"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
@@ -278,7 +278,7 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_USBDIALOG DIALOGEX 0, 0, 280, 351
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-EXSTYLE WS_EX_WINDOWEDGE | WS_EX_TOPMOST
+EXSTYLE WS_EX_WINDOWEDGE | WS_EX_OVERLAPPEDWINDOW
 CAPTION "USB devices"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {

@@ -30,7 +30,7 @@ BEGIN
     BEGIN
         BLOCK "000004B0"
         BEGIN
-            VALUE "FileDescription", "USB2Email Greek language"
+            VALUE "FileDescription", "USB2Email Greek language pack"
             VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "U2MLocale_Gr.dll"
             VALUE "ProductVersion", PROD_VER_STR_D
@@ -113,9 +113,8 @@ STRINGTABLE
     ID_ERR_MSG_59,  "Το USB2Email είναι ενεργό"
     ID_ERR_MSG_60,  "Έξοδος"
     ID_ERR_MSG_61,  "Άνοιγμα USB2Email"
-    ID_ERR_MSG_62,  "Αυτή η επιλογή απαιτεί επανεκκίνηση της εφαρμογής για να δουλέψει."
-    ID_ERR_MSG_63,  "Ειδοποίηση!"
-    ID_ERR_MSG_64,  "Προσοχή!"
+    ID_ERR_MSG_62,  "Η Αυτόματη εκκίνηση απαιτεί επανεκκίνηση της εφαρμογής για να δουλέψει."
+    ID_ERR_MSG_63,  "Προσοχή!"
 }
 
 STRINGTABLE
@@ -260,7 +259,7 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
 LANGUAGE LANG_GREEK, SUBLANG_GREEK_GREECE
 IDD_EMAILDIALOG DIALOGEX 0, 0, 225, 310
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-EXSTYLE WS_EX_CLIENTEDGE | WS_EX_TOPMOST
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_OVERLAPPEDWINDOW
 CAPTION "Ρυθμίσεις e-mail"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {
@@ -281,7 +280,7 @@ FONT 8, "Ms Shell Dlg", 400, 0, 1
 LANGUAGE LANG_GREEK, SUBLANG_GREEK_GREECE
 IDD_USBDIALOG DIALOGEX 0, 0, 280, 351
 STYLE DS_3DLOOK | DS_CENTER | DS_SETFOREGROUND | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-EXSTYLE WS_EX_WINDOWEDGE | WS_EX_TOPMOST
+EXSTYLE WS_EX_WINDOWEDGE | WS_EX_OVERLAPPEDWINDOW
 CAPTION "Συσκευές USB"
 FONT 8, "Ms Shell Dlg", 400, 0, 1
 {

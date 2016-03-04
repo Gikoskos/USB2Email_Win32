@@ -27,6 +27,7 @@ BOOL USBdev_scan = FALSE; //helper global for the USB reload thread
 BOOL HlpDlg_open = FALSE; //bool to check whether Help dialog has already been opened
 BOOL TrayIsInitialized = FALSE; //saves memory by initializing the tray icon once at any point
 BOOL Autostart = FALSE; //when TRUE the application autostarts on boot
+BOOL AutostartWarning = TRUE; //when TRUE the warning dialog will be shown on autostart click
 
 HDC hdc;
 PAINTSTRUCT ps;
@@ -125,7 +126,7 @@ TCHAR *GetLocaleStr(UINT iD) //only to be used for printing a single string
     TCHAR tmp[255];
 
     LoadString(*g_hInst, iD, tmp, sizeof(tmp)/sizeof(tmp));
-    return tmp;
+    return tmp; //warning for GCC is supressed on U2MCommon.h
 }
 
 VOID DeleteAll(VOID)
@@ -188,20 +189,24 @@ VOID InitEmailDialog(HWND hwnd)
 
 VOID InitHelpDialog(HWND hwnd)
 {
+    static HWND hlp_hwnd = NULL;
+
     if (!HlpDlg_open) {
         HRSRC HelpDlgHrsrc = FindResource(*g_hInst, MAKEINTRESOURCE(IDD_HELPDIALOG), 
                                           MAKEINTRESOURCE(RT_DIALOG));
         HGLOBAL HelpDlgHandle = LoadResource(*g_hInst, HelpDlgHrsrc);
         LPCDLGTEMPLATE HelpDlgPtr = (LPCDLGTEMPLATE)LockResource(HelpDlgHandle);
 
-        if (!CreateDialogIndirectParam(*g_hInst, HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0)) {
+        if (!(hlp_hwnd = CreateDialogIndirectParam(*g_hInst, HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0))) {
             TCHAR tmp1[255], tmp2[255];
             LoadString(*g_hInst, ID_ERR_MSG_47, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
             MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
         }
     } else {
-        SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
+        //this doesn't work well so i'm saving a static handle for the Help dialog
+        //SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
+        SetActiveWindow(hlp_hwnd);
     }
 }
 
@@ -283,7 +288,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
     HWND hwndTool = GetDlgItem(hDlg, toolID);
 
     HWND hwndTip = CreateWindowEx(0, TOOLTIPS_CLASS, NULL,
-                                  WS_POPUP |TTS_ALWAYSTIP | TTS_BALLOON,
+                                  WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON,
                                   CW_USEDEFAULT, CW_USEDEFAULT,
                                   CW_USEDEFAULT, CW_USEDEFAULT,
                                   hDlg, NULL,
@@ -293,7 +298,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
         return NULL;
 
     TOOLINFO toolInfo = { 0 };
-    toolInfo.cbSize = sizeof(toolInfo) - sizeof(void*);
+    toolInfo.cbSize = sizeof(toolInfo) - sizeof(void*); //<-fixes bug on win7+
     toolInfo.hwnd = hDlg;
     toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
     toolInfo.uId = (UINT_PTR)hwndTool;
@@ -304,9 +309,9 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
 
 HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
 {
-    HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, 
-                                 WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 
-                                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+    HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
+                                 WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+                                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                  hDlg, NULL, *g_hInst,NULL);
 
     if (!hwndTT)
@@ -321,7 +326,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
 
     GetClientRect(hDlg, &ttrack_struct.rect);
 
-    SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &ttrack_struct);      
+    SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &ttrack_struct);
     return hwndTT;
 }
 
@@ -983,13 +988,13 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             switch (LOWORD(wParam)) {
                 case IDOK:
                     HlpDlg_open = FALSE;
-                    EndDialog(hwnd, (INT_PTR)TRUE);
+                    DestroyWindow(hwnd);
                     return (INT_PTR)TRUE;
             }
             break;
         case WM_CLOSE:
             HlpDlg_open = FALSE;
-            EndDialog(hwnd, (INT_PTR)TRUE);
+            DestroyWindow(hwnd);
             return (INT_PTR)TRUE;
     }
     return (INT_PTR)FALSE;
@@ -1149,6 +1154,13 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     }
                     break;
                 case IDM_AUTOSTART:
+                    if (AutostartWarning) {
+                        AutostartWarning = FALSE;
+                        TCHAR tmpmsg1[255], tmpmsg2[255];
+                        LoadString(*g_hInst, ID_ERR_MSG_62, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+                        LoadString(*g_hInst, ID_ERR_MSG_63, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONASTERISK | MB_OK, currentLangID);
+                    }
                     Autostart = !Autostart;
                     CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
                                   (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
@@ -1324,11 +1336,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     if (!U2M_dlls.U2MLocale_en.module || 
         !U2M_dlls.U2MLocale_gr.module) {
-        if (MessageBox(NULL, 
-                       _T("One or more language packages were not found. ")
+        if (MessageBox(NULL,
+                       _T("One or more language packs were not found. ")
                        _T("The application might malfunction. ")
                        _T("Are you sure you want to continue?"),
-                       _T("Failed loading localization libraries!"), 
+                       _T("Failed loading language packages!"), 
                        MB_ICONASTERISK | MB_YESNO) == IDNO)
             return 1;
     }
