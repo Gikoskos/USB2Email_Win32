@@ -678,17 +678,16 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
     static BOOL LibVisible = FALSE;
     static HFONT DlgFont = NULL;
     static HWND lconf_link = NULL, lquick_link = NULL, lcurl_link = NULL;
+    static HICON about_usb_icon = NULL;
 
     switch (msg) {
         case WM_INITDIALOG:
-            {
-                HICON about_usb_icon = (HICON)LoadImage(GetModuleHandle(NULL), 
-                                        MAKEINTRESOURCE(IDI_USB2MAILICONLARGE),
-                                        IMAGE_ICON, 128, 128, 0);
-                if (about_usb_icon)
-                    SendDlgItemMessage(hwnd, IDOK, BM_SETIMAGE, 
-                                      (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
-            }
+            about_usb_icon = (HICON)LoadImage(GetModuleHandle(NULL), 
+                                    MAKEINTRESOURCE(IDI_USB2MAILICONLARGE),
+                                    IMAGE_ICON, 128, 128, 0);
+            if (about_usb_icon)
+                SendDlgItemMessage(hwnd, IDOK, BM_SETIMAGE, 
+                                  (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
             /*{
                 TCHAR tmpmsg1[255], tmpmsg2[255];
                 LoadString(*g_hInst, ID_ERR_MSG_31, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -755,6 +754,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                     DestroyWindow(lquick_link);
                     DestroyWindow(lconf_link);
                     DestroyWindow(lcurl_link);
+                    DestroyIcon(about_usb_icon);
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
                 case IDUSB2MAILLIBS:
@@ -767,14 +767,18 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                         width = DlgRect.right - DlgRect.left;
                         height = DlgRect.bottom - DlgRect.top;
                         for (i = 1; i <= 35; i++) {
+                            HDWP winnum = BeginDeferWindowPos(1);
+                            if (!winnum) continue;
+
                             Sleep(1);
                             if (LibVisible) {
-                                SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height + i,
-                                             SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+                                DeferWindowPos(winnum, hwnd, HWND_TOP, 0, 0, width, height + i,
+                                               SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
                             } else {
-                                SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height - i,
-                                             SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+                                DeferWindowPos(winnum, hwnd, HWND_TOP, 0, 0, width, height - i,
+                                               SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
                             }
+                            EndDeferWindowPos(winnum);
                         }
                     }
                     return (INT_PTR)TRUE;
@@ -869,27 +873,25 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 {
     LVCOLUMN vendCol, devcCol;
     HANDLE refresh_usb_hnd ATTRIB_UNUSED = NULL; //usb auto scan thread handle
+    static HICON refreshDlgIco = NULL, usbDlgIco = NULL;
     static INT temp_idx = -1;
 
     switch (msg) {
         case WM_INITDIALOG:
-            {
-                HICON refreshDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
-                                                 MAKEINTRESOURCE(IDI_REFRESHICON),
-                                                 IMAGE_ICON, 18, 16, LR_LOADTRANSPARENT);
-                if (refreshDlgIco) {
-                    SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE,
-                                      (WPARAM)IMAGE_ICON, (LPARAM)refreshDlgIco);
-                }
+            refreshDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
+                                             MAKEINTRESOURCE(IDI_REFRESHICON),
+                                             IMAGE_ICON, 18, 16, LR_LOADTRANSPARENT);
+            if (refreshDlgIco) {
+                SendDlgItemMessage(hwnd, IDUSBREFRESH, BM_SETIMAGE,
+                                  (WPARAM)IMAGE_ICON, (LPARAM)refreshDlgIco);
+            }
 
-                HICON usbDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
-                                                 MAKEINTRESOURCE(IDI_USB2MAILICONMEDIUM),
-                                                 IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
-                                                 GetSystemMetrics(SM_CYSMICON), 0);
-                if (usbDlgIco) {
-                    SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)usbDlgIco);
-                }
-                
+            usbDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
+                                         MAKEINTRESOURCE(IDI_USB2MAILICONMEDIUM),
+                                         IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
+                                         GetSystemMetrics(SM_CYSMICON), 0);
+            if (usbDlgIco) {
+                SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)usbDlgIco);
             }
 
             temp_idx = -1;
@@ -939,13 +941,16 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                     } else {
                         DeleteScannedUSBIDs();
                         USBdev_scan = FALSE;
-                        //fprintf(stderr, "\nselected %04lx:%04lx\n", usb_id_selection[0], usb_id_selection[1]);
+                        DestroyIcon(refreshDlgIco);
+                        DestroyIcon(usbDlgIco);
                         EndDialog(hwnd, (INT_PTR)TRUE);
                     }
                     return (INT_PTR)TRUE;
                 case IDCANCEL:
                     DeleteScannedUSBIDs();
                     USBdev_scan = FALSE;
+                    DestroyIcon(refreshDlgIco);
+                    DestroyIcon(usbDlgIco);
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
             }
@@ -963,6 +968,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                                 LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
                                 MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
                             } else {
+                                DestroyIcon(refreshDlgIco);
+                                DestroyIcon(usbDlgIco);
                                 USBdev_scan = FALSE;
                                 EndDialog(hwnd, (INT_PTR)TRUE);
                             }

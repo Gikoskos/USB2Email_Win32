@@ -56,6 +56,6 @@
 /* versioning */
 #define U2MWin32_MAJOR 2
 #define U2MWin32_MINOR 10
-#define U2MWin32_PATCH 2
+#define U2MWin32_PATCH 3
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
