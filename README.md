@@ -8,6 +8,8 @@ SMTP settings and the e-mail you want to send and start the service.
 More detailed instructions about different functionalities in the application, you will find in
 the Help dialog.
 
+This is the Win32 version. Latest release binaries are on Tags.
+
 ## Libs used
 
 libquickmail
@@ -19,4 +21,3 @@ Winapi
 ### License
 
 See LICENSE
-
