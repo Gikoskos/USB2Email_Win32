@@ -20,11 +20,16 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 #endif*/
 
 
+//the prefix of ever U2M log file name
+#define U2MLOG_PREFIX _T("U2MLog")
+//maximum number of U2M log files that we're allowed to save on the disk
+#define MAX_NUMBER_OF_U2M_LOGS  10000
 
 /*** Globals ***/
-HANDLE u2mMainThread;
-UINT *thrdID;
 ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
+
+static ULONG curr_filename = 2; //current log file number
+static BOOL Logging_System_Enabled = TRUE;
 
 extern HINSTANCE *g_hInst;
 
@@ -72,7 +77,47 @@ BOOL InitU2MThread(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
-    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThreadSingle, (LPVOID)hwnd, 0, thrdID);
+
+    HANDLE u2mMainThread;
+    UINT thrdID;
+
+    Logging_System_Enabled = TRUE;
+
+    //find if there are already other U2M log files in the folder and increase the global filename number accordingly
+    if (curr_filename == 1) {
+        while (1) {
+            TCHAR temp_fn[255];
+            WIN32_FIND_DATA u2m_log_data;
+            LARGE_INTEGER Logfile_sz;
+
+            StringCchPrintf(temp_fn, 255, U2MLOG_PREFIX _T("_%ld.txt"), curr_filename + 1);
+            HANDLE curr_u2m_log = FindFirstFile(temp_fn, &u2m_log_data);
+
+            //if we found a U2M log file with the next to current filename
+            if (curr_u2m_log != INVALID_HANDLE_VALUE) {
+                //if this function fails break
+                if (!GetFileSizeEx(curr_u2m_log, &Logfile_sz)) {
+                    CloseHandle(curr_u2m_log);
+                    break;
+                }
+                //if the next logfile size is bigger than our max size
+                if (Logfile_sz.QuadPart > MAX_LOG_FILE_SZ) {
+                    CloseHandle(curr_u2m_log);
+                    curr_filename++;
+                    continue;
+                }
+            }
+            break;
+        }
+    }
+
+    //if we exceed the maximum number of allowed U2M logs then the logging is disabled
+    if (curr_filename - 1 >= MAX_NUMBER_OF_U2M_LOGS) {
+        Logging_System_Enabled = FALSE;
+    }
+
+    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThreadSingle, (LPVOID)hwnd, 0, &thrdID);
+    (VOID)u2mMainThread;
 
     return TRUE;
 }
@@ -89,10 +134,15 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
         if (!onoff) break;
 
         if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
-            WriteToU2MLogFile(_T("U2MLog"));
+            if (Logging_System_Enabled == TRUE) {
+                WriteToU2MLogFile(U2MLOG_PREFIX);
+            }
+
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
-            if (!SendEmail()) failed_emails++;
+            if (!SendEmail()) {
+                failed_emails++;
+            }
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
 
@@ -166,17 +216,15 @@ BOOL SendEmail(VOID)
 
 BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
 {
-    static ULONG curr_filename = 1;
-
     HANDLE hLogfile;
     DWORD dwRet;
     SYSTEMTIME curr_time;
-    GetLocalTime(&curr_time);
     TCHAR to_write[255], filename[255];
     size_t to_write_len;
-    OVERLAPPED log_inf = {.Offset = 0xffffffff, .OffsetHigh = 0xffffffff};
-    LARGE_INTEGER Logfile_sz;
+    OVERLAPPED log_inf = {.Offset = 0xffffffff, .OffsetHigh = 0xffffffff}; //to write to the end of the file
+    LARGE_INTEGER Logfile_sz; //the size of the current file
 
+    GetLocalTime(&curr_time);
     StringCchPrintf(filename, 255, _T("%s_%ld.txt"), Logfile_name, curr_filename);
     hLogfile = CreateFile(filename, FILE_GENERIC_WRITE, FILE_SHARE_WRITE, 
                           NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -189,11 +237,12 @@ BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
     if (Logfile_sz.QuadPart > MAX_LOG_FILE_SZ) {
         CloseHandle(hLogfile);
         curr_filename++;
-        WriteToU2MLogFile(Logfile_name);
+        return WriteToU2MLogFile(Logfile_name);
     }
+
 WRITE_TO_LOG:
     StringCchPrintf(to_write, 255,
-                    _T("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\n\n"), 
+                    _T("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\r\n\r\n"), 
                     curr_time.wDay, curr_time.wMonth, curr_time.wYear, curr_time.wHour, 
                     curr_time.wMinute, curr_time.wSecond, curr_time.wMilliseconds);
     StringCbLength(to_write, 255, &to_write_len);

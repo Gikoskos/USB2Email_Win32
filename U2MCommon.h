@@ -17,6 +17,7 @@
 
 #define _str(x) #x
 #define str(x) _str(x)
+
 #define _ver_str(x,y,z) str(x)"."str(y)"."str(z)
 #define ver_str(x,y,z) _ver_str(x,y,z)
 #define ver_commas(x,y,z) x,y,z
@@ -56,6 +57,6 @@
 /* versioning */
 #define U2MWin32_MAJOR 2
 #define U2MWin32_MINOR 12
-#define U2MWin32_PATCH 0
+#define U2MWin32_PATCH 5
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
