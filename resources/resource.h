@@ -134,3 +134,4 @@
 #define ID_ERR_MSG_63                           40173
 #define ID_ERR_MSG_64                           40174
 #define ID_ERR_MSG_65                           40175
+#define ID_ERR_MSG_66                           40176

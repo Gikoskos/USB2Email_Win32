@@ -10,7 +10,7 @@
 #define _WIN32_WINNT 0x0601
 #include <SDKDDKVer.h> //API versioning
 
-
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <tchar.h> //unicode
 #include <winerror.h> //error messages
@@ -55,7 +55,7 @@
 
 /* versioning */
 #define U2MWin32_MAJOR 2
-#define U2MWin32_MINOR 10
-#define U2MWin32_PATCH 3
+#define U2MWin32_MINOR 12
+#define U2MWin32_PATCH 0
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)

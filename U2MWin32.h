@@ -15,6 +15,7 @@
 #include <winnt.h> //lanugage macros
 #include <objbase.h> //for CoCreateGuid()
 #include <shellapi.h>
+#include <sddl.h> //for security descriptor definition language strings and functions
 
 #undef __CRT__NO_INLINE
 #include <strsafe.h> //win32 native string handling
@@ -44,61 +45,72 @@
 /********************************************
 *Macros to clear all data entered by the user*
  ********************************************/
-#define ClearEmailData()                         \
-do {                                             \
-    if (FROM) free(FROM);                        \
-    if (TO) free(TO);                            \
-    if (CC) free(CC);                            \
-    if (SUBJECT) free(SUBJECT);                  \
-    if (BODY) free(BODY);                        \
-    FROM = TO = CC = SUBJECT = BODY = NULL;      \
+#define ClearEmailData()                          \
+do {                                              \
+    if (user_dat.FROM) free(user_dat.FROM);       \
+    if (user_dat.TO) free(user_dat.TO);           \
+    if (user_dat.CC) free(user_dat.CC);           \
+    if (user_dat.SUBJECT) free(user_dat.SUBJECT); \
+    if (user_dat.BODY) free(user_dat.BODY);       \
+    user_dat.FROM = user_dat.TO = user_dat.CC =   \
+    user_dat.SUBJECT = user_dat.BODY = NULL;      \
 } while (0)
 
-#define ClearPwd()                               \
-do {                                             \
-    if (pass) free(pass);                        \
-    pass = NULL;                                 \
+#define ClearPwd()                          \
+do {                                        \
+    if (user_dat.pass) free(user_dat.pass); \
+    user_dat.pass = NULL;                   \
 } while (0)
 
-#define ClearPrefs()                             \
-do {                                             \
-    if (SMTP_SERVER) free(SMTP_SERVER);          \
-    SMTP_SERVER = NULL;                          \
-    PORT = 0;                                    \
-    break;                                       \
+#define ClearPrefs()                                      \
+do {                                                      \
+    if (user_dat.SMTP_SERVER) free(user_dat.SMTP_SERVER); \
+    user_dat.SMTP_SERVER = NULL;                          \
+    user_dat.PORT = 0;                                    \
+    break;                                                \
 } while (0)
 
-#define DeleteScannedUSBIDs()                    \
-do {                                             \
-    int i, j;                                    \
-    for (i = 0; i < MAX_CONNECTED_USB; i++) {    \
-        for (j = 0; j < 2; j++) {                \
-            scanned_usb_ids[i][j] = 0;           \
-        }                                        \
-    }                                            \
+#define DeleteScannedUSBIDs()                 \
+do {                                          \
+    int i, j;                                 \
+    for (i = 0; i < MAX_CONNECTED_USB; i++) { \
+        for (j = 0; j < 2; j++) {             \
+            scanned_usb_ids[i][j] = 0;        \
+        }                                     \
+    }                                         \
 } while (0)
 
-#define DeleteU2MTrayIcon()                                  \
-do {                                                         \
-    if (TrayIsInitialized) {                                 \
-        DestroyIcon(U2MTrayData.hIcon);                      \
-        Shell_NotifyIcon(NIM_DELETE, &U2MTrayData);          \
-    }                                                        \
-    if (TrayIconMenu != NULL) DestroyMenu(TrayIconMenu);     \
+#define DeleteU2MTrayIcon()                              \
+do {                                                     \
+    if (TrayIsInitialized) {                             \
+        DestroyIcon(U2MTrayData.hIcon);                  \
+        Shell_NotifyIcon(NIM_DELETE, &U2MTrayData);      \
+    }                                                    \
+    if (TrayIconMenu != NULL) DestroyMenu(TrayIconMenu); \
 } while (0)
 
-extern char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER, *USBdev;
-extern BOOL ValidEmailCheck;
-extern BOOL USBRefresh;
-extern BOOL TrayIcon;
-extern BOOL Autostart;
-extern UINT TIMEOUT;
-extern UINT MAX_FAILED_EMAILS;
+
+typedef struct user_input_data{
+    char *pass;
+    char *FROM;
+    char *TO;
+    char *CC;
+    char *SUBJECT;
+    char *BODY;
+    char *SMTP_SERVER;
+    UINT PORT;
+    UINT TIMEOUT;
+    UINT MAX_FAILED_EMAILS;
+    BOOL TrayIcon;
+    BOOL Autostart;
+    BOOL USBRefresh;
+    ULONG usb_id_selection[2];
+    BOOL ValidEmailCheck;
+} user_input_data;
+
+extern user_input_data user_dat;
 extern BOOL onoff;
-extern UINT PORT;
 extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
-
-extern ULONG usb_id_selection[2];
 
 extern char *cfg_filename; //the filename of the configuration file
 

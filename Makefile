@@ -35,10 +35,10 @@ all_extern: locale_dlls usbids_dll clean compile_icon_res
 locale_dlls: compile_en_dll compile_gr_dll
 
 compile_en_dll: compile_en_resources
-	$(CC) -shared -o U2MLocale_En.dll en_resources.o
+	$(CC) -shared -o build/U2MLocale_En.dll en_resources.o
 
 compile_gr_dll: compile_gr_resources
-	$(CC) -shared -o U2MLocale_Gr.dll gr_resources.o
+	$(CC) -shared -o build/U2MLocale_Gr.dll gr_resources.o
 
 compile_en_resources:
 	cd resources & windres $(EN_RES) ..\en_resources.o & cd ..
@@ -53,7 +53,7 @@ compile_usbids:
 	$(CC) $(CFLAGS) -c $(USBIDS_SOURCE)
 
 usbids_dll: compile_usbids
-	$(CC) -shared -o U2MUsbIDs.dll find_usb.o usb_ids.o -Wl,--out-implib,libU2MUsbIDs_dll.a
+	$(CC) -shared -o build/U2MUsbIDs.dll find_usb.o usb_ids.o -Wl,--out-implib,libU2MUsbIDs_dll.a
 
 installer: candle light
 

@@ -115,6 +115,7 @@ STRINGTABLE
     ID_ERR_MSG_61,  "Άνοιγμα USB2Email"
     ID_ERR_MSG_62,  "Η Αυτόματη εκκίνηση απαιτεί επανεκκίνηση της εφαρμογής για να δουλέψει."
     ID_ERR_MSG_63,  "Προσοχή!"
+    ID_ERR_MSG_66,  "Το USB2Email είναι ανοιχτό!"
 }
 
 STRINGTABLE

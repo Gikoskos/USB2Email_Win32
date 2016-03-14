@@ -5,28 +5,31 @@
 
 #include "U2MWin32.h"
 
-const _TCHAR szClassName[] = _T("USB2Email");
-
+static const _TCHAR szClassName[] = _T("USB2Email");
 HINSTANCE *g_hInst;
 
-ULONG usb_id_selection[2];
+/* user input data from fields and controls all over the program */
+user_input_data user_dat = {
+    .pass = NULL,
+    .FROM = NULL,
+    .TO = NULL,
+    .CC = NULL,
+    .SUBJECT = NULL,
+    .BODY = NULL,
+    .SMTP_SERVER = NULL,
+    .PORT = 0,
+    .TIMEOUT = 1000,
+    .MAX_FAILED_EMAILS = 0,
+    .TrayIcon = FALSE, //for the Tray Icon check control
+    .Autostart = FALSE, //when TRUE the application autostarts on boot
+    .USBRefresh = FALSE, //for the USB refresh check control
+    .usb_id_selection = {0x0000, 0x0000},
+    .ValidEmailCheck = FALSE //for the valid e-mail check control
+};
 
-/********************
-*Input field raw data*
- ********************/
-char *pass, *FROM, *TO, *CC, *SUBJECT, *BODY, *SMTP_SERVER;
-UINT PORT;
-
-/*******************************
-*Bools to check enabled controls*
- *******************************/
-BOOL ValidEmailCheck = FALSE; //for the valid e-mail check control
-BOOL USBRefresh = FALSE; //for the USB refresh check control
-BOOL TrayIcon = FALSE; //for the Tray Icon check control
 BOOL USBdev_scan = FALSE; //helper global for the USB reload thread
 BOOL HlpDlg_open = FALSE; //bool to check whether Help dialog has already been opened
 BOOL TrayIsInitialized = FALSE; //saves memory by initializing the tray icon once at any point
-BOOL Autostart = FALSE; //when TRUE the application autostarts on boot
 BOOL AutostartWarning = TRUE; //when TRUE the warning dialog will be shown on autostart click
 
 /*Is TRUE when the service is running and FALSE when it's not*/
@@ -39,10 +42,7 @@ TOOLINFO ttrack_struct;
 HMENU MainMenu, TrayIconMenu;
 NOTIFYICONDATA U2MTrayData = { 0 }; //tray area icon
 
-UINT MAX_FAILED_EMAILS = 0;
-UINT TIMEOUT;
 UINT usb_idx;
-
 
 struct dll_data {
     TCHAR *filename;
@@ -58,14 +58,11 @@ struct {
 
 WORD currentLangID;
 
-
 /*Trackbar limits*/
 #define T_MIN                     200
 #define T_MAX                    2000
 
-/*Flag for ValidEmailCheck*/
-#define NO_SEPARATOR              '\0'
-
+#define NO_SEPARATOR             '\0'
 
 /***************************************************
 * Prototypes for functions in this compilation unit *
@@ -88,6 +85,7 @@ BOOL isValidDomain(char *str, char SEPARATOR);
 BOOL GetUSBListViewSelection(HWND hwnd);
 VOID ResetMainWindowLanguage(HWND hwnd);
 TCHAR *GetLocaleStr(UINT iD);
+HANDLE InitSingleInstanceMutex(VOID);
 
 VOID InitEmailDialog(HWND hwnd);
 VOID InitAboutDialog(HWND hwnd);
@@ -99,12 +97,14 @@ VOID InitU2MTray(HWND hwnd);
 BOOL InitU2MTrayMenu(VOID);
 VOID SetU2MNotifyTip(VOID);
 UINT PowerOf10(UINT x);
+BOOL LoadLocaleDLLs(VOID);
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
 VOID DeleteAll(VOID);
 VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
+
 
 UINT PowerOf10(UINT x)
 {
@@ -201,7 +201,7 @@ VOID InitHelpDialog(HWND hwnd)
             MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
         }
     } else {
-        //this doesn't work well so i'm saving a static handle for the Help dialog
+        //SetActiveWindow doesn't work well so i'm saving a static handle for the Help dialog
         //SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
         SetActiveWindow(hlp_hwnd);
     }
@@ -357,15 +357,15 @@ BOOL parsePrefDialogFields(HWND hwnd)
             return FALSE;
         }
 
-        PORT = 0;
+        user_dat.PORT = 0;
         UINT c;
         for (size_t i = 0; i < tmp2_len ; i++) {
             c = tmp2[i] - '0';
-            PORT = c*(PowerOf10(tmp2_len - (i + 1))) + PORT;
+            user_dat.PORT = c*(PowerOf10(tmp2_len - (i + 1))) + user_dat.PORT;
         }
         free(tmp2);
 
-        if (PORT > 65535) {
+        if (user_dat.PORT > 65535) {
             free(tmp1);
             TCHAR tmpmsg1[255], tmpmsg2[255];
             LoadString(*g_hInst, ID_ERR_MSG_44, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -374,7 +374,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
             return FALSE;
         }
     } else {
-        PORT = 0;
+        user_dat.PORT = 0;
         /*free(tmp1);
         free(tmp2);
         TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -383,8 +383,8 @@ BOOL parsePrefDialogFields(HWND hwnd)
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);*/
     }
 
-    SMTP_SERVER = realloc(NULL, tmp1_len + 1);
-    StringCchPrintfA(SMTP_SERVER, tmp1_len + 1, "%s", tmp1);
+    user_dat.SMTP_SERVER = realloc(NULL, tmp1_len + 1);
+    StringCchPrintfA(user_dat.SMTP_SERVER, tmp1_len + 1, "%s", tmp1);
     free(tmp1);
     return TRUE;
 }
@@ -403,7 +403,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         return FALSE;
     }
 
-    if (ValidEmailCheck) { 
+    if (user_dat.ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
             TCHAR tmpmsg1[255], tmpmsg2[255];
             LoadString(*g_hInst, ID_ERR_MSG_42, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -414,8 +414,8 @@ BOOL parseEmailDialogFields(HWND hwnd)
         }
     }
     if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
-    FROM = realloc(NULL, tmp_len + 1);
-    StringCchPrintfA(FROM, tmp_len + 1, "%s", tmp);
+    user_dat.FROM = realloc(NULL, tmp_len + 1);
+    StringCchPrintfA(user_dat.FROM, tmp_len + 1, "%s", tmp);
     free(tmp);
     tmp = NULL;
     tmp_len = 0;
@@ -429,7 +429,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         return FALSE;
     }
 
-    if (ValidEmailCheck) { 
+    if (user_dat.ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
             free(tmp);
             TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -440,15 +440,15 @@ BOOL parseEmailDialogFields(HWND hwnd)
         }
     }
     if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
-    TO = realloc(NULL, tmp_len + 1);
-    StringCchPrintfA(TO, tmp_len + 1, "%s", tmp);
+    user_dat.TO = realloc(NULL, tmp_len + 1);
+    StringCchPrintfA(user_dat.TO, tmp_len + 1, "%s", tmp);
     free(tmp);
     tmp = NULL;
     tmp_len = 0;
 
     GetFieldTextA(hwnd, IDC_CCFIELD, &tmp);
 
-    if (ValidEmailCheck && tmp) { 
+    if (user_dat.ValidEmailCheck && tmp) { 
         if (!isValidDomain(tmp, ';')) {
             free(tmp);
             TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -458,11 +458,11 @@ BOOL parseEmailDialogFields(HWND hwnd)
             return FALSE;
         }
     } else if (!tmp) {
-        CC = NULL;
+        user_dat.CC = NULL;
     } else {
         if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
-        CC = realloc(NULL, tmp_len + 1);
-        StringCchCopyNA(CC, tmp_len + 1, tmp, tmp_len + 1);
+        user_dat.CC = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(user_dat.CC, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
         tmp = NULL;
         tmp_len = 0;
@@ -474,15 +474,15 @@ BOOL parseEmailDialogFields(HWND hwnd)
         LoadString(*g_hInst, ID_ERR_MSG_38, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_37, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
-            SUBJECT = malloc(2);
-            StringCchPrintfA(SUBJECT, 2, "");
+            user_dat.SUBJECT = malloc(2);
+            StringCchPrintfA(user_dat.SUBJECT, 2, "");
         } else {
             return FALSE;
         }
     } else {
         if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
-        SUBJECT = realloc(NULL, tmp_len + 1);
-        StringCchCopyNA(SUBJECT, tmp_len + 1, tmp, tmp_len + 1);
+        user_dat.SUBJECT = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(user_dat.SUBJECT, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
         tmp = NULL;
         tmp_len = 0;
@@ -494,15 +494,15 @@ BOOL parseEmailDialogFields(HWND hwnd)
         LoadString(*g_hInst, ID_ERR_MSG_36, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_35, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
-            BODY = malloc(2);
-            StringCchPrintfA(BODY, 2, "");
+            user_dat.BODY = malloc(2);
+            StringCchPrintfA(user_dat.BODY, 2, "");
         } else {
             return FALSE;
         }
     } else {
         if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
-        BODY = realloc(NULL, tmp_len + 1);
-        StringCchCopyNA(BODY, tmp_len + 1, tmp, tmp_len + 1);
+        user_dat.BODY = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(user_dat.BODY, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
     }
 
@@ -523,8 +523,8 @@ BOOL parsePwdField(HWND hwnd)
         return FALSE;
     } else {
         if (FAILED(StringCchLengthA(tmp, 255, &tmp_len))) return FALSE;
-        pass = realloc(NULL, tmp_len + 1);
-        StringCchCopyNA(pass, tmp_len + 1, tmp, tmp_len + 1);
+        user_dat.pass = realloc(NULL, tmp_len + 1);
+        StringCchCopyNA(user_dat.pass, tmp_len + 1, tmp, tmp_len + 1);
         free(tmp);
     }
     return TRUE;
@@ -576,8 +576,8 @@ BOOL GetUSBListViewSelection(HWND hwnd)
 
     if (usb_sel_idx == -1) return FALSE;
 
-    usb_id_selection[0] = scanned_usb_ids[usb_sel_idx][0];
-    usb_id_selection[1] = scanned_usb_ids[usb_sel_idx][1];
+    user_dat.usb_id_selection[0] = scanned_usb_ids[usb_sel_idx][0];
+    user_dat.usb_id_selection[1] = scanned_usb_ids[usb_sel_idx][1];
     return TRUE;
 }
 
@@ -599,6 +599,41 @@ VOID CenterChild(HWND hwnd)
     if (final_x < 0) final_x = 0;
     if (final_y < 0) final_y = 0;
     SetWindowPos(hwnd, HWND_TOP, final_x, final_y, 0, 0, SWP_NOSIZE);
+}
+
+BOOL LoadLocaleDLLs(VOID)
+{
+    /* loading the language dlls */
+    U2M_dlls.U2MLocale_gr.module = LoadLibraryEx(U2M_dlls.U2MLocale_gr.filename, NULL, 0);
+    U2M_dlls.U2MLocale_en.module = LoadLibraryEx(U2M_dlls.U2MLocale_en.filename, NULL, 0);
+
+    U2M_dlls.U2MLocale_en.locale_menu = LoadMenu(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDR_MAINMENU));
+    U2M_dlls.U2MLocale_gr.locale_menu = LoadMenu(U2M_dlls.U2MLocale_gr.module, MAKEINTRESOURCE(IDR_MAINMENU));
+
+    if (!U2M_dlls.U2MLocale_en.module || 
+        !U2M_dlls.U2MLocale_gr.module) {
+        if (MessageBox(NULL,
+                       _T("One or more language packs were not found. ")
+                       _T("The application might malfunction. ")
+                       _T("Are you sure you want to continue?"),
+                       _T("Failed loading language packages!"), 
+                       MB_ICONASTERISK | MB_YESNO) == IDNO)
+            return FALSE;
+    }
+
+    currentLangID = GetUserDefaultUILanguage(); //get the language of the system
+    switch (PRIMARYLANGID(currentLangID)) {
+        case LANG_GREEK:
+            *g_hInst = U2M_dlls.U2MLocale_gr.module;
+            break;
+        case LANG_ENGLISH:
+        default:
+            currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+            *g_hInst = U2M_dlls.U2MLocale_en.module;
+            break;
+    }
+
+    return TRUE;
 }
 
 VOID InitU2MTray(HWND hwnd)
@@ -644,7 +679,7 @@ VOID InitU2MTray(HWND hwnd)
 
 VOID SetU2MNotifyTip(VOID)
 {
-    if (TrayIsInitialized && TrayIcon) {
+    if (TrayIsInitialized && user_dat.TrayIcon) {
         if (onoff) {
             TCHAR tmpmsg1[50];
             LoadString(*g_hInst, ID_ERR_MSG_59, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
@@ -657,6 +692,25 @@ VOID SetU2MNotifyTip(VOID)
             Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
         }
     }
+}
+
+HANDLE InitSingleInstanceMutex(VOID)
+{
+    SECURITY_ATTRIBUTES mtx_sa;
+    TCHAR *szSD = _T("D:(D;OICI;GA;;;BG)(D;OICI;GA;;;AN)(A;OICI;GRGWGX;;;AU)(A;OICI;GA;;;BA)");
+    BOOL DACL_success;
+    HANDLE retvalue;
+
+    mtx_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    mtx_sa.bInheritHandle = FALSE;
+    DACL_success = ConvertStringSecurityDescriptorToSecurityDescriptor(szSD,
+                       SDDL_REVISION_1, &(mtx_sa.lpSecurityDescriptor), NULL);
+
+    retvalue = (DACL_success)?CreateMutex(&mtx_sa, FALSE, _T("Global\\{USB2Email-2CB5E714-8B05-4DFC-B8B0-4CBECEEC00E3}")):
+                              CreateMutex(NULL, FALSE, _T("Global\\{USB2Email-2CB5E714-8B05-4DFC-B8B0-4CBECEEC00E3}"));
+    LocalFree(mtx_sa.lpSecurityDescriptor);
+
+    return retvalue;
 }
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat)
@@ -792,8 +846,8 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 {
     switch (msg) {
         case WM_INITDIALOG:
-            if (pass)
-                SetDlgItemTextA(hwnd, IDC_PWDFIELD, pass);
+            if (user_dat.pass)
+                SetDlgItemTextA(hwnd, IDC_PWDFIELD, user_dat.pass);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
@@ -818,18 +872,18 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 {
     switch (msg) {
         case WM_INITDIALOG:
-            if (SMTP_SERVER)
-                SetDlgItemTextA(hwnd, IDC_SERVERURLFIELD, SMTP_SERVER);
-            if (PORT) {
+            if (user_dat.SMTP_SERVER)
+                SetDlgItemTextA(hwnd, IDC_SERVERURLFIELD, user_dat.SMTP_SERVER);
+            if (user_dat.PORT) {
                 char PORT_STR[9];
-                StringCchPrintfA(PORT_STR, 9, "%u", PORT);
+                StringCchPrintfA(PORT_STR, 9, "%u", user_dat.PORT);
                 SetDlgItemTextA(hwnd, IDC_PORTFIELD, PORT_STR);
             }
-            CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (ValidEmailCheck)?BST_CHECKED:BST_UNCHECKED);
-            CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (USBRefresh)?BST_CHECKED:BST_UNCHECKED);
-            CheckDlgButton(hwnd, IDC_CHECKMINTOTRAY, (TrayIcon)?BST_CHECKED:BST_UNCHECKED);
+            CheckDlgButton(hwnd, IDC_CHECKVALIDEMAIL, (user_dat.ValidEmailCheck)?BST_CHECKED:BST_UNCHECKED);
+            CheckDlgButton(hwnd, IDC_CHECKUSBREFRESH, (user_dat.USBRefresh)?BST_CHECKED:BST_UNCHECKED);
+            CheckDlgButton(hwnd, IDC_CHECKMINTOTRAY, (user_dat.TrayIcon)?BST_CHECKED:BST_UNCHECKED);
             SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 50));
-            SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)0);
+            SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)user_dat.MAX_FAILED_EMAILS);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
@@ -843,12 +897,12 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     if (parsePrefDialogFields(hwnd)) {
                         // i'm storing the check controls' values only if the 
                         // data entered on the input fields was valid
-                        ValidEmailCheck = IsDlgButtonChecked(hwnd, IDC_CHECKVALIDEMAIL);
-                        USBRefresh = IsDlgButtonChecked(hwnd, IDC_CHECKUSBREFRESH);
-                        TrayIcon = IsDlgButtonChecked(hwnd, IDC_CHECKMINTOTRAY);
-                        MAX_FAILED_EMAILS = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, 
+                        user_dat.ValidEmailCheck = IsDlgButtonChecked(hwnd, IDC_CHECKVALIDEMAIL);
+                        user_dat.USBRefresh = IsDlgButtonChecked(hwnd, IDC_CHECKUSBREFRESH);
+                        user_dat.TrayIcon = IsDlgButtonChecked(hwnd, IDC_CHECKMINTOTRAY);
+                        user_dat.MAX_FAILED_EMAILS = (UINT)SendDlgItemMessage(hwnd, IDT_TRACKEMAILINTERVAL, 
                                                   TBM_GETPOS, (WPARAM)0, (LPARAM)0);
-                        if (TrayIcon) {
+                        if (user_dat.TrayIcon) {
                             InitU2MTray(GetParent(hwnd));
                         } else {
                             DeleteU2MTrayIcon();
@@ -915,14 +969,14 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             ListView_SetColumnWidth(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, 150);
             CenterChild(hwnd);
             GetConnectedUSBDevs(hwnd, FILL_USB_LISTVIEW);
-            if (USBRefresh) {
+            if (user_dat.USBRefresh) {
                 USBdev_scan = TRUE;
                 refresh_usb_hnd = (HANDLE)_beginthreadex(NULL, 0, RefreshUSBThread, (LPVOID)hwnd, 0, NULL);
             }
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             usb_idx = 0;
-            memset(usb_id_selection, 0, sizeof(UINT)*2);
+            memset(user_dat.usb_id_selection, 0, sizeof(UINT)*2);
             switch (LOWORD(wParam)) {
                 case IDUSBREFRESH:
                     ListView_DeleteAllItems(GetDlgItem(hwnd, IDC_USBDEVLIST));
@@ -962,7 +1016,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                         case NM_DBLCLK:
                             usb_idx = 0;
                             if (!GetUSBListViewSelection(hwnd)) {
-                                memset(usb_id_selection, 0, sizeof(usb_id_selection));
+                                memset(user_dat.usb_id_selection, 0, sizeof(user_dat.usb_id_selection));
                                 TCHAR tmpmsg1[255], tmpmsg2[255];
                                 LoadString(*g_hInst, ID_ERR_MSG_27, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
                                 LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
@@ -1017,16 +1071,16 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 SUBJECT_ttip = CreateBaloonToolTip(IDC_SUBJECTFIELD, hwnd, tmpmsg4);
                 BODY_ttip = CreateBaloonToolTip(IDC_MESSAGEFIELD, hwnd, tmpmsg5);
             }
-            if (FROM)
-                SetDlgItemTextA(hwnd, IDC_FROMFIELD, FROM);
-            if (TO)
-                SetDlgItemTextA(hwnd, IDC_TOFIELD, TO);
-            if (CC)
-                SetDlgItemTextA(hwnd, IDC_CCFIELD, CC);
-            if (SUBJECT)
-                SetDlgItemTextA(hwnd, IDC_SUBJECTFIELD, SUBJECT);
-            if (BODY)
-                SetDlgItemTextA(hwnd, IDC_MESSAGEFIELD, BODY);
+            if (user_dat.FROM)
+                SetDlgItemTextA(hwnd, IDC_FROMFIELD, user_dat.FROM);
+            if (user_dat.TO)
+                SetDlgItemTextA(hwnd, IDC_TOFIELD, user_dat.TO);
+            if (user_dat.CC)
+                SetDlgItemTextA(hwnd, IDC_CCFIELD, user_dat.CC);
+            if (user_dat.SUBJECT)
+                SetDlgItemTextA(hwnd, IDC_SUBJECTFIELD, user_dat.SUBJECT);
+            if (user_dat.BODY)
+                SetDlgItemTextA(hwnd, IDC_MESSAGEFIELD, user_dat.BODY);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_COMMAND:
@@ -1088,7 +1142,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
     switch (msg) {
         case WM_CREATE:
-            if (TrayIcon) InitU2MTray(hwnd);
+            if (user_dat.TrayIcon) InitU2MTray(hwnd);
             {
                 TCHAR tmp1[255], tmp2[255], tmp3[255], tmp4[255];
                 LoadString(*g_hInst, ID_ERR_MSG_21, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
@@ -1177,15 +1231,15 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 SendMessage(time_track, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(T_MIN, T_MAX));
                 SendMessage(time_track, TBM_SETPAGESIZE, (WPARAM)0, (LPARAM)4);
                 SendMessage(time_track, TBM_SETSEL, (WPARAM)FALSE, (LPARAM)MAKELONG(T_MIN, T_MAX));
-                SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)1000);
+                SendMessage(time_track, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)user_dat.TIMEOUT);
 
-                if (!Autostart) {
+                if (!user_dat.Autostart) {
                     UpdateWindow(hwnd);
                 } else {
                     SendMessage(hwnd, WM_COMMAND, MAKEWPARAM((WORD)IDC_STARTSTOP, 0), (LPARAM)0);
                 }
                 CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                              (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                              (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
                 DrawMenuBar(hwnd);
             }
         case WM_PAINT:
@@ -1208,7 +1262,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     SetMenu(hwnd, MainMenu);
                     SetU2MNotifyTip();
                     CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                                  (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                                  (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
                     DrawMenuBar(hwnd);
                     break;
                 case IDM_GR_LANG:
@@ -1219,7 +1273,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     SetMenu(hwnd, MainMenu);
                     SetU2MNotifyTip();
                     CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                                  (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                                  (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
                     DrawMenuBar(hwnd);
                     break;
                 case IDM_ABOUT:
@@ -1243,9 +1297,9 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         LoadString(*g_hInst, ID_ERR_MSG_63, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
                         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONASTERISK | MB_OK, currentLangID);
                     }
-                    Autostart = !Autostart;
+                    user_dat.Autostart = !user_dat.Autostart;
                     CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                                  (Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+                                  (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
                     DrawMenuBar(hwnd);
                     break;
                 case IDM_PASSWORD:
@@ -1310,7 +1364,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         case WM_SYSCOMMAND:
             switch (wParam) {
                 case SC_MINIMIZE:
-                    if (TrayIcon) {
+                    if (user_dat.TrayIcon) {
                         ShowWindow(hwnd, SW_HIDE);
                     } else {
                         ShowWindow(hwnd, SW_MINIMIZE);
@@ -1375,7 +1429,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             DestroyWindow(hwnd);
             break;
         case WM_HSCROLL:
-            TIMEOUT = (UINT)SendMessage(time_track, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+            user_dat.TIMEOUT = (UINT)SendMessage(time_track, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -1393,54 +1447,44 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     BOOL bRet = TRUE;
     RECT wrkspace_px;
     INT center_x, center_y;
+    INT err;
+    HANDLE u2m_mtx = NULL;
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES | ICC_LINK_CLASS};
 
+
+    g_hInst = &hInstance; //possibly a bad decision
+
+    err = LoadLocaleDLLs();
+    if (!err) return 1;
+
+    u2m_mtx = InitSingleInstanceMutex();
+    err = GetLastError();
+    if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED || u2m_mtx == NULL) {
+        TCHAR tmpmsg1[255], tmpmsg2[255];
+        LoadString(*g_hInst, ID_ERR_MSG_66, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
+        LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+        FreeLibrary(U2M_dlls.U2MLocale_gr.module);
+        FreeLibrary(U2M_dlls.U2MLocale_en.module);
+        return 1;
+    }
 
     InitCommonControlsEx(&columnControlClass);
     //InitCommonControls();
 
     /*** Global initializations ***/
-    PORT = 0;
-    pass = CC = TO = FROM = SUBJECT = BODY = SMTP_SERVER = NULL;
     onoff = FALSE;
     TrayIconMenu = NULL;
-    memset(usb_id_selection, 0, sizeof(UINT)*2);
-    TIMEOUT = 1000;
+    //memset(user_dat.usb_id_selection, 0, sizeof(UINT)*2);
 
-    GetU2MRegData();
-    if (Autostart) TrayIcon = TRUE;
+    err = GetU2MRegData();
+#ifdef DEBUG
+    if (!err)
+        fprintf(stderr, "Error at reading data from the registry.\n");
+#endif
 
-    g_hInst = &hInstance; //possibly a bad decision
+    if (user_dat.Autostart) user_dat.TrayIcon = TRUE;
 
-    /* loading the language dlls */
-    U2M_dlls.U2MLocale_gr.module = LoadLibraryEx(U2M_dlls.U2MLocale_gr.filename, NULL, 0);
-    U2M_dlls.U2MLocale_en.module = LoadLibraryEx(U2M_dlls.U2MLocale_en.filename, NULL, 0);
-
-    U2M_dlls.U2MLocale_en.locale_menu = LoadMenu(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDR_MAINMENU));
-    U2M_dlls.U2MLocale_gr.locale_menu = LoadMenu(U2M_dlls.U2MLocale_gr.module, MAKEINTRESOURCE(IDR_MAINMENU));
-
-    if (!U2M_dlls.U2MLocale_en.module || 
-        !U2M_dlls.U2MLocale_gr.module) {
-        if (MessageBox(NULL,
-                       _T("One or more language packs were not found. ")
-                       _T("The application might malfunction. ")
-                       _T("Are you sure you want to continue?"),
-                       _T("Failed loading language packages!"), 
-                       MB_ICONASTERISK | MB_YESNO) == IDNO)
-            return 1;
-    }
-
-    currentLangID = GetUserDefaultUILanguage(); //get the language of the system
-    switch (PRIMARYLANGID(currentLangID)) {
-        case LANG_GREEK:
-            *g_hInst = U2M_dlls.U2MLocale_gr.module;
-            break;
-        case LANG_ENGLISH:
-        default:
-            currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-            *g_hInst = U2M_dlls.U2MLocale_en.module;
-            break;
-    }
 
     usb_idx = 0;
 
@@ -1469,6 +1513,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         LoadString(*g_hInst, ID_ERR_MSG_4, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+        FreeLibrary(U2M_dlls.U2MLocale_gr.module);
+        FreeLibrary(U2M_dlls.U2MLocale_en.module);
         return -1;
     }
 
@@ -1481,11 +1527,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         LoadString(*g_hInst, ID_ERR_MSG_3, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+        FreeLibrary(U2M_dlls.U2MLocale_gr.module);
+        FreeLibrary(U2M_dlls.U2MLocale_en.module);
         return -2;
     }
 
 
-    if (!Autostart) {
+    if (!user_dat.Autostart) {
 #ifdef DEBUG
         ShowWindow(hwnd, SW_SHOW);
         SetActiveWindow(hwnd);
@@ -1503,6 +1551,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             LoadString(*g_hInst, ID_ERR_MSG_2, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
             MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+            FreeLibrary(U2M_dlls.U2MLocale_gr.module);
+            FreeLibrary(U2M_dlls.U2MLocale_en.module);
             return -3;
         } else if (bRet == -2) {
             return -2;
@@ -1512,5 +1562,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
     }
+    CloseHandle(u2m_mtx);
     return Msg.wParam;
 }

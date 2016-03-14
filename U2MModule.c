@@ -43,28 +43,28 @@ BOOL InitU2MThread(HWND hwnd)
 {
     if (onoff) return FALSE;
 
-    if (!FROM) {
+    if (!user_dat.FROM) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_53, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
-    if (!SMTP_SERVER) {
+    if (!user_dat.SMTP_SERVER) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_55, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
-    if (!usb_id_selection[0] || !usb_id_selection[1]) {
+    if (!user_dat.usb_id_selection[0] || !user_dat.usb_id_selection[1]) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_56, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
-    if (!pass) {
+    if (!user_dat.pass) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
         LoadString(*g_hInst, ID_ERR_MSG_57, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
@@ -83,8 +83,8 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
     HWND hwnd ATTRIB_UNUSED = (HWND)dat;
     UINT failed_emails = 0;
 
-    while (onoff && (failed_emails <= MAX_FAILED_EMAILS)) {
-        Sleep((DWORD)TIMEOUT);
+    while (onoff && (failed_emails <= user_dat.MAX_FAILED_EMAILS)) {
+        Sleep((DWORD)user_dat.TIMEOUT);
         if (!onoff) break;
 
         if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
@@ -94,7 +94,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
 
-            if (failed_emails > MAX_FAILED_EMAILS) break; //bad logic but it works
+            if (failed_emails > user_dat.MAX_FAILED_EMAILS) break; //bad logic but it works
 
             while (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
                 Sleep(900);
@@ -104,7 +104,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
         }                     //message in line 104, thus disabling the button
     }
 
-    if (failed_emails > MAX_FAILED_EMAILS) 
+    if (failed_emails > user_dat.MAX_FAILED_EMAILS) 
         SendMessageTimeout(hwnd, WM_COMMAND, 
                            MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
                            (LPARAM)0, SMTO_NORMAL, 0, NULL);
@@ -117,8 +117,8 @@ UINT CALLBACK U2MThreadMulti(LPVOID dat)
     HWND hwnd ATTRIB_UNUSED = (HWND)dat;
     UINT failed_emails = 0;
 
-    while (onoff && (failed_emails <= MAX_FAILED_EMAILS)) {
-        Sleep((DWORD)TIMEOUT);
+    while (onoff && (failed_emails <= user_dat.MAX_FAILED_EMAILS)) {
+        Sleep((DWORD)user_dat.TIMEOUT);
         if (!onoff) break;
         if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
@@ -128,7 +128,7 @@ UINT CALLBACK U2MThreadMulti(LPVOID dat)
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
         }
     }
-    if (failed_emails > MAX_FAILED_EMAILS) 
+    if (failed_emails > user_dat.MAX_FAILED_EMAILS) 
         SendMessageTimeout(hwnd, WM_COMMAND, 
                            MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
                            (LPARAM)0, SMTO_NORMAL, 0, NULL);
@@ -139,23 +139,23 @@ BOOL SendEmail(VOID)
 {
     BOOL retvalue = TRUE;
     quickmail_initialize();
-    quickmail mailobj = quickmail_create(FROM, SUBJECT);
+    quickmail mailobj = quickmail_create(user_dat.FROM, user_dat.SUBJECT);
 
-    quickmail_add_to(mailobj, TO);
+    quickmail_add_to(mailobj, user_dat.TO);
 
-    if (CC)
-        quickmail_add_cc(mailobj, CC);
+    if (user_dat.CC)
+        quickmail_add_cc(mailobj, user_dat.CC);
 
     quickmail_add_header(mailobj, "Importance: High");
     /*quickmail_add_header(mailobj, "X-Priority: 5");
     quickmail_add_header(mailobj, "X-MSMail-Priority: Low");*/
-    quickmail_set_body(mailobj, BODY);
+    quickmail_set_body(mailobj, user_dat.BODY);
 
     const char* errmsg;
 #ifdef DEBUG
     quickmail_set_debug_log(mailobj, stderr);
 #endif
-    if ((errmsg = quickmail_send(mailobj, SMTP_SERVER, PORT, FROM, pass)) != NULL) {
+    if ((errmsg = quickmail_send(mailobj, user_dat.SMTP_SERVER, user_dat.PORT, user_dat.FROM, user_dat.pass)) != NULL) {
         retvalue = FALSE;
     }
     quickmail_destroy(mailobj);
@@ -242,8 +242,8 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                     }
                     break;
                 case IS_USB_CONNECTED:
-                    if ((usb_id_selection[0] == vID && usb_id_selection[1] == dID) ||
-                        (usb_id_selection[0] == vID && usb_id_selection[1] == 0xabcd)) {
+                    if ((user_dat.usb_id_selection[0] == vID && user_dat.usb_id_selection[1] == dID) ||
+                        (user_dat.usb_id_selection[0] == vID && user_dat.usb_id_selection[1] == 0xabcd)) {
                         free(DevIntfDetailData);
                         SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, 
                                                     &GUID_DEVINTERFACE_USB_DEVICE, 
