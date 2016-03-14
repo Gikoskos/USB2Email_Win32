@@ -37,6 +37,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat);
 BOOL SendEmail(VOID);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
+BOOL WriteToU2MLogFile(TCHAR *Logfile_name);
 
 
 BOOL InitU2MThread(HWND hwnd)
@@ -88,6 +89,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
         if (!onoff) break;
 
         if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
+            WriteToU2MLogFile(_T("U2MLog"));
             SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
             if (!SendEmail()) failed_emails++;
@@ -162,6 +164,45 @@ BOOL SendEmail(VOID)
     return retvalue;
 }
 
+BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
+{
+    static ULONG curr_filename = 1;
+
+    HANDLE hLogfile;
+    DWORD dwRet;
+    SYSTEMTIME curr_time;
+    GetLocalTime(&curr_time);
+    TCHAR to_write[255], filename[255];
+    size_t to_write_len;
+    OVERLAPPED log_inf = {.Offset = 0xffffffff, .OffsetHigh = 0xffffffff};
+    LARGE_INTEGER Logfile_sz;
+
+    StringCchPrintf(filename, 255, _T("%s_%ld.txt"), Logfile_name, curr_filename);
+    hLogfile = CreateFile(filename, FILE_GENERIC_WRITE, FILE_SHARE_WRITE, 
+                          NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hLogfile == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
+    //if we failed to get the size of the file, write to it anyway
+    if (!GetFileSizeEx(hLogfile, &Logfile_sz)) goto WRITE_TO_LOG;
+    //else if the size of the file is bigger than MAX_LOG_FILE_SZ we write to a new file
+    if (Logfile_sz.QuadPart > MAX_LOG_FILE_SZ) {
+        CloseHandle(hLogfile);
+        curr_filename++;
+        WriteToU2MLogFile(Logfile_name);
+    }
+WRITE_TO_LOG:
+    StringCchPrintf(to_write, 255,
+                    _T("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\n\n"), 
+                    curr_time.wDay, curr_time.wMonth, curr_time.wYear, curr_time.wHour, 
+                    curr_time.wMinute, curr_time.wSecond, curr_time.wMilliseconds);
+    StringCbLength(to_write, 255, &to_write_len);
+    WriteFile(hLogfile, to_write, to_write_len, &dwRet, &log_inf);
+    CloseHandle(hLogfile);
+
+    return TRUE;
+}
+
 BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath)
 {
     if (devpath == NULL)  return FALSE;
@@ -206,7 +247,6 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
         return FALSE;
     }
 
-    
     DevIntfData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
     dwMemberIdx = 0;
     if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
@@ -222,7 +262,6 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
         SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &DevIntfData, NULL, 0, &dwSize, NULL);
 
         DevIntfDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(dwSize);
-        memset(DevIntfDetailData, 0, dwSize - sizeof(ULONG_PTR)); //don't zero out Reserved
         DevIntfDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
         if (SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &DevIntfData,

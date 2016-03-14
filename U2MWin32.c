@@ -545,7 +545,8 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
     } else {
 #if defined(UNICODE) || defined(_UNICODE)
         wchar_t wc_temp[255];
-        mbstowcs(wc_temp, dev_str, strlen(dev_str) + 1);
+        MultiByteToWideChar(CP_UTF8, 0, dev_str, -1, wc_temp,
+                            MultiByteToWideChar(CP_UTF8, 0, dev_str, -1, NULL, 0));
         dev.pszText = wc_temp;
 #else
         dev.pszText = dev_str;
@@ -564,7 +565,8 @@ VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str)
     } else {
 #if defined(UNICODE) || defined(_UNICODE)
         wchar_t wc_temp[255];
-        mbstowcs(wc_temp, ven_str, strlen(ven_str) + 1);
+        MultiByteToWideChar(CP_UTF8, 0, ven_str, -1, wc_temp,
+                            MultiByteToWideChar(CP_UTF8, 0, ven_str, -1, NULL, 0));
         ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, wc_temp);
 #else
         ListView_SetItemText(GetDlgItem(hDlg, IDC_USBDEVLIST), usb_idx, 1, ven_str);
@@ -623,7 +625,7 @@ VOID SetApplicationLanguage(VOID)
 
 VOID DestroyLanguageLibraries(enum locale_idx UP_TO)
 {
-    for (enum locale_idx i = GREEK_DLL; i <= UP_TO && i <= ENGLISH_DLL; i++) {
+    for (enum locale_idx i = GREEK_DLL; (i <= UP_TO) && (i <= ENGLISH_DLL); i++) {
         if (U2M_dlls[i].module) {
             FreeLibrary(U2M_dlls[i].module);
             U2M_dlls[i].module = NULL;
@@ -1461,10 +1463,10 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     break;
             }
 #endif
+            WriteDataToU2MReg();
             DeleteAll();
             DeleteObject(mainwindowcontrol_font_big);
             DeleteObject(mainwindowcontrol_font);
-            WriteDataToU2MReg();
             DestroyWindow(hwnd);
             break;
         case WM_HSCROLL:
@@ -1495,7 +1497,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     err = GetLastError();
     if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED || u2m_mtx == NULL) {
         MessageBox(NULL, _T("There's already a running instance of USB2Email!"), 
-                         _T("Error!"), MB_ICONERROR | MB_OK);
+                         _T("USB2Email is open!"), MB_ICONERROR | MB_OK);
         return 1;
     }
 

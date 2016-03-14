@@ -9,7 +9,6 @@
 
 #include <commctrl.h> //common controls
 #include <windowsx.h>
-#include <stdio.h>
 #include <signal.h>
 #include <process.h> //threads
 #include <winnt.h> //lanugage macros
@@ -25,6 +24,9 @@
 #define ERR_ID(x) ID_ERR_MSG_##x
 
 #define MAX_CONNECTED_USB 20
+
+/* maximum size for a U2M log file is 80 kibibytes */
+#define MAX_LOG_FILE_SZ 81920
 
 /* custom messages for the main window procedure */
 #define WM_ENABLE_STARTSTOP WM_USER + 0x00dd
@@ -91,7 +93,7 @@ do {                                                     \
     if (TrayIconMenu != NULL) DestroyMenu(TrayIconMenu); \
 } while (0)
 
-
+/* struct to store user data, like text field strings and check control booleans */
 typedef struct user_input_data{
     char *pass;
     char *FROM;
@@ -110,14 +112,6 @@ typedef struct user_input_data{
     BOOL ValidEmailCheck;
 } user_input_data;
 
-extern user_input_data user_dat;
-extern BOOL onoff;
-extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
-
-extern char *cfg_filename; //the filename of the configuration file
-
-extern WORD currentLangID; //the ID of the current language used
-
 /* enumeration of the locales, to be used as the index on the language DLL module array 
    last locale always has to be English */
 enum locale_idx {
@@ -126,6 +120,14 @@ enum locale_idx {
     ENGLISH_DLL
 };
 
+
+extern user_input_data user_dat;
+extern BOOL onoff;
+extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
+
+extern char *cfg_filename; //the filename of the configuration file
+
+extern WORD currentLangID; //the ID of the current language used
 
 #ifdef DEBUG
 static inline void __MsgBoxGetLastError(LPTSTR lpszFunction) 
