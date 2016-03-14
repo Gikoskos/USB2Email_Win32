@@ -26,14 +26,16 @@
 
 #define MAX_CONNECTED_USB 20
 
+/* custom messages for the main window procedure */
 #define WM_ENABLE_STARTSTOP WM_USER + 0x00dd
 #define WM_U2M_NOTIF_ICON WM_USER + 0x000e
+#define WM_RESET_MAINWINDOW_CONTROLS WM_USER + 0x000f
 
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10
 #define IS_USB_CONNECTED 20
 
-/* wrappers for freestanding .exe */
+/* wrappers for win32 native memory management */
 #define free(x) HeapFree(GetProcessHeap(), 0, x)
 //this one isn't actually a wrapper for stdlib malloc since malloc doesn't 0 out the allocated bytes
 #define malloc(x) HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)
@@ -115,6 +117,14 @@ extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 extern char *cfg_filename; //the filename of the configuration file
 
 extern WORD currentLangID; //the ID of the current language used
+
+/* enumeration of the locales, to be used as the index on the language DLL module array 
+   last locale always has to be English */
+enum locale_idx {
+    GREEK_DLL = 0,
+    /* other locales can be put here */
+    ENGLISH_DLL
+};
 
 
 #ifdef DEBUG

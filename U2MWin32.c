@@ -50,11 +50,12 @@ struct dll_data {
     HMENU locale_menu;
 };
 
-struct {
-    struct dll_data U2MLocale_en;
-    struct dll_data U2MLocale_gr;
-} U2M_dlls = {{_T("U2MLocale_en.dll"), NULL, NULL},
-              {_T("U2MLocale_gr.dll"), NULL, NULL}};
+struct dll_data U2M_dlls[] = {
+    {_T("U2MLocale_gr.dll"), NULL, NULL},
+    /* other DLLs can be put here */
+    {_T("U2MLocale_en.dll"), NULL, NULL}
+};
+
 
 WORD currentLangID;
 
@@ -98,6 +99,8 @@ BOOL InitU2MTrayMenu(VOID);
 VOID SetU2MNotifyTip(VOID);
 UINT PowerOf10(UINT x);
 BOOL LoadLocaleDLLs(VOID);
+VOID SetApplicationLanguage(VOID);
+VOID DestroyLanguageLibraries(enum locale_idx UP_TO);
 
 UINT CALLBACK RefreshUSBThread(LPVOID dat);
 VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
@@ -132,6 +135,7 @@ VOID DeleteAll(VOID)
     ClearPwd();
     ClearPrefs();
     DeleteU2MTrayIcon();
+    DestroyLanguageLibraries(ENGLISH_DLL);
 }
 
 VOID InitPreferencesDialog(HWND hwnd)
@@ -601,37 +605,76 @@ VOID CenterChild(HWND hwnd)
     SetWindowPos(hwnd, HWND_TOP, final_x, final_y, 0, 0, SWP_NOSIZE);
 }
 
-BOOL LoadLocaleDLLs(VOID)
+VOID SetApplicationLanguage(VOID)
 {
-    /* loading the language dlls */
-    U2M_dlls.U2MLocale_gr.module = LoadLibraryEx(U2M_dlls.U2MLocale_gr.filename, NULL, 0);
-    U2M_dlls.U2MLocale_en.module = LoadLibraryEx(U2M_dlls.U2MLocale_en.filename, NULL, 0);
-
-    U2M_dlls.U2MLocale_en.locale_menu = LoadMenu(U2M_dlls.U2MLocale_en.module, MAKEINTRESOURCE(IDR_MAINMENU));
-    U2M_dlls.U2MLocale_gr.locale_menu = LoadMenu(U2M_dlls.U2MLocale_gr.module, MAKEINTRESOURCE(IDR_MAINMENU));
-
-    if (!U2M_dlls.U2MLocale_en.module || 
-        !U2M_dlls.U2MLocale_gr.module) {
-        if (MessageBox(NULL,
-                       _T("One or more language packs were not found. ")
-                       _T("The application might malfunction. ")
-                       _T("Are you sure you want to continue?"),
-                       _T("Failed loading language packages!"), 
-                       MB_ICONASTERISK | MB_YESNO) == IDNO)
-            return FALSE;
-    }
-
-    currentLangID = GetUserDefaultUILanguage(); //get the language of the system
     switch (PRIMARYLANGID(currentLangID)) {
         case LANG_GREEK:
-            *g_hInst = U2M_dlls.U2MLocale_gr.module;
+            *g_hInst = U2M_dlls[GREEK_DLL].module;
+            MainMenu = U2M_dlls[GREEK_DLL].locale_menu;
             break;
         case LANG_ENGLISH:
         default:
             currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-            *g_hInst = U2M_dlls.U2MLocale_en.module;
+            *g_hInst = U2M_dlls[ENGLISH_DLL].module;
+            MainMenu = U2M_dlls[ENGLISH_DLL].locale_menu;
             break;
     }
+}
+
+VOID DestroyLanguageLibraries(enum locale_idx UP_TO)
+{
+    for (enum locale_idx i = GREEK_DLL; i <= UP_TO && i <= ENGLISH_DLL; i++) {
+        if (U2M_dlls[i].module) {
+            FreeLibrary(U2M_dlls[i].module);
+            U2M_dlls[i].module = NULL;
+        }
+        if (U2M_dlls[i].locale_menu) {
+            DestroyMenu(U2M_dlls[i].locale_menu);
+            U2M_dlls[i].locale_menu = NULL;
+        }
+    }
+}
+
+BOOL LoadLocaleDLLs(VOID)
+{
+    /* loading the language dlls */
+    for (enum locale_idx i = GREEK_DLL; i <= ENGLISH_DLL; i++) {
+        U2M_dlls[i].module = LoadLibraryEx(U2M_dlls[i].filename, NULL, 0);
+        if (!U2M_dlls[i].module) {
+            if (MessageBox(NULL,
+                           _T("A language pack failed to load. ")
+                           _T("The application might malfunction. ")
+                           _T("Are you sure you want to continue?"),
+                           _T("Failed loading language package!"),
+                           MB_ICONASTERISK | MB_YESNO) == IDNO) {
+                DestroyLanguageLibraries(i - 1); //free all the libraries up to this point
+                return FALSE;
+            }
+            U2M_dlls[i].locale_menu = NULL;
+            continue;
+        }
+
+        U2M_dlls[i].locale_menu = LoadMenu(U2M_dlls[i].module, MAKEINTRESOURCE(IDR_MAINMENU));
+        if (!U2M_dlls[i].locale_menu) {
+            if (MessageBox(NULL,
+                           _T("One or more menu resources failed to load. ")
+                           _T("The application might malfunction. ")
+                           _T("Are you sure you want to continue?"),
+                           _T("Failed loading menu resource!"),
+                           MB_ICONASTERISK | MB_YESNO) == IDNO) {
+                DestroyLanguageLibraries(i - 1); //free all the libraries up to this point
+                return FALSE;
+            }
+            if (U2M_dlls[i].module) {
+                FreeLibrary(U2M_dlls[i].module);
+                U2M_dlls[i].module = NULL;
+            }
+            continue;
+        }
+    }
+
+    currentLangID = GetUserDefaultUILanguage(); //get the language of the system
+    SetApplicationLanguage();
 
     return TRUE;
 }
@@ -1252,29 +1295,26 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             EnableWindow(STARTSTOP, !IsWindowEnabled(STARTSTOP));
             SetU2MNotifyTip();
             break;
+        /* custom message that redraws the text and resets the state of the main window, based on the
+           global, currently loaded, language module (g_hInst) */
+        case WM_RESET_MAINWINDOW_CONTROLS:
+            SetApplicationLanguage();
+            ResetMainWindowLanguage(hwnd);
+            SetMenu(hwnd, MainMenu);
+            SetU2MNotifyTip();
+            CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
+                          (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+            DrawMenuBar(hwnd);
+            break;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDM_EN_LANG:
-                    *g_hInst = U2M_dlls.U2MLocale_en.module;
                     currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-                    ResetMainWindowLanguage(hwnd);
-                    MainMenu = U2M_dlls.U2MLocale_en.locale_menu;
-                    SetMenu(hwnd, MainMenu);
-                    SetU2MNotifyTip();
-                    CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                                  (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
-                    DrawMenuBar(hwnd);
+                    SendMessage(hwnd, WM_RESET_MAINWINDOW_CONTROLS, (WPARAM)0, (LPARAM)0);
                     break;
                 case IDM_GR_LANG:
-                    *g_hInst = U2M_dlls.U2MLocale_gr.module;
                     currentLangID = MAKELANGID(LANG_GREEK, SUBLANG_GREEK_GREECE);
-                    ResetMainWindowLanguage(hwnd);
-                    MainMenu = U2M_dlls.U2MLocale_gr.locale_menu;
-                    SetMenu(hwnd, MainMenu);
-                    SetU2MNotifyTip();
-                    CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                                  (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
-                    DrawMenuBar(hwnd);
+                    SendMessage(hwnd, WM_RESET_MAINWINDOW_CONTROLS, (WPARAM)0, (LPARAM)0);
                     break;
                 case IDM_ABOUT:
                     InitAboutDialog(hwnd);
@@ -1374,6 +1414,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             break;
+        /* custom message for handling the messages for the USB2Email Tray icon */
         case WM_U2M_NOTIF_ICON:
             switch (lParam) {
                 case WM_RBUTTONUP:
@@ -1423,8 +1464,6 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             DeleteAll();
             DeleteObject(mainwindowcontrol_font_big);
             DeleteObject(mainwindowcontrol_font);
-            FreeLibrary(U2M_dlls.U2MLocale_gr.module);
-            FreeLibrary(U2M_dlls.U2MLocale_en.module);
             WriteDataToU2MReg();
             DestroyWindow(hwnd);
             break;
@@ -1451,23 +1490,18 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE u2m_mtx = NULL;
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES | ICC_LINK_CLASS};
 
-
-    g_hInst = &hInstance; //possibly a bad decision
-
-    err = LoadLocaleDLLs();
-    if (!err) return 1;
-
-    u2m_mtx = InitSingleInstanceMutex();
+    // check if there's already an instance of the application running
+    u2m_mtx = InitSingleInstanceMutex(); // possible DDOS?
     err = GetLastError();
     if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED || u2m_mtx == NULL) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_66, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
-        FreeLibrary(U2M_dlls.U2MLocale_gr.module);
-        FreeLibrary(U2M_dlls.U2MLocale_en.module);
+        MessageBox(NULL, _T("There's already a running instance of USB2Email!"), 
+                         _T("Error!"), MB_ICONERROR | MB_OK);
         return 1;
     }
+
+    g_hInst = &hInstance; //possibly a bad decision
+    err = LoadLocaleDLLs();
+    if (!err) return 1;
 
     InitCommonControlsEx(&columnControlClass);
     //InitCommonControls();
@@ -1513,8 +1547,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         LoadString(*g_hInst, ID_ERR_MSG_4, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
-        FreeLibrary(U2M_dlls.U2MLocale_gr.module);
-        FreeLibrary(U2M_dlls.U2MLocale_en.module);
+        DestroyLanguageLibraries(ENGLISH_DLL);
         return -1;
     }
 
@@ -1527,8 +1560,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         LoadString(*g_hInst, ID_ERR_MSG_3, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
         LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
         MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
-        FreeLibrary(U2M_dlls.U2MLocale_gr.module);
-        FreeLibrary(U2M_dlls.U2MLocale_en.module);
+        DestroyLanguageLibraries(ENGLISH_DLL);
         return -2;
     }
 
@@ -1551,8 +1583,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             LoadString(*g_hInst, ID_ERR_MSG_2, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
             LoadString(*g_hInst, ID_ERR_MSG_0, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
             MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
-            FreeLibrary(U2M_dlls.U2MLocale_gr.module);
-            FreeLibrary(U2M_dlls.U2MLocale_en.module);
+            DestroyLanguageLibraries(ENGLISH_DLL);
             return -3;
         } else if (bRet == -2) {
             return -2;
