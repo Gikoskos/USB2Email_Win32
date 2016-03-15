@@ -3,4 +3,9 @@
 *.conf
 *.dll
 *.a
-build/*/
+*.txt
+!build/libeay32.dll
+!build/libcurl-4.dll
+!build/ssleay32.dll
+!build/libquickmail-0.dll
+build/*
