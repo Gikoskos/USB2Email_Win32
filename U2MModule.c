@@ -28,7 +28,7 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 /*** Globals ***/
 ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
-static ULONG curr_filename = 2; //current log file number
+static ULONG curr_filename = 1; //current log file number
 static BOOL Logging_System_Enabled = TRUE;
 
 extern HINSTANCE *g_hInst;
@@ -95,6 +95,7 @@ BOOL InitU2MThread(HWND hwnd)
 
             //if we found a U2M log file with the next to current filename
             if (curr_u2m_log != INVALID_HANDLE_VALUE) {
+                putchar('s');
                 //if this function fails break
                 if (!GetFileSizeEx(curr_u2m_log, &Logfile_sz)) {
                     CloseHandle(curr_u2m_log);
