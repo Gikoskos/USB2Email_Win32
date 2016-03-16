@@ -5,13 +5,24 @@
 
 #pragma once
 
+#ifndef _UNICODE
+# define UNICODE
+#endif
+
+#ifndef UNICODE
+# define UNICODE
+#endif
+
 /* compile for Win7 */
 #define WINVER 0x0601
 #define _WIN32_WINNT 0x0601
 #include <SDKDDKVer.h> //API versioning
 
-#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN //skip uneccessary header files
+#define NOCRYPT
+
 #include <windows.h>
+#include <winnt.h> //lanugage macros
 #include <tchar.h> //unicode
 #include <winerror.h> //error messages
 
@@ -25,6 +36,7 @@
 
 /* options for Microsoft VC++ compiler */
 #ifdef _MSC_VER
+# pragma warning(disable : 4172)
 # define COMPILER_VERSION_STR str(_MSC_FULL_VER)
 # define COMPILER_NAME_STR str(MSVC)
 # define snprintf _snprintf

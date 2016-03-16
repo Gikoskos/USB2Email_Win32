@@ -313,7 +313,7 @@ HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText)
     HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
                                  WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
                                  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                 hDlg, NULL, *g_hInst,NULL);
+                                 hDlg, NULL, *g_hInst, NULL);
 
     if (!hwndTT)
         return NULL;
@@ -787,14 +787,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             if (about_usb_icon)
                 SendDlgItemMessage(hwnd, IDOK, BM_SETIMAGE, 
                                   (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
-            /*{
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadString(*g_hInst, ID_ERR_MSG_31, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-                LoadString(*g_hInst, ID_ERR_MSG_30, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
-                SetDlgItemText(hwnd, IDC_ABOUT_BUILD, tmpmsg1);
-                SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, tmpmsg2);
-                
-            }*/
+
             DlgFont = CreateFont(12, 0, 0, 0, 400,
                                  FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
                                  CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
@@ -824,8 +817,8 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             if (lcurl_link)
                 SendMessage(lcurl_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
 
-            SetDlgItemText(hwnd, IDC_ABOUT_BUILD, _T("USB2Email "U2MWin32_VERSION_STR" "WINARCH));
-            SetDlgItemText(hwnd, IDC_ABOUT_COMPILER, _T("built with "COMPILER_NAME_STR" "COMPILER_VERSION_STR));
+            SetDlgItemTextA(hwnd, IDC_ABOUT_BUILD, "USB2Email " U2MWin32_VERSION_STR " " WINARCH);
+			SetDlgItemTextA(hwnd, IDC_ABOUT_COMPILER, "built with " COMPILER_NAME_STR " " COMPILER_VERSION_STR);
             CenterChild(hwnd);
             return (INT_PTR)TRUE;
         case WM_NOTIFY:
@@ -1157,8 +1150,10 @@ INT_PTR CALLBACK HelpDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)helpDlgIco);
                 }
 
-                TCHAR tmp1[5000];
-                LoadString(*g_hInst, ID_HELP_MSG, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
+                TCHAR tmp1[7500], tmp2[2500];
+                LoadString(*g_hInst, ID_HELP_MSG1, tmp1, sizeof(tmp1) / sizeof(tmp1[0]));
+                LoadString(*g_hInst, ID_HELP_MSG2, tmp2, sizeof(tmp2) / sizeof(tmp2[0]));
+                StringCchCat(tmp1, 7500, tmp2);
                 SetDlgItemText(hwnd, IDC_HELP_TEXT, tmp1);
             }
             CenterChild(hwnd);

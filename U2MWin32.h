@@ -11,7 +11,6 @@
 #include <windowsx.h>
 #include <signal.h>
 #include <process.h> //threads
-#include <winnt.h> //lanugage macros
 #include <objbase.h> //for CoCreateGuid()
 #include <shellapi.h>
 #include <sddl.h> //for security descriptor definition language strings and functions

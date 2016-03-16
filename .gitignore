@@ -4,6 +4,7 @@
 *.dll
 *.a
 *.txt
-build\USB2Email\*.exe
+!build\*.a
+!build\USB2Email\*.dll
 build\USB2Email\U2MLocale*.dll
 build\USB2Email\U2MUsbIDs.dll

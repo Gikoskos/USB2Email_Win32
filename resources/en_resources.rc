@@ -6,7 +6,8 @@
 #pragma code_page(65001) //unicode codepage
 
 
-#include "../U2MWin32.h"
+#include "../U2MCommon.h"
+#include <CommCtrl.h>
 #include "resource.h"
 #include <richedit.h>
 
@@ -119,11 +120,12 @@ STRINGTABLE
 
 STRINGTABLE
 {
-    ID_HELP_MSG,  "[Choose USB device]: A list of all USB devices currently attached to your PC. \
+    ID_HELP_MSG1,  "[Choose USB device]: A list of all USB devices currently attached to your PC. \
 Pick the device you want either by double clicking it, or clicking it once and hitting the 'OK' button. \
 The 'Refresh' button re-scans the PC's USB ports and shows the new USB devices. \r\n\
 Every time you open this window, the USB device you chose is reset. Your USB device's IDs are saved in the \
-registry, when USB2Email is closed, so you don't have to choose the same device every time you open the application. \
+registry, when USB2Email is closed, so you don't have to choose the same device every time\
+ you open the application. \
 \r\n----------------------------------------------------------------------------------\r\n\
 [Configure E-Mail to send]: The details of the e-mail you want to send.\
 \r\n----------------------------------------------------------------------------------\r\n\
@@ -134,31 +136,43 @@ the milliseconds of that pause with this trackbar. Values range from 200-2000 mi
 [Start/Stop]: Starts/Stops the service. Before the service is initiated, there are checks to see \
 if certain info has been given yet, otherwise it fails to start. Necessary fields to fill are \
 SMTP server, FROM field, TO field and E-mail password field. The service also fails to start if the user \
-hasn't picked a USB device from the list. \r\n While the service is running the button text changes to 'Stop' \
-and you can stop the service at any moment except for when the e-mail is being sent. During that time the button \
+hasn't picked a USB device from the list. \r\n While the service is running the button text\
+ changes to 'Stop' \
+and you can stop the service at any moment except for when the e-mail is being sent. During that\
+ time the button \
 is disabled.\
 \r\n----------------------------------------------------------------------------------\r\n\
-[Menu -> E-mail Password]: The password for the e-mail address entered on the 'FROM' field is entered here.\
+[Menu -> E-mail Password]: The password for the e-mail address entered on the 'FROM' field is\
+ entered here.\
 \r\n----------------------------------------------------------------------------------\r\n\
-[Menu -> Autostart]: When enabled, this option, loads the application every time Windows boots and runs the service \
-automatically. You need to restart USB2Email when you change this option, to save the info to the registry. \
+[Menu -> Autostart]: When enabled, this option, loads the application every time Windows boots and\
+ runs the service \
+automatically. You need to restart USB2Email when you change this option, to save the info\
+ to the registry. \
 \r\n----------------------------------------------------------------------------------\r\n\
 [Menu -> Preferences] \r\n \r\n\
 [Server URL]: The URL address of the server (e.g. smtp-mail.outlook.com, smtp.gmail.com).\
 \r\n----------------------------------------------------------------------------------\r\n\
 [Port]: The port number (e.g. 465, 587). Not a necessary field.\
 \r\n----------------------------------------------------------------------------------\r\n\
-[Reload USB devices automatically]: Refreshes the USB devices automatically on the 'Choose USB device' dialog.\
-\r\n----------------------------------------------------------------------------------\r\n\
+[Reload USB devices automatically]: Refreshes the USB devices automatically on the 'Choose\
+ USB device' dialog."
+
+    ID_HELP_MSG2,   "\r\n----------------------------------------------------------------------\
+------------\r\n\
 [Enable checking for valid e-mail addresses]: (ALPHA)Non-RFC compliant. Doesn't work as well.\
 \r\n----------------------------------------------------------------------------------\r\n\
-[Maximum number of acceptable failed e-mails sent, before stopping the service]: If the service fails to send an e-mail \
-once it will stop running. You can set here a number of failed e-mails to be accepted before stopping the service.\
+[Maximum number of acceptable failed e-mails sent, before stopping the service]: If the service\
+ fails to send an e-mail \
+once it will stop running. You can set here a number of failed e-mails to be accepted before\
+ stopping the service.\
 \r\n----------------------------------------------------------------------------------\r\n\
 [System tray icon]: Enables a notification area icon allowing USB2Email to be minimized to the tray.\
 \r\n----------------------------------------------------------------------------------\r\n\
-[Store user input to configuration file]: Stores the current given data from input fields to a backup file. USB2Email reads this file \
-every time it's opened. Also the password will be stored on that file; don't enter your password before pressing this button if \
+[Store user input to configuration file]: Stores the current given data from input fields to\
+ a backup file. USB2Email reads this file \
+every time it's opened. Also the password will be stored on that file; don't \
+enter your password before pressing this button if \
 you don't want it to be stolen."
 }
 

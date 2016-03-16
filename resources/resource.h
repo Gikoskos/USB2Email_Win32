@@ -126,7 +126,7 @@
 #define IDM_TRAY_OPENWINDOW                     40167
 #define IDM_TRAY_QUIT                           40168
 
-#define ID_HELP_MSG                             40169
+#define ID_HELP_MSG1                            40169
 #define IDC_HELP_TEXT                           40170
 #define IDM_AUTOSTART                           40171
 
@@ -134,4 +134,4 @@
 #define ID_ERR_MSG_63                           40173
 #define ID_ERR_MSG_64                           40174
 #define ID_ERR_MSG_65                           40175
-#define ID_ERR_MSG_66                           40176
+#define ID_HELP_MSG2                            40176

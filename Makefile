@@ -3,11 +3,11 @@ DEBUG = -g -DDEBUG
 CFLAGS = -Wall -DUNICODE -D_UNICODE -static-libgcc 
 INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
-DBG = build/debug.exe
-RLS = build/USB2Email.exe
+DBG = build/USB2Email/debug.exe
+RLS = build/USB2Email/USB2Email.exe
 DWARF2 = -ggdb
 
-LINKER = -L. -lU2MUsbIDs_dll -lsetupapi -lgdi32 -lole32 -ladvapi32 -lshell32 -lcomctl32 -lquickmail -lconfuse
+LINKER = build/libU2MUsbIDs_dll.a build/libquickmail.dll.a build/libconfuse.a -lsetupapi -lgdi32 -lole32 -ladvapi32 -lshell32 -lcomctl32
 RLS_FLAGS = -mwindows -O1
 
 WINDOW_SOURCE = U2MWin32.c
@@ -30,15 +30,15 @@ dbg: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE)
 rls: $(WINDOW_SOURCE) $(USB2MAIL_SOURCE) $(CONFIG_SOURCE)
 	$(CC) $(CFLAGS) $(RLS_FLAGS) $(OBJ) $(RLS) main_res.o $^ $(LINKER)
 
-all_extern: locale_dlls usbids_dll clean compile_icon_res
+all_extern: clean locale_dlls usbids_dll compile_icon_res
 
 locale_dlls: compile_en_dll compile_gr_dll
 
 compile_en_dll: compile_en_resources
-	$(CC) -shared -o build/U2MLocale_En.dll en_resources.o
+	$(CC) -shared -o build/USB2Email/U2MLocale_En.dll en_resources.o
 
 compile_gr_dll: compile_gr_resources
-	$(CC) -shared -o build/U2MLocale_Gr.dll gr_resources.o
+	$(CC) -shared -o build/USB2Email/U2MLocale_Gr.dll gr_resources.o
 
 compile_en_resources:
 	cd resources & windres $(EN_RES) ..\en_resources.o & cd ..
@@ -53,7 +53,7 @@ compile_usbids:
 	$(CC) $(CFLAGS) -c $(USBIDS_SOURCE)
 
 usbids_dll: compile_usbids
-	$(CC) -shared -o build/U2MUsbIDs.dll find_usb.o usb_ids.o -Wl,--out-implib,libU2MUsbIDs_dll.a
+	$(CC) -shared -o build/USB2Email/U2MUsbIDs.dll find_usb.o usb_ids.o -Wl,--out-implib,build/libU2MUsbIDs_dll.a
 
 installer: candle light
 
@@ -63,15 +63,11 @@ candle: $(WXS)
 light: $(WIXOBJ)
 	light.exe $^
 
-ml: smtp-tls.c
-	$(CC) $(CFLAGS) $^ -lcurl
-
-
 .PHONY:
 clean: cleanobj cleanexe
 
 cleanobj:
-	@del *.o *.wixobj *.wixpdb
+	@del *.o *.wixobj *.wixpdb *.a
 
 cleanexe:
-	@del build\*.exe
+	@del build\USB2Email\*.exe build\USB2Email\U2MLocale*.dll build\USB2Email\U2MUsbIDs.dll build\libU2MUsbIDs_dll.a
