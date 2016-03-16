@@ -9,7 +9,7 @@
 #include <initguid.h>
 #include <usbiodef.h> //for GUID_DEVINTERFACE_USB_DEVICE
 #include <regstr.h>
-#include <quickmail.h>
+#include "quickmail.h"
 
 
 /*#ifdef DEFINE_GUID

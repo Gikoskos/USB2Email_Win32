@@ -4,7 +4,7 @@
  ******************************************/
 
 #include "U2MWin32.h"
-#include <confuse.h>
+#include "confuse.h"
 
 
 char *cfg_filename = "U2M.conf";
