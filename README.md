@@ -18,8 +18,13 @@ If you want to support other languages e-mail me.
 
 ## Building
 
-I compile with Mingw-w64. If you manage to compile it on Visual Studio congrats.
-This is the Win32 version. Latest release binaries are on Tags.
+The Makefile compiles with mingw-w64. The executable for mingw-w64 is on the build\USB2Email directory.
+The following command compiles a full-featured executable and the DLLs needed:
+
+    mingw32-make.exe all_extern & mingw32-make.exe rls
+
+There's also my Visual Studio 2013 project files in the repo. On the MSVC version, I don't compile the USB IDs 
+and functions in a seperate DLL; they are packaged with the final executable.
 
 ## Libs used
 
