@@ -4,8 +4,6 @@
 *.dll
 *.a
 *.txt
-build/*
-!build/libeay32.dll
-!build/libcurl-4.dll
-!build/ssleay32.dll
-!build/libquickmail-0.dll
+build\USB2Email\*.exe
+build\USB2Email\U2MLocale*.dll
+build\USB2Email\U2MUsbIDs.dll
