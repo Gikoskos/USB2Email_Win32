@@ -33,6 +33,7 @@ static BOOL Logging_System_Enabled = TRUE;
 
 extern HINSTANCE *g_hInst;
 
+
 /*******************************************
 * Prototypes for functions with local scope *
  *******************************************/
@@ -43,11 +44,21 @@ BOOL SendEmail(VOID);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 BOOL WriteToU2MLogFile(TCHAR *Logfile_name);
+VOID InitU2MLogging(VOID);
 
 
 BOOL InitU2MThread(HWND hwnd)
 {
-    if (onoff) return FALSE;
+    static HANDLE u2mMainThread = NULL;
+    UINT thrdID;
+
+    if (onoff) {
+        if (u2mMainThread != NULL) {
+            CloseHandle(u2mMainThread);
+            u2mMainThread = NULL;
+        }
+        return FALSE;
+    }
 
     if (!user_dat.FROM) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -78,47 +89,9 @@ BOOL InitU2MThread(HWND hwnd)
         return FALSE;
     }
 
-    HANDLE u2mMainThread;
-    UINT thrdID;
-
-    Logging_System_Enabled = TRUE;
-
-    //find if there are already other U2M log files in the folder and increase the global filename number accordingly
-    if (curr_filename == 1) {
-        while (1) {
-            TCHAR temp_fn[255];
-            WIN32_FIND_DATA u2m_log_data;
-            LARGE_INTEGER Logfile_sz;
-
-            StringCchPrintf(temp_fn, 255, U2MLOG_PREFIX _T("_%ld.txt"), curr_filename + 1);
-            HANDLE curr_u2m_log = FindFirstFile(temp_fn, &u2m_log_data);
-
-            //if we found a U2M log file with the next to current filename
-            if (curr_u2m_log != INVALID_HANDLE_VALUE) {
-                putchar('s');
-                //if this function fails break
-                if (!GetFileSizeEx(curr_u2m_log, &Logfile_sz)) {
-                    CloseHandle(curr_u2m_log);
-                    break;
-                }
-                //if the next logfile size is bigger than our max size
-                if (Logfile_sz.QuadPart > MAX_LOG_FILE_SZ) {
-                    CloseHandle(curr_u2m_log);
-                    curr_filename++;
-                    continue;
-                }
-            }
-            break;
-        }
-    }
-
-    //if we exceed the maximum number of allowed U2M logs then the logging is disabled
-    if (curr_filename - 1 >= MAX_NUMBER_OF_U2M_LOGS) {
-        Logging_System_Enabled = FALSE;
-    }
+    InitU2MLogging();
 
     u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThreadSingle, (LPVOID)hwnd, 0, &thrdID);
-    (VOID)u2mMainThread;
 
     return TRUE;
 }
@@ -127,8 +100,13 @@ BOOL InitU2MThread(HWND hwnd)
  *it's removed*/
 UINT CALLBACK U2MThreadSingle(LPVOID dat)
 {
-    HWND hwnd ATTRIB_UNUSED = (HWND)dat;
+    HWND hwnd = (HWND)dat;
     UINT failed_emails = 0;
+
+    if (hwnd == NULL) {
+        _endthreadex(1);
+        return 1;
+    }
 
     while (onoff && (failed_emails <= user_dat.MAX_FAILED_EMAILS)) {
         Sleep((DWORD)user_dat.TIMEOUT);
@@ -151,16 +129,19 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
 
             while (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
                 Sleep(900);
-                if (!onoff) 
+                if (!onoff) {
+                    _endthreadex(0);
                     return 0; //if onoff is FALSE, it means that the STARTSTOP button has
-            }                 //been already pushed and there's no need to risk sending the 
-        }                     //message in line 104, thus disabling the button
+                }             //been already pushed and there's no need to risk sending the
+            }                 //message in line 104, thus disabling the button
+        }
     }
 
     if (failed_emails > user_dat.MAX_FAILED_EMAILS) 
         SendMessageTimeout(hwnd, WM_COMMAND, 
                            MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
                            (LPARAM)0, SMTO_NORMAL, 0, NULL);
+    _endthreadex(0);
     return 0;
 }
 
@@ -213,6 +194,45 @@ BOOL SendEmail(VOID)
     }
     quickmail_destroy(mailobj);
     return retvalue;
+}
+
+VOID InitU2MLogging(VOID)
+{
+    Logging_System_Enabled = TRUE;
+
+    //find if there are already other U2M log files in the folder and increase the global filename number accordingly
+    if (curr_filename == 1) {
+        while (1) {
+            TCHAR temp_fn[255];
+            WIN32_FIND_DATA u2m_log_data;
+            LARGE_INTEGER Logfile_sz;
+
+            StringCchPrintf(temp_fn, 255, U2MLOG_PREFIX _T("_%ld.txt"), curr_filename + 1);
+            HANDLE curr_u2m_log = FindFirstFile(temp_fn, &u2m_log_data);
+
+            //if we found a U2M log file with the next to current filename
+            if (curr_u2m_log != INVALID_HANDLE_VALUE) {
+                putchar('s');
+                //if this function fails break
+                if (!GetFileSizeEx(curr_u2m_log, &Logfile_sz)) {
+                    CloseHandle(curr_u2m_log);
+                    break;
+                }
+                //if the next logfile size is bigger than our max size
+                if (Logfile_sz.QuadPart > MAX_LOG_FILE_SZ) {
+                    CloseHandle(curr_u2m_log);
+                    curr_filename++;
+                    continue;
+                }
+            }
+            break;
+        }
+    }
+
+    //if we exceed the maximum number of allowed U2M logs then the logging is disabled
+    if (curr_filename - 1 >= MAX_NUMBER_OF_U2M_LOGS) {
+        Logging_System_Enabled = FALSE;
+    }
 }
 
 BOOL WriteToU2MLogFile(TCHAR *Logfile_name)

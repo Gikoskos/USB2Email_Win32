@@ -65,9 +65,9 @@
 #endif
 
 #ifdef _WIN64
-#define WINARCH str(x64)
+# define WINARCH str(x64)
 #elif _WIN32
-#define WINARCH str(Win32)
+# define WINARCH str(Win32)
 #endif
 
 /* versioning */

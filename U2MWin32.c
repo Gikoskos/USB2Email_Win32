@@ -83,9 +83,9 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText);
 HWND WINAPI CreateTrackingToolTip(HWND hDlg, TCHAR *pszText);
 BOOL isValidDomain(char *str, char SEPARATOR);
 BOOL GetUSBListViewSelection(HWND hwnd);
-VOID ResetMainWindowLanguage(HWND hwnd);
 TCHAR *GetLocaleStr(UINT iD);
 HANDLE InitSingleInstanceMutex(VOID);
+VOID ResetLocale(HWND hwnd);
 
 VOID InitEmailDialog(HWND hwnd);
 VOID InitAboutDialog(HWND hwnd);
@@ -200,21 +200,6 @@ VOID InitHelpDialog(HWND hwnd)
         //SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
         SetActiveWindow(hlp_hwnd);
     }
-}
-
-VOID ResetMainWindowLanguage(HWND hwnd)
-{
-    TCHAR tmp1[255], tmp2[255], tmp3[255], tmp4[255];
-
-    LoadLocaleErrMsg(tmp1, 21);
-    LoadLocaleErrMsg(tmp2, 19);
-    LoadLocaleErrMsg(tmp3, 9);
-    LoadLocaleErrMsg(tmp4, 15);
-
-    SetWindowText(USBListButton, tmp1);
-    SetWindowText(EMAILButton, tmp2);
-    SetWindowText(STARTSTOP, tmp3);
-    SetWindowText(ttrack_label, tmp4);
 }
 
 BOOL isValidDomain(char *str, char SEPARATOR)
@@ -729,6 +714,29 @@ VOID SetU2MNotifyTip(VOID)
     }
 }
 
+VOID ResetLocale(HWND hwnd)
+{
+    TCHAR tmp1[255], tmp2[255], tmp3[255], tmp4[255];
+
+    SetApplicationLanguage();
+
+    LoadLocaleErrMsg(tmp1, 21);
+    LoadLocaleErrMsg(tmp2, 19);
+    LoadLocaleErrMsg(tmp3, 9);
+    LoadLocaleErrMsg(tmp4, 15);
+
+    SetWindowText(USBListButton, tmp1);
+    SetWindowText(EMAILButton, tmp2);
+    SetWindowText(STARTSTOP, tmp3);
+    SetWindowText(ttrack_label, tmp4);
+
+    SetMenu(hwnd, MainMenu);
+    SetU2MNotifyTip();
+    CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
+                  (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
+    DrawMenuBar(hwnd);
+}
+
 HANDLE InitSingleInstanceMutex(VOID)
 {
     SECURITY_ATTRIBUTES mtx_sa;
@@ -752,6 +760,11 @@ UINT CALLBACK RefreshUSBThread(LPVOID dat)
 {
     HWND hwnd = (HWND)dat;
 
+    if (hwnd == NULL) {
+        _endthreadex(1);
+        return 1;
+    }
+
     while (USBdev_scan) {
         Sleep(2000);
         SendMessageTimeout(hwnd, WM_COMMAND, 
@@ -759,6 +772,7 @@ UINT CALLBACK RefreshUSBThread(LPVOID dat)
                            (LPARAM)0, SMTO_NORMAL,
                            0, NULL);
     }
+    _endthreadex(0);
     return 0;
 }
 
@@ -853,7 +867,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                             HDWP winnum = BeginDeferWindowPos(1);
                             if (!winnum) continue;
 
-                            Sleep(1);
+                            //Sleep(1);
                             if (LibVisible) {
                                 DeferWindowPos(winnum, hwnd, HWND_TOP, 0, 0, width, height + i,
                                                SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
@@ -955,7 +969,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     LVCOLUMN vendCol, devcCol;
-    HANDLE refresh_usb_hnd ATTRIB_UNUSED = NULL; //usb auto scan thread handle
+    static HANDLE refresh_usb_hnd = NULL; //usb auto scan thread handle
     static HICON refreshDlgIco = NULL, usbDlgIco = NULL;
     static INT temp_idx = -1;
 
@@ -1005,7 +1019,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             usb_idx = 0;
-            memset(user_dat.usb_id_selection, 0, sizeof(UINT)*2);
+            ZeroMemory(user_dat.usb_id_selection, sizeof(UINT)*2);
             switch (LOWORD(wParam)) {
                 case IDUSBREFRESH:
                     ListView_DeleteAllItems(GetDlgItem(hwnd, IDC_USBDEVLIST));
@@ -1021,17 +1035,15 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                         LoadLocaleErrMsg(tmpmsg1, 27);
                         LoadLocaleErrMsg(tmpmsg2, 0);
                         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
-                    } else {
-                        DeleteScannedUSBIDs();
-                        USBdev_scan = FALSE;
-                        DestroyIcon(refreshDlgIco);
-                        DestroyIcon(usbDlgIco);
-                        EndDialog(hwnd, (INT_PTR)TRUE);
+                        return (INT_PTR)TRUE;
                     }
-                    return (INT_PTR)TRUE;
                 case IDCANCEL:
                     DeleteScannedUSBIDs();
                     USBdev_scan = FALSE;
+                    if (refresh_usb_hnd != NULL) {
+                        CloseHandle(refresh_usb_hnd);
+                        refresh_usb_hnd = NULL;
+                    }
                     DestroyIcon(refreshDlgIco);
                     DestroyIcon(usbDlgIco);
                     EndDialog(hwnd, (INT_PTR)TRUE);
@@ -1045,15 +1057,19 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                         case NM_DBLCLK:
                             usb_idx = 0;
                             if (!GetUSBListViewSelection(hwnd)) {
-                                memset(user_dat.usb_id_selection, 0, sizeof(user_dat.usb_id_selection));
-                                TCHAR tmpmsg1[255], tmpmsg2[255];
+                                ZeroMemory(user_dat.usb_id_selection, sizeof(user_dat.usb_id_selection));
+                                /*TCHAR tmpmsg1[255], tmpmsg2[255];
                                 LoadLocaleErrMsg(tmpmsg1, 27);
                                 LoadLocaleErrMsg(tmpmsg2, 0);
-                                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);*/
                             } else {
+                                USBdev_scan = FALSE;
+                                if (refresh_usb_hnd != NULL) {
+                                    CloseHandle(refresh_usb_hnd);
+                                    refresh_usb_hnd = NULL;
+                                }
                                 DestroyIcon(refreshDlgIco);
                                 DestroyIcon(usbDlgIco);
-                                USBdev_scan = FALSE;
                                 EndDialog(hwnd, (INT_PTR)TRUE);
                             }
                             return (INT_PTR)TRUE;                            
@@ -1283,26 +1299,15 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             EnableWindow(STARTSTOP, !IsWindowEnabled(STARTSTOP));
             SetU2MNotifyTip();
             break;
-        /* custom message that redraws the text and resets the state of the main window, based on the
-           global, currently loaded, language module (g_hInst) */
-        case WM_RESET_MAINWINDOW_CONTROLS:
-            SetApplicationLanguage();
-            ResetMainWindowLanguage(hwnd);
-            SetMenu(hwnd, MainMenu);
-            SetU2MNotifyTip();
-            CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
-                          (user_dat.Autostart)?(MF_BYCOMMAND | MF_CHECKED):(MF_BYCOMMAND | MF_UNCHECKED));
-            DrawMenuBar(hwnd);
-            break;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDM_EN_LANG:
                     currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-                    SendMessage(hwnd, WM_RESET_MAINWINDOW_CONTROLS, (WPARAM)0, (LPARAM)0);
+                    ResetLocale(hwnd);
                     break;
                 case IDM_GR_LANG:
                     currentLangID = MAKELANGID(LANG_GREEK, SUBLANG_GREEK_GREECE);
-                    SendMessage(hwnd, WM_RESET_MAINWINDOW_CONTROLS, (WPARAM)0, (LPARAM)0);
+                    ResetLocale(hwnd);
                     break;
                 case IDM_ABOUT:
                     InitAboutDialog(hwnd);
@@ -1408,14 +1413,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 case WM_RBUTTONUP:
                     {
                         POINT cursor_pos;
-                        TCHAR tmpmsg1[255], tmpmsg2[255], tmpmsg3[255];
+                        TCHAR tmpmsg1[255], tmpmsg2[255], tmpmsg3[255] ATTRIB_UNUSED;
 
                         LoadLocaleErrMsg(tmpmsg1, 60);
                         LoadLocaleErrMsg(tmpmsg2, 61);
-                        LoadLocaleErrMsg(tmpmsg3, 10);
+                        //LoadLocaleErrMsg(tmpmsg3, 10);
                         TrayIconMenu = CreatePopupMenu();
                         AppendMenu(TrayIconMenu, MF_STRING, IDM_TRAY_OPENWINDOW, tmpmsg2);
-                        AppendMenu(TrayIconMenu, MF_STRING | ((onoff) ? MF_ENABLED : MF_DISABLED), IDC_STARTSTOP, tmpmsg3);
+                        //AppendMenu(TrayIconMenu, MF_STRING | ((onoff) ? MF_ENABLED : MF_DISABLED), IDC_STARTSTOP, tmpmsg3);
                         AppendMenu(TrayIconMenu, MF_SEPARATOR, 0, NULL);
                         AppendMenu(TrayIconMenu, MF_STRING, IDM_TRAY_QUIT, tmpmsg1);
 
@@ -1500,7 +1505,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /*** Global initializations ***/
     onoff = FALSE;
     TrayIconMenu = NULL;
-    //memset(user_dat.usb_id_selection, 0, sizeof(UINT)*2);
+    //ZeroMemory(user_dat.usb_id_selection, sizeof(UINT)*2);
 
     err = GetU2MRegData();
 #ifdef DEBUG
