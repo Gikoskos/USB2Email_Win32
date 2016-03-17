@@ -1,6 +1,6 @@
 CC = gcc
 DEBUG = -g -DDEBUG
-CFLAGS = -Wall -DUNICODE -D_UNICODE -static-libgcc 
+CFLAGS = -Wall -DUNICODE -D_UNICODE -static-libgcc
 INC_WARN_LEVEL = -Wextra -pedantic
 OBJ = -o
 DBG = build/USB2Email/debug.exe
