@@ -611,14 +611,18 @@ VOID SetApplicationLanguage(VOID)
 {
     switch (PRIMARYLANGID(currentLangID)) {
         case LANG_GREEK:
-            *g_hInst = U2M_dlls[GREEK_DLL].module;
-            MainMenu = U2M_dlls[GREEK_DLL].locale_menu;
+            if (U2M_dlls[GREEK_DLL].module != NULL && U2M_dlls[GREEK_DLL].locale_menu != NULL) {
+                *g_hInst = U2M_dlls[GREEK_DLL].module;
+                MainMenu = U2M_dlls[GREEK_DLL].locale_menu;
+            }
             break;
         case LANG_ENGLISH:
         default:
             currentLangID = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
-            *g_hInst = U2M_dlls[ENGLISH_DLL].module;
-            MainMenu = U2M_dlls[ENGLISH_DLL].locale_menu;
+            if (U2M_dlls[ENGLISH_DLL].module != NULL && U2M_dlls[ENGLISH_DLL].locale_menu != NULL) {
+                *g_hInst = U2M_dlls[ENGLISH_DLL].module;
+                MainMenu = U2M_dlls[ENGLISH_DLL].locale_menu;
+            }
             break;
     }
 }
@@ -673,6 +677,11 @@ BOOL LoadLocaleDLLs(VOID)
             }
             continue;
         }
+        // the loop gets here only if both the library and the menu were loaded successfully
+        // the program locale defaults to the last library that was loaded succesfully
+        // this is a failsafe measure
+        *g_hInst = U2M_dlls[i].module;
+        MainMenu = U2M_dlls[i].locale_menu;
     }
 
     currentLangID = GetUserDefaultUILanguage(); //get the language of the system
