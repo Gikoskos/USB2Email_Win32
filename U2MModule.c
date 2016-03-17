@@ -20,7 +20,7 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 #endif*/
 
 
-//the prefix of ever U2M log file name
+//the prefix of every U2M log's file name
 #define U2MLOG_PREFIX _T("U2MLog")
 //maximum number of U2M log files that we're allowed to save on the disk
 #define MAX_NUMBER_OF_U2M_LOGS  10000
@@ -51,29 +51,29 @@ BOOL InitU2MThread(HWND hwnd)
 
     if (!user_dat.FROM) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_53, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        LoadLocaleErrMsg(tmpmsg1, 53);
+        LoadLocaleErrMsg(tmpmsg2, 54);
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     if (!user_dat.SMTP_SERVER) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_55, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        LoadLocaleErrMsg(tmpmsg1, 55);
+        LoadLocaleErrMsg(tmpmsg2, 54);
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     if (!user_dat.usb_id_selection[0] || !user_dat.usb_id_selection[1]) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_56, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        LoadLocaleErrMsg(tmpmsg1, 56);
+        LoadLocaleErrMsg(tmpmsg2, 54);
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
     if (!user_dat.pass) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_57, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadString(*g_hInst, ID_ERR_MSG_54, tmpmsg2, sizeof(tmpmsg2)/sizeof(tmpmsg2[0]));
+        LoadLocaleErrMsg(tmpmsg1, 57);
+        LoadLocaleErrMsg(tmpmsg2, 54);
         MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
         return FALSE;
     }
@@ -323,10 +323,39 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                 case FILL_USB_LISTVIEW:
                     if (hDlg != NULL) {
                         UsbDevStruct *new = UsbFind(vID, dID);
-                        if (!new) goto SKIP_DEVICE;
+
                         scanned_usb_ids[idx][0] = vID;
                         scanned_usb_ids[idx][1] = dID;
-                        AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
+                        // if the device isn't found in the USB list
+                        // then we will show a localized 'Unknown device/vendor' string
+                        // with the device's ID
+                        if (new == NULL) {
+                            TCHAR device_to_add[255], vendor_to_add[255];
+                            TCHAR venIDstr[] = {
+                                _T('('), _T('0'), _T('x'),
+                                DevIntfDetailData->DevicePath[12],
+                                DevIntfDetailData->DevicePath[13],
+                                DevIntfDetailData->DevicePath[14],
+                                DevIntfDetailData->DevicePath[15],
+                                _T(')'), _T('\0')
+                            },    devIDstr[] = {
+                                _T('('), _T('0'), _T('x'),
+                                DevIntfDetailData->DevicePath[21],
+                                DevIntfDetailData->DevicePath[22],
+                                DevIntfDetailData->DevicePath[23],
+                                DevIntfDetailData->DevicePath[24],
+                                _T(')'), _T('\0')
+                            };
+
+                            LoadLocaleErrMsg(vendor_to_add, 32);
+                            LoadLocaleErrMsg(device_to_add, 33);
+                            StringCchCat(vendor_to_add, sizeof(vendor_to_add) / sizeof(vendor_to_add[0]), venIDstr);
+                            StringCchCat(device_to_add, sizeof(device_to_add) / sizeof(device_to_add[0]), devIDstr);
+                            AddDeviceToUSBListView(hDlg, device_to_add, vendor_to_add);
+                        } else {
+                            AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
+                        }
+
                         idx++;
                     }
                     break;

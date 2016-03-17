@@ -28,9 +28,9 @@
 #define MAX_LOG_FILE_SZ 81920
 
 /* custom messages for the main window procedure */
-#define WM_ENABLE_STARTSTOP WM_USER + 0x00dd
-#define WM_U2M_NOTIF_ICON WM_USER + 0x000e
-#define WM_RESET_MAINWINDOW_CONTROLS WM_USER + 0x000f
+#define WM_ENABLE_STARTSTOP WM_USER + 0x0234
+#define WM_U2M_NOTIF_ICON WM_USER + 0xdeef
+#define WM_RESET_MAINWINDOW_CONTROLS WM_USER + 0xdea7
 
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10
@@ -43,6 +43,9 @@
 #define realloc(NULL, x) malloc(x)
 #define calloc(x, y) malloc(x * y)
 
+/* macro for LoadString which loads the error message 'y' from the currently
+ * loaded locale DLL and puts it in the TCHAR string 'x' */
+#define LoadLocaleErrMsg(x, y) LoadString(*g_hInst, ERR_ID(y), x, sizeof(x)/sizeof(x[0]));
 
 
 /********************************************
@@ -155,7 +158,7 @@ static inline void __MsgBoxGetLastError(LPTSTR lpszFunction)
 
 BOOL InitU2MThread(HWND hwnd);
 BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag);
-VOID AddDeviceToUSBListView(HWND hDlg, char *dev_str, char *ven_str);
+VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str);
 
 BOOL parseConfFile(VOID);
 BOOL saveConfFile(VOID);

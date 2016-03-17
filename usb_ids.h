@@ -7,6 +7,7 @@
 #ifndef USB_IDS_H
 #define USB_IDS_H
 
+#include "U2MCommon.h"
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -16,8 +17,8 @@ extern "C" {
 typedef struct {
 	unsigned long VendorID;
 	unsigned long DeviceID;
-	char *Vendor;
-	char *Device;
+	TCHAR *Vendor;
+	TCHAR *Device;
 } UsbDevStruct;
 
 extern __declspec(dllexport) UsbDevStruct UsbList[];

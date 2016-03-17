@@ -14,8 +14,12 @@
 #endif
 
 /* compile for Win7 */
-#define WINVER 0x0601
-#define _WIN32_WINNT 0x0601
+#ifndef WINVER
+# define WINVER 0x0601
+#endif
+#ifndef _WIN32_WINNT
+# define _WIN32_WINNT 0x0601
+#endif
 #include <SDKDDKVer.h> //API versioning
 
 #define WIN32_LEAN_AND_MEAN //skip uneccessary header files
@@ -68,7 +72,7 @@
 
 /* versioning */
 #define U2MWin32_MAJOR 2
-#define U2MWin32_MINOR 13
-#define U2MWin32_PATCH 1
+#define U2MWin32_MINOR 14
+#define U2MWin32_PATCH 0
 
 #define U2MWin32_VERSION_STR ver_str(U2MWin32_MAJOR,U2MWin32_MINOR,U2MWin32_PATCH)
