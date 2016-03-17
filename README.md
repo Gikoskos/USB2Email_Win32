@@ -26,9 +26,13 @@ The following command compiles a full-featured executable and the DLLs needed:
 There's also my Visual Studio 2013 project files in the repo. On the MSVC version, I don't compile the USB IDs 
 and functions in a seperate DLL; they are packaged with the final executable.
 
+Also the MSVC libcurl depends on WinSSL instead of OpenSSL and all the libraries and the final executable
+link statically with the msvcrt libraries (\MT) meaning that the Visual Studio executable can run without
+the Visual C++ Redistributable.
+
 ## Libs used
 
-libquickmail
+libquickmail (depends on libcurl)
 
 libconfuse
 
