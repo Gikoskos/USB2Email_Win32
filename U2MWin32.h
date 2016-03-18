@@ -29,8 +29,7 @@
 
 /* custom messages for the main window procedure */
 #define WM_ENABLE_STARTSTOP WM_USER + 0x0234
-#define WM_U2M_NOTIF_ICON WM_USER + 0xdeef
-#define WM_RESET_MAINWINDOW_CONTROLS WM_USER + 0xdea7
+#define WM_U2M_NOTIF_ICON WM_USER + 0x023f
 
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10

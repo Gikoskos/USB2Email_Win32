@@ -262,6 +262,7 @@ HWND WINAPI CreateBaloonToolTip(int toolID, HWND hDlg, TCHAR *pszText)
 {
     if (!toolID || !hDlg || !pszText)
         return NULL;
+
     HWND hwndTool = GetDlgItem(hDlg, toolID);
 
     HWND hwndTip = CreateWindowEx(0, TOOLTIPS_CLASS, NULL,
@@ -897,11 +898,10 @@ INT_PTR CALLBACK PwdDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             switch (LOWORD(wParam)) {
                 case IDOK:
                     ClearPwd();
-                    if (parsePwdField(hwnd))
-                        EndDialog(hwnd, (INT_PTR)TRUE);
-                    else
+                    if (!parsePwdField(hwnd)) {
                         ClearPwd();
-                    return (INT_PTR)TRUE;
+                        return (INT_PTR)TRUE;
+                    }
                 case IDCANCEL:
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
@@ -1086,6 +1086,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    //static
     HWND FROM_ttip ATTRIB_UNUSED,
          TO_ttip ATTRIB_UNUSED,
          CC_ttip ATTRIB_UNUSED,
@@ -1094,6 +1095,7 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
     switch (msg) {
         case WM_INITDIALOG:
+            //FROM_ttip = TO_ttip = CC_ttip = SUBJECT_ttip = BODY_ttip = NULL;
             {
                 HICON emailDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
                                                  MAKEINTRESOURCE(IDI_EMAILICON),
@@ -1132,12 +1134,16 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             switch (LOWORD(wParam)) {
                 case IDOK:
                     ClearEmailData();
-                    if (parseEmailDialogFields(hwnd))
-                        EndDialog(hwnd, (INT_PTR)TRUE);
-                    else
+                    if (!parseEmailDialogFields(hwnd)) {
                         ClearEmailData();
-                    break;
+                        break;
+                    }
                 case IDCANCEL:
+                    /*DestroyWindow(FROM_ttip);
+                    DestroyWindow(TO_ttip);
+                    DestroyWindow(CC_ttip);
+                    DestroyWindow(SUBJECT_ttip);
+                    DestroyWindow(BODY_ttip);*/
                     EndDialog(hwnd, (INT_PTR)TRUE);
                     return (INT_PTR)TRUE;
             }
