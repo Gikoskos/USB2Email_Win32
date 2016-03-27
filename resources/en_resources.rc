@@ -119,6 +119,7 @@ STRINGTABLE
     ID_ERR_MSG_64,  "U2M_event failed!"
     ID_ERR_MSG_65,  "Failed reading data from the registry! Try restarting the application."
     ID_ERR_MSG_66,  "Failed writing data to the registry! Some of your options might not be saved."
+    HELP_DLG_CAPTION, "Using USB2Email"
 }
 
 STRINGTABLE

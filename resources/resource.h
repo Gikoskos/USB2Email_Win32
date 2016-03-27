@@ -134,6 +134,7 @@
 #define ID_ERR_MSG_65                           40175
 #define ID_ERR_MSG_66                           40176
 #define ID_HELP_MSG2                            40177
+#define HELP_DLG_CAPTION                        40178
 
 //language identifiers
 #define IDM_GR_LANG                             1032 //MAKELANGID(LANG_GREEK, SUBLANG_GREEK_GREECE)

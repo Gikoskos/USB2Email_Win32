@@ -22,7 +22,10 @@
 #include "resources/resource.h"
 #define ERR_ID(x) ID_ERR_MSG_##x
 
-#define MAX_CONNECTED_USB 20
+#define MAX_CONNECTED_USB  20
+
+/* constant buffer size in characters */
+#define MAX_BUFFER     100000
 
 /* maximum size for a U2M log file is 80 kibibytes */
 #define MAX_LOG_FILE_SZ 81920
@@ -135,10 +138,10 @@ extern char *cfg_filename; //the filename of the configuration file
 
 extern WORD currentLangID; //the ID of the current language used
 
-#ifdef __MINGW32__
-static inline void __MsgBoxGetLastError(LPTSTR lpszFunction)
+#if !_MSC_VER
+static inline void __MsgBoxGetLastError(const LPCTSTR func, const ULONG line)
 #else
-static inline void __MsgBoxGetLastError(LPTSTR lpszFunction)
+static void __MsgBoxGetLastError(const LPCTSTR func, ULONG line)
 #endif
 { 
     LPVOID lpMsgBuf;
@@ -152,14 +155,14 @@ static inline void __MsgBoxGetLastError(LPTSTR lpszFunction)
                   NULL, err, currentLangID, (LPTSTR)&lpMsgBuf, 0, NULL);
 
     lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
-                   (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+                   ((lstrlen(lpMsgBuf) + 40) * sizeof(TCHAR) + (lstrlen(func) * sizeof(TCHAR))));
 
     StringCchPrintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-                    _T("%s EC %lu: %s"),
-                    lpszFunction, err, lpMsgBuf);
+                    TEXT("%s err %lu @ %lu: %s"),
+                    func, err, line, lpMsgBuf);
 
     err = LoadLocaleErrMsg(error_localized, 0);
-    MessageBoxEx(NULL, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : _T("Error!"), MB_OK, currentLangID); 
+    MessageBoxEx(NULL, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : TEXT("Error!"), MB_OK, currentLangID); 
 
     LocalFree(lpMsgBuf);
     LocalFree(lpDisplayBuf);

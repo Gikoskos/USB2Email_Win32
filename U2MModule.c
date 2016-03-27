@@ -27,7 +27,7 @@ typedef struct thread_args {
 
 
 //the prefix of every U2M log's file name
-#define U2MLOG_PREFIX _T("Logs\\U2MLog")
+#define U2MLOG_PREFIX TEXT("Logs\\U2MLog")
 //maximum number of U2M log files that we're allowed to save on the disk
 #define MAX_NUMBER_OF_U2M_LOGS  10000
 
@@ -38,6 +38,8 @@ HANDLE u2mMainThread;
 
 static ULONG curr_filename = 1; //current log file number
 static LONG Logging_System_Enabled = TRUE;
+/* pointer to the thread arguments
+ * malloc'd and filled with data before the thread is created and deleted */
 static thread_args *tmp = NULL;
 
 
@@ -246,7 +248,7 @@ VOID InitU2MLogging(VOID)
             WIN32_FIND_DATA u2m_log_data;
             LARGE_INTEGER Logfile_sz;
 
-            StringCchPrintf(temp_fn, 255, U2MLOG_PREFIX _T("_%ld.txt"), curr_filename + 1);
+            StringCchPrintf(temp_fn, 255, U2MLOG_PREFIX TEXT("_%ld.txt"), curr_filename + 1);
             HANDLE curr_u2m_log = FindFirstFile(temp_fn, &u2m_log_data);
 
             //if we found a U2M log file with the next to current filename
@@ -272,7 +274,7 @@ VOID InitU2MLogging(VOID)
     if (curr_filename - 1 >= MAX_NUMBER_OF_U2M_LOGS) {
         EnableU2MLogging(FALSE);
     } else {
-        CreateDirectory(_T("Logs"), NULL);
+        CreateDirectory(TEXT("Logs"), NULL);
     }
 }
 
@@ -287,7 +289,7 @@ BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
     LARGE_INTEGER Logfile_sz; //the size of the current file
 
     GetLocalTime(&curr_time);
-    StringCchPrintf(filename, 255, _T("%s_%ld.txt"), Logfile_name, curr_filename);
+    StringCchPrintf(filename, 255, TEXT("%s_%ld.txt"), Logfile_name, curr_filename);
     hLogfile = CreateFile(filename, FILE_GENERIC_WRITE, FILE_SHARE_WRITE, 
                           NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hLogfile == INVALID_HANDLE_VALUE) {
@@ -304,7 +306,7 @@ BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
 
 WRITE_TO_LOG:
     StringCchPrintf(to_write, 255,
-                    _T("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\r\n\r\n"), 
+                    TEXT("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\r\n\r\n"), 
                     curr_time.wDay, curr_time.wMonth, curr_time.wYear, curr_time.wHour, 
                     curr_time.wMinute, curr_time.wSecond, curr_time.wMilliseconds);
     StringCbLength(to_write, 255, &to_write_len);
@@ -353,7 +355,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
 
     if (hUSBDevInfo == INVALID_HANDLE_VALUE) {
 #ifdef DEBUG
-        __MsgBoxGetLastError(_T("hDevInfo"));
+        __MsgBoxGetLastError(TEXT("hDevInfo"), __LINE__);
 #endif
         return FALSE;
     }
@@ -363,7 +365,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
     if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
          dwMemberIdx, &DevIntfData)) {
 #ifdef DEBUG
-        __MsgBoxGetLastError(_T("SetupDiEnumDeviceInterfaces() 1st call"));
+        __MsgBoxGetLastError(TEXT("SetupDiEnumDeviceInterfaces()"), __LINE__);
 #endif
         return FALSE;
     }
@@ -393,19 +395,19 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
                         if (new == NULL) {
                             TCHAR device_to_add[255], vendor_to_add[255];
                             TCHAR venIDstr[] = {
-                                _T('('), _T('0'), _T('x'),
+                                TEXT('('), TEXT('0'), TEXT('x'),
                                 DevIntfDetailData->DevicePath[12],
                                 DevIntfDetailData->DevicePath[13],
                                 DevIntfDetailData->DevicePath[14],
                                 DevIntfDetailData->DevicePath[15],
-                                _T(')'), _T('\0')
+                                TEXT(')'), TEXT('\0')
                             },    devIDstr[] = {
-                                _T('('), _T('0'), _T('x'),
+                                TEXT('('), TEXT('0'), TEXT('x'),
                                 DevIntfDetailData->DevicePath[21],
                                 DevIntfDetailData->DevicePath[22],
                                 DevIntfDetailData->DevicePath[23],
                                 DevIntfDetailData->DevicePath[24],
-                                _T(')'), _T('\0')
+                                TEXT(')'), TEXT('\0')
                             };
 
                             LoadLocaleErrMsg(vendor_to_add, 32);
@@ -435,7 +437,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
             }
         } else {
 #ifdef DEBUG
-            __MsgBoxGetLastError(_T("SetupDiGetDeviceInterfaceDetail()"));
+            __MsgBoxGetLastError(TEXT("SetupDiGetDeviceInterfaceDetail()"), __LINE__);
 #endif
             free(DevIntfDetailData);
             SetupDiDestroyDeviceInfoList(hUSBDevInfo);
@@ -448,7 +450,7 @@ SKIP_DEVICE:
     }
 #ifdef DEBUG
     if (!SetupDiDestroyDeviceInfoList(hUSBDevInfo)) {
-        __MsgBoxGetLastError(_T("SetupDiDestroyDeviceInfoList()"));
+        __MsgBoxGetLastError(TEXT("SetupDiDestroyDeviceInfoList()"), __LINE__);
     }
 #else
     SetupDiDestroyDeviceInfoList(hUSBDevInfo);

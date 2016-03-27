@@ -8,13 +8,14 @@
 
 
 char *cfg_filename = "U2M.conf";
-TCHAR *registry_path = _T("Software\\USB2Email");
+TCHAR *registry_path = TEXT("Software\\USB2Email");
 TCHAR *reg_subkeys[] = {
-    _T("TrayIcon"), _T("VendorID"),
-    _T("DeviceID"), _T("Autostart"),
-    _T("Timeout"), _T("Max_failed_Emails"),
-    _T("Check_for_Valid_Email"), _T("USB_Auto_Refresh")
+    TEXT("TrayIcon"), TEXT("VendorID"),
+    TEXT("DeviceID"), TEXT("Autostart"),
+    TEXT("Timeout"), TEXT("Max_failed_Emails"),
+    TEXT("Check_for_Valid_Email"), TEXT("USB_Auto_Refresh")
 };
+
 
 /* functions for handling the configuration file */
 BOOL parseConfFile(user_input_data *user_dat)
@@ -56,50 +57,79 @@ BOOL parseConfFile(user_input_data *user_dat)
         cfg_getstr(U2MConf, "SMTP_server")
     };
 
-#if 0
-    printf("%s\n%s\n%s\n%s\n%s\n%s\n%ld\n", temp[0], temp[1], temp[2],
-           temp[3], temp[4], temp[5], cfg_getint(U2MConf, "Port_number"));
-#endif
-    if (user_dat->FROM) free(user_dat->FROM);
-    if (user_dat->TO) free(user_dat->TO);
-    if (user_dat->CC) free(user_dat->CC);
-    if (user_dat->SUBJECT) free(user_dat->SUBJECT);
-    if (user_dat->BODY) free(user_dat->BODY);
-    user_dat->FROM = user_dat->TO = user_dat->CC = user_dat->SUBJECT = user_dat->BODY = NULL;
-
     if (temp[0]) {
-        user_dat->FROM = malloc(sizeof(temp[0])*strlen(temp[0]) + 1);
-        StringCchCopyA(user_dat->FROM, 255, temp[0]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[0], MAX_BUFFER, &len))) {
+            if (user_dat->FROM) free(user_dat->FROM);
+            user_dat->FROM = malloc(sizeof(temp[0])*(len + 1));
+            if (user_dat->FROM) StringCchCopyA(user_dat->FROM, MAX_BUFFER, temp[0]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
     if (temp[1]) {
-        user_dat->TO = malloc(sizeof(temp[1])*strlen(temp[1]) + 1);
-        StringCchCopyA(user_dat->TO, 255, temp[1]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[1], MAX_BUFFER, &len))) {
+            if (user_dat->TO) free(user_dat->TO);
+            user_dat->TO = malloc(sizeof(temp[1])*(len + 1));
+            if (user_dat->TO) StringCchCopyA(user_dat->TO, MAX_BUFFER, temp[1]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
     if (temp[2]) {
-        user_dat->CC = malloc(sizeof(temp[2])*strlen(temp[2]) + 1);
-        StringCchCopyA(user_dat->CC, 255, temp[2]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[2], MAX_BUFFER, &len))) {
+            if (user_dat->CC) free(user_dat->CC);
+            user_dat->CC = malloc(sizeof(temp[2])*(len + 1));
+            if (user_dat->CC) StringCchCopyA(user_dat->CC, MAX_BUFFER, temp[2]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
     if (temp[3]) {
-        user_dat->SUBJECT = malloc(sizeof(temp[3])*strlen(temp[3]) + 1);
-        StringCchCopyA(user_dat->SUBJECT, 255, temp[3]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[3], MAX_BUFFER, &len))) {
+            if (user_dat->SUBJECT) free(user_dat->SUBJECT);
+            user_dat->SUBJECT = malloc(sizeof(temp[3])*(len + 1));
+            if (user_dat->SUBJECT) StringCchCopyA(user_dat->SUBJECT, MAX_BUFFER, temp[3]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
     if (temp[4]) {
-        user_dat->BODY = malloc(sizeof(temp[4])*strlen(temp[4]) + 1);
-        StringCchCopyA(user_dat->BODY, 255, temp[4]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[4], MAX_BUFFER, &len))) {
+            if (user_dat->BODY) free(user_dat->BODY);
+            user_dat->BODY = malloc(sizeof(temp[4])*(len + 1));
+            if (user_dat->BODY) StringCchCopyA(user_dat->BODY, MAX_BUFFER, temp[4]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
     if (temp[5]) {
-        user_dat->pass = malloc(sizeof(temp[5])*strlen(temp[5]) + 1);
-        StringCchCopyA(user_dat->pass, 255, temp[5]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[5], MAX_BUFFER, &len))) {
+            if (user_dat->pass) free(user_dat->pass);
+            user_dat->pass = malloc(sizeof(temp[5])*(len + 1));
+            if (user_dat->pass) StringCchCopyA(user_dat->pass, MAX_BUFFER, temp[5]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
     if (temp[6]) {
-        user_dat->SMTP_SERVER = malloc(sizeof(temp[6])*strlen(temp[6]) + 1);
-        StringCchCopyA(user_dat->SMTP_SERVER, 255, temp[6]);
+        size_t len;
+        if (SUCCEEDED(StringCbLengthA(temp[6], MAX_BUFFER, &len))) {
+            if (user_dat->SMTP_SERVER) free(user_dat->SMTP_SERVER);
+            user_dat->SMTP_SERVER = malloc(sizeof(temp[6])*(len + 1));
+            if (user_dat->SMTP_SERVER) StringCchCopyA(user_dat->SMTP_SERVER, MAX_BUFFER, temp[6]);
+            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        }
     }
 
     int signed_port = cfg_getint(U2MConf, "Port_number");
     user_dat->PORT = (UINT)signed_port;
 
     cfg_free(U2MConf);
+
+#if 1
+    printf("%s\n%s\n%s\n%s\n%s\n%s\n%s\n%u\n", user_dat->FROM, user_dat->TO, user_dat->CC,
+           user_dat->SUBJECT, user_dat->BODY, user_dat->pass, user_dat->SMTP_SERVER, user_dat->PORT);
+#endif
     return TRUE;
 }
 
@@ -154,13 +184,13 @@ BOOL WriteDataToU2MReg(user_input_data user_dat)
 
     if (!GetModuleFileName(0, U2MPath, 1024)) return FALSE;
 
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 
                      0, KEY_ALL_ACCESS, &WinAuto) != ERROR_SUCCESS) return FALSE;
 
     if (user_dat.Autostart) {
-        RegSetValueEx(WinAuto, _T("USB2Email"), 0, REG_SZ, (LPBYTE)U2MPath, sizeof(TCHAR)*(_tcslen(U2MPath) + 1));
+        RegSetValueEx(WinAuto, TEXT("USB2Email"), 0, REG_SZ, (LPBYTE)U2MPath, sizeof(TCHAR)*(_tcslen(U2MPath) + 1));
     } else {
-        RegDeleteKeyValue(WinAuto, NULL, _T("USB2Email"));
+        RegDeleteKeyValue(WinAuto, NULL, TEXT("USB2Email"));
     }
 
     if (RegCloseKey(WinAuto) != ERROR_SUCCESS) return FALSE;
