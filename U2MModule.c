@@ -19,19 +19,26 @@ DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE,
 #error DEFINE_GUID is not defined.
 #endif*/
 
+typedef struct thread_args {
+    user_input_data usr;
+    HWND hwnd;
+    DWORD thrdID;
+} thread_args;
+
 
 //the prefix of every U2M log's file name
-#define U2MLOG_PREFIX _T("U2MLog")
+#define U2MLOG_PREFIX _T("Logs\\U2MLog")
 //maximum number of U2M log files that we're allowed to save on the disk
 #define MAX_NUMBER_OF_U2M_LOGS  10000
 
 /*** Globals ***/
 ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
-static ULONG curr_filename = 1; //current log file number
-static BOOL Logging_System_Enabled = TRUE;
+HANDLE u2mMainThread;
 
-extern HINSTANCE *g_hInst;
+static ULONG curr_filename = 1; //current log file number
+static LONG Logging_System_Enabled = TRUE;
+static thread_args *tmp = NULL;
 
 
 /*******************************************
@@ -40,25 +47,20 @@ extern HINSTANCE *g_hInst;
 BOOL USBisConnected();
 UINT CALLBACK U2MThreadSingle(LPVOID dat);
 //UINT CALLBACK U2MThreadMulti(LPVOID dat);
-BOOL SendEmail(VOID);
+BOOL SendEmail(user_input_data user_dat);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 BOOL WriteToU2MLogFile(TCHAR *Logfile_name);
 VOID InitU2MLogging(VOID);
+VOID EnableU2MLogging(BOOL new_state);
+BOOL U2MLoggingIsEnabled(VOID);
 
 
-BOOL InitU2MThread(HWND hwnd)
+BOOL InitU2MThread(user_input_data user_dat, HWND hwnd)
 {
-    static HANDLE u2mMainThread = NULL;
-    UINT thrdID;
+    if (onoff == TRUE) return FALSE;
 
-    if (onoff) {
-        if (u2mMainThread != NULL) {
-            CloseHandle(u2mMainThread);
-            u2mMainThread = NULL;
-        }
-        return FALSE;
-    }
+    UINT u2mthrdID;
 
     if (!user_dat.FROM) {
         TCHAR tmpmsg1[255], tmpmsg2[255];
@@ -89,10 +91,17 @@ BOOL InitU2MThread(HWND hwnd)
         return FALSE;
     }
 
-    InitU2MLogging();
+    FreeModuleHeap();
 
-    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThreadSingle, (LPVOID)hwnd, 0, &thrdID);
+    tmp = malloc(sizeof(thread_args));
 
+    tmp->usr = user_dat;
+    tmp->hwnd = hwnd;
+    tmp->thrdID = GetThreadId(GetCurrentThread());
+
+    if (u2mMainThread) CloseHandle(u2mMainThread);
+
+    u2mMainThread = (HANDLE)_beginthreadex(NULL, 0, U2MThreadSingle, (LPVOID)tmp, 0, &u2mthrdID);
     return TRUE;
 }
 
@@ -100,47 +109,49 @@ BOOL InitU2MThread(HWND hwnd)
  *it's removed*/
 UINT CALLBACK U2MThreadSingle(LPVOID dat)
 {
-    HWND hwnd = (HWND)dat;
+    thread_args *args = (thread_args *)dat;
     UINT failed_emails = 0;
 
-    if (hwnd == NULL) {
+    if (args->hwnd == NULL) {
         _endthreadex(1);
         return 1;
     }
 
-    while (onoff && (failed_emails <= user_dat.MAX_FAILED_EMAILS)) {
-        Sleep((DWORD)user_dat.TIMEOUT);
-        if (!onoff) break;
-
-        if (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
-            if (Logging_System_Enabled == TRUE) {
+    while ((WaitForSingleObject(u2m_StartStop_event, (DWORD)args->usr.TIMEOUT) == WAIT_TIMEOUT) &&
+           (failed_emails <= args->usr.MAX_FAILED_EMAILS)) {
+        if (GetConnectedUSBDevs(NULL, args->usr.usb_id_selection[0],
+                                args->usr.usb_id_selection[1], IS_USB_CONNECTED)) {
+            if (U2MLoggingIsEnabled()) {
                 WriteToU2MLogFile(U2MLOG_PREFIX);
             }
 
-            SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
+            //disable the StartStop button while the e-mail is being sent, by sending
+            //a custom message to the main window
+            SendMessageTimeout(args->hwnd, WM_ENABLE_STARTSTOP,
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
-            if (!SendEmail()) {
+            if (SendEmail(args->usr) == FALSE) {
                 failed_emails++;
             }
-            SendMessageTimeout(hwnd, WM_ENABLE_STARTSTOP, 
+            SendMessageTimeout(args->hwnd, WM_ENABLE_STARTSTOP,
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
 
-            if (failed_emails > user_dat.MAX_FAILED_EMAILS) break; //bad logic but it works
+            if (failed_emails > args->usr.MAX_FAILED_EMAILS) break; //bad logic but it works
 
-            while (GetConnectedUSBDevs(NULL, IS_USB_CONNECTED)) {
-                Sleep(900);
-                if (!onoff) {
+            while (GetConnectedUSBDevs(NULL, args->usr.usb_id_selection[0],
+                   args->usr.usb_id_selection[1], IS_USB_CONNECTED)) {
+                if (WaitForSingleObject(u2m_StartStop_event, 200) != WAIT_TIMEOUT) {
                     _endthreadex(0);
                     return 0; //if onoff is FALSE, it means that the STARTSTOP button has
-                }             //been already pushed and there's no need to risk sending the
-            }                 //message in line 104, thus disabling the button
+                }             //been already pushed and there's no need to potentially send the
+            }                 //message in line 132
         }
     }
 
-    if (failed_emails > user_dat.MAX_FAILED_EMAILS) 
-        SendMessageTimeout(hwnd, WM_COMMAND, 
-                           MAKEWPARAM((WORD)IDC_STARTSTOP, 0), 
-                           (LPARAM)0, SMTO_NORMAL, 0, NULL);
+    //InterlockedDecrement(&Logging_System_Enabled);
+    if (failed_emails > args->usr.MAX_FAILED_EMAILS) {
+        SendMessageTimeout(args->hwnd, WM_STARTSTOP_CONTROL,
+                               (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
+    }
     _endthreadex(0);
     return 0;
 }
@@ -169,7 +180,7 @@ UINT CALLBACK U2MThreadMulti(LPVOID dat)
     return 0;
 }*/
 
-BOOL SendEmail(VOID)
+BOOL SendEmail(user_input_data user_dat)
 {
     BOOL retvalue = TRUE;
     quickmail_initialize();
@@ -186,7 +197,7 @@ BOOL SendEmail(VOID)
     quickmail_set_body(mailobj, user_dat.BODY);
 
     const char* errmsg;
-#ifdef DEBUG
+#if 1
     quickmail_set_debug_log(mailobj, stderr);
 #endif
     if ((errmsg = quickmail_send(mailobj, user_dat.SMTP_SERVER, user_dat.PORT, user_dat.FROM, user_dat.pass)) != NULL) {
@@ -196,9 +207,37 @@ BOOL SendEmail(VOID)
     return retvalue;
 }
 
+BOOL U2MLoggingIsEnabled(VOID)
+{
+    SRWLOCK U2Msrw_lock = SRWLOCK_INIT;
+    BOOL retvalue;
+
+    AcquireSRWLockShared(&U2Msrw_lock);
+    retvalue = Logging_System_Enabled;
+    ReleaseSRWLockShared(&U2Msrw_lock);
+    return retvalue;
+}
+
+VOID EnableU2MLogging(BOOL new_state)
+{
+    SRWLOCK U2Msrw_lock = SRWLOCK_INIT;
+
+    AcquireSRWLockExclusive(&U2Msrw_lock);
+    Logging_System_Enabled = new_state;
+    ReleaseSRWLockExclusive(&U2Msrw_lock);
+}
+
+VOID FreeModuleHeap(VOID)
+{
+    if (tmp != (thread_args*)NULL) {
+        free(tmp);
+        tmp = NULL;
+    }
+}
+
 VOID InitU2MLogging(VOID)
 {
-    Logging_System_Enabled = TRUE;
+    EnableU2MLogging(TRUE);
 
     //find if there are already other U2M log files in the folder and increase the global filename number accordingly
     if (curr_filename == 1) {
@@ -231,7 +270,9 @@ VOID InitU2MLogging(VOID)
 
     //if we exceed the maximum number of allowed U2M logs then the logging is disabled
     if (curr_filename - 1 >= MAX_NUMBER_OF_U2M_LOGS) {
-        Logging_System_Enabled = FALSE;
+        EnableU2MLogging(FALSE);
+    } else {
+        CreateDirectory(_T("Logs"), NULL);
     }
 }
 
@@ -296,7 +337,7 @@ BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath)
     return FALSE;
 }
 
-BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
+BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag)
 {
     HDEVINFO hUSBDevInfo, hUSBHUBInfo;
     SP_DEVICE_INTERFACE_DATA DevIntfData;
@@ -380,8 +421,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag)
                     }
                     break;
                 case IS_USB_CONNECTED:
-                    if ((user_dat.usb_id_selection[0] == vID && user_dat.usb_id_selection[1] == dID) ||
-                        (user_dat.usb_id_selection[0] == vID && user_dat.usb_id_selection[1] == 0xabcd)) {
+                    if ((VendorID == vID && ProductID == dID) || (VendorID == vID && ProductID == 0xabcd)) {
                         free(DevIntfDetailData);
                         SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, 
                                                     &GUID_DEVINTERFACE_USB_DEVICE, 

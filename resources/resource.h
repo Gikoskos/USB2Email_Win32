@@ -50,8 +50,6 @@
 #define IDC_SAVECONFBUTTON                      40012
 
 #define IDAPPLY                                 40013
-#define IDM_GR_LANG                             40014
-#define IDM_EN_LANG                             40015
 
 #define ID_ERR_MSG_0                            40100
 #define ID_ERR_MSG_1                            40101
@@ -134,4 +132,9 @@
 #define ID_ERR_MSG_63                           40173
 #define ID_ERR_MSG_64                           40174
 #define ID_ERR_MSG_65                           40175
-#define ID_HELP_MSG2                            40176
+#define ID_ERR_MSG_66                           40176
+#define ID_HELP_MSG2                            40177
+
+//language identifiers
+#define IDM_GR_LANG                             1032 //MAKELANGID(LANG_GREEK, SUBLANG_GREEK_GREECE)
+#define IDM_EN_LANG                             1033 //MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)

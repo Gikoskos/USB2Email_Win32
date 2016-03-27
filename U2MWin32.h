@@ -28,8 +28,9 @@
 #define MAX_LOG_FILE_SZ 81920
 
 /* custom messages for the main window procedure */
-#define WM_ENABLE_STARTSTOP WM_USER + 0x0234
-#define WM_U2M_NOTIF_ICON WM_USER + 0x023f
+#define WM_ENABLE_STARTSTOP WM_USER + 0x00ff
+#define WM_U2M_NOTIF_ICON WM_USER + 0x003f
+#define WM_STARTSTOP_CONTROL WM_USER + 0x000d
 
 /* flags to use with the ConnectedUSBDevs() function */
 #define FILL_USB_LISTVIEW 10
@@ -37,7 +38,7 @@
 
 /* wrappers for win32 native memory management */
 #define free(x) HeapFree(GetProcessHeap(), 0, x)
-//this one isn't actually a wrapper for stdlib malloc since malloc doesn't 0 out the allocated bytes
+//this one is technically a wrapper for calloc since stdlib malloc doesn't 0 out the allocated bytes
 #define malloc(x) HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)
 #define realloc(NULL, x) malloc(x)
 #define calloc(x, y) malloc(x * y)
@@ -121,45 +122,55 @@ enum locale_idx {
     ENGLISH_DLL
 };
 
-
-extern user_input_data user_dat;
 extern BOOL onoff;
+extern HANDLE u2m_StartStop_event;
+
+extern HANDLE u2mMainThread;
+
+extern HINSTANCE *g_hInst;
+
 extern ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
 
 extern char *cfg_filename; //the filename of the configuration file
 
 extern WORD currentLangID; //the ID of the current language used
 
-#ifdef DEBUG
+
 static inline void __MsgBoxGetLastError(LPTSTR lpszFunction) 
 { 
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError(); 
+    INT err = GetLastError();
+    TCHAR error_localized[255];
 
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, dw, currentLangID, (LPTSTR)&lpMsgBuf, 0, NULL);
+                  FORMAT_MESSAGE_FROM_SYSTEM |
+                  FORMAT_MESSAGE_IGNORE_INSERTS,
+                  NULL, err, currentLangID, (LPTSTR)&lpMsgBuf, 0, NULL);
 
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
                    (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+
     StringCchPrintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR),
                     _T("%s EC %lu: %s"),
-                    lpszFunction, dw, lpMsgBuf);
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, _T("Error!"), MB_OK); 
+                    lpszFunction, err, lpMsgBuf);
+
+    err = LoadLocaleErrMsg(error_localized, 0);
+    MessageBoxEx(NULL, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : _T("Error!"), MB_OK, currentLangID); 
 
     LocalFree(lpMsgBuf);
     LocalFree(lpDisplayBuf);
 }
-#endif
 
 
-BOOL InitU2MThread(HWND hwnd);
-BOOL GetConnectedUSBDevs(HWND hDlg, USHORT flag);
+
+BOOL InitU2MThread(user_input_data user_dat, HWND hwnd);
+BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag);
 VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str);
+VOID InitU2MLogging(VOID);
+VOID FreeModuleHeap(VOID);
 
-BOOL parseConfFile(VOID);
-BOOL saveConfFile(VOID);
-BOOL WriteDataToU2MReg(VOID);
-BOOL GetU2MRegData(VOID);
+BOOL parseConfFile(user_input_data *user_dat);
+BOOL saveConfFile(user_input_data user_dat);
+BOOL WriteDataToU2MReg(user_input_data user_dat);
+BOOL GetU2MRegData(user_input_data *user_dat);

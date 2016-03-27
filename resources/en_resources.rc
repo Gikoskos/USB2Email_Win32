@@ -116,6 +116,9 @@ STRINGTABLE
     ID_ERR_MSG_61,  "Open USB2Email"
     ID_ERR_MSG_62,  "Restart the application for Autostart to take place."
     ID_ERR_MSG_63,  "Don't forget!"
+    ID_ERR_MSG_64,  "U2M_event failed!"
+    ID_ERR_MSG_65,  "Failed reading data from the registry! Try restarting the application."
+    ID_ERR_MSG_66,  "Failed writing data to the registry! Some of your options might not be saved."
 }
 
 STRINGTABLE

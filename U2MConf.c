@@ -17,7 +17,7 @@ TCHAR *reg_subkeys[] = {
 };
 
 /* functions for handling the configuration file */
-BOOL parseConfFile(VOID)
+BOOL parseConfFile(user_input_data *user_dat)
 {
     cfg_opt_t email_opts[] = {
         CFG_STR("From", NULL, CFGF_NONE),
@@ -60,45 +60,50 @@ BOOL parseConfFile(VOID)
     printf("%s\n%s\n%s\n%s\n%s\n%s\n%ld\n", temp[0], temp[1], temp[2],
            temp[3], temp[4], temp[5], cfg_getint(U2MConf, "Port_number"));
 #endif
-    ClearEmailData();
+    if (user_dat->FROM) free(user_dat->FROM);
+    if (user_dat->TO) free(user_dat->TO);
+    if (user_dat->CC) free(user_dat->CC);
+    if (user_dat->SUBJECT) free(user_dat->SUBJECT);
+    if (user_dat->BODY) free(user_dat->BODY);
+    user_dat->FROM = user_dat->TO = user_dat->CC = user_dat->SUBJECT = user_dat->BODY = NULL;
 
     if (temp[0]) {
-        user_dat.FROM = malloc(sizeof(temp[0])*strlen(temp[0]) + 1);
-        StringCchCopyA(user_dat.FROM, 255, temp[0]);
+        user_dat->FROM = malloc(sizeof(temp[0])*strlen(temp[0]) + 1);
+        StringCchCopyA(user_dat->FROM, 255, temp[0]);
     }
     if (temp[1]) {
-        user_dat.TO = malloc(sizeof(temp[1])*strlen(temp[1]) + 1);
-        StringCchCopyA(user_dat.TO, 255, temp[1]);
+        user_dat->TO = malloc(sizeof(temp[1])*strlen(temp[1]) + 1);
+        StringCchCopyA(user_dat->TO, 255, temp[1]);
     }
     if (temp[2]) {
-        user_dat.CC = malloc(sizeof(temp[2])*strlen(temp[2]) + 1);
-        StringCchCopyA(user_dat.CC, 255, temp[2]);
+        user_dat->CC = malloc(sizeof(temp[2])*strlen(temp[2]) + 1);
+        StringCchCopyA(user_dat->CC, 255, temp[2]);
     }
     if (temp[3]) {
-        user_dat.SUBJECT = malloc(sizeof(temp[3])*strlen(temp[3]) + 1);
-        StringCchCopyA(user_dat.SUBJECT, 255, temp[3]);
+        user_dat->SUBJECT = malloc(sizeof(temp[3])*strlen(temp[3]) + 1);
+        StringCchCopyA(user_dat->SUBJECT, 255, temp[3]);
     }
     if (temp[4]) {
-        user_dat.BODY = malloc(sizeof(temp[4])*strlen(temp[4]) + 1);
-        StringCchCopyA(user_dat.BODY, 255, temp[4]);
+        user_dat->BODY = malloc(sizeof(temp[4])*strlen(temp[4]) + 1);
+        StringCchCopyA(user_dat->BODY, 255, temp[4]);
     }
     if (temp[5]) {
-        user_dat.pass = malloc(sizeof(temp[5])*strlen(temp[5]) + 1);
-        StringCchCopyA(user_dat.pass, 255, temp[5]);
+        user_dat->pass = malloc(sizeof(temp[5])*strlen(temp[5]) + 1);
+        StringCchCopyA(user_dat->pass, 255, temp[5]);
     }
     if (temp[6]) {
-        user_dat.SMTP_SERVER = malloc(sizeof(temp[6])*strlen(temp[6]) + 1);
-        StringCchCopyA(user_dat.SMTP_SERVER, 255, temp[6]);
+        user_dat->SMTP_SERVER = malloc(sizeof(temp[6])*strlen(temp[6]) + 1);
+        StringCchCopyA(user_dat->SMTP_SERVER, 255, temp[6]);
     }
 
     int signed_port = cfg_getint(U2MConf, "Port_number");
-    user_dat.PORT = (UINT)signed_port;
+    user_dat->PORT = (UINT)signed_port;
 
     cfg_free(U2MConf);
     return TRUE;
 }
 
-BOOL saveConfFile(VOID)
+BOOL saveConfFile(user_input_data user_dat)
 {
     FILE *U2Mconf_file = fopen(cfg_filename, "w");
 
@@ -127,7 +132,7 @@ BOOL saveConfFile(VOID)
 
 /* functions for handling data in the registry */
 
-BOOL WriteDataToU2MReg(VOID)
+BOOL WriteDataToU2MReg(user_input_data user_dat)
 {
     HKEY U2MRegkey = NULL, WinAuto = NULL;
     TCHAR U2MPath[1024];
@@ -162,7 +167,7 @@ BOOL WriteDataToU2MReg(VOID)
     return TRUE;
 }
 
-BOOL GetU2MRegData(VOID)
+BOOL GetU2MRegData(user_input_data *user_dat)
 {
     HKEY U2MRegkey = NULL;
     DWORD RegDisposition;
@@ -181,19 +186,19 @@ BOOL GetU2MRegData(VOID)
             if (RegQueryValueEx(U2MRegkey, reg_subkeys[i], NULL, NULL, 
                                 (BYTE*)&sub_data[i], &data_size) != ERROR_SUCCESS) goto CLOSE_KEY;
         }
-        user_dat.TrayIcon = (BOOL)(sub_data[0] | 0x0);
-        user_dat.usb_id_selection[0] = (UINT)sub_data[1];
-        user_dat.usb_id_selection[1] = (UINT)sub_data[2];
-        user_dat.Autostart = (BOOL)(sub_data[3] | 0x0);
-        user_dat.TIMEOUT = (UINT)sub_data[4];
-        user_dat.MAX_FAILED_EMAILS = (UINT)sub_data[5];
-        user_dat.ValidEmailCheck = (BOOL)(sub_data[6] | 0x0);
-        user_dat.USBRefresh = (BOOL)(sub_data[7] | 0x0);
+        user_dat->TrayIcon = (BOOL)(sub_data[0] | 0x0);
+        user_dat->usb_id_selection[0] = (UINT)sub_data[1];
+        user_dat->usb_id_selection[1] = (UINT)sub_data[2];
+        user_dat->Autostart = (BOOL)(sub_data[3] | 0x0);
+        user_dat->TIMEOUT = (UINT)sub_data[4];
+        user_dat->MAX_FAILED_EMAILS = (UINT)sub_data[5];
+        user_dat->ValidEmailCheck = (BOOL)(sub_data[6] | 0x0);
+        user_dat->USBRefresh = (BOOL)(sub_data[7] | 0x0);
     }
 
 CLOSE_KEY:
     if (RegCloseKey(U2MRegkey) != ERROR_SUCCESS) return FALSE;
 
-    if (RegDisposition == REG_CREATED_NEW_KEY) return WriteDataToU2MReg();
+    if (RegDisposition == REG_CREATED_NEW_KEY) return WriteDataToU2MReg(*user_dat);
     else return TRUE;
 }
