@@ -5,6 +5,9 @@ With USB2Email you can send an e-mail whenever a certain USB device is inserted 
 Insert your USB device to the PC, find it and choose it from the list, configure your server's
 SMTP settings and the e-mail you want to send and start the service.
 
+USB2Email logs all the times the USB device is detected and writes down to log files a timestamp
+of when the USB was inserted.
+
 More detailed instructions about different functionalities in the application, you will find in
 the Help dialog.
 
@@ -26,9 +29,9 @@ The following command compiles a full-featured executable and the DLLs needed:
 There's also my Visual Studio 2013 project files in the repo. On the MSVC version, I don't compile the USB IDs 
 and functions in a seperate DLL; they are packaged with the final executable.
 
-Also the MSVC libcurl depends on WinSSL instead of OpenSSL and all the libraries and the final executable
-link statically with the msvcrt libraries (\MT) meaning that the Visual Studio executable can run without
-the Visual C++ Redistributable.
+Also all the external libs on the MSVC version are linked statically with the 
+final executable and msvcrt (\MT flag) meaning that the Visual Studio executable can run without
+the Visual C++ Redistributable (standalone .exe).
 
 ## Libs used
 
