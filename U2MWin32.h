@@ -136,7 +136,7 @@ extern char *cfg_filename; //the filename of the configuration file
 extern WORD currentLangID; //the ID of the current language used
 
 
-static inline void __MsgBoxGetLastError(LPTSTR lpszFunction) 
+static void __MsgBoxGetLastError(LPTSTR lpszFunction)
 { 
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;

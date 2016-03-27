@@ -1475,6 +1475,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                         POINT cursor_pos;
                         TCHAR tmpmsg1[255], tmpmsg2[255], tmpmsg3[255] ATTRIB_UNUSED;
 
+                        (VOID)tmpmsg3;
                         LoadLocaleErrMsg(tmpmsg1, 60);
                         LoadLocaleErrMsg(tmpmsg2, 61);
                         //LoadLocaleErrMsg(tmpmsg3, 10);
@@ -1552,7 +1553,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES | ICC_LINK_CLASS};
 
     // check if there's already an instance of the application running
-    u2m_sinstance_mtx = InitSingleInstanceMutex(); // possible DDOS?
+    u2m_sinstance_mtx = InitSingleInstanceMutex(); // possible DOS?
     err = GetLastError();
     if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED || u2m_sinstance_mtx == NULL) {
         MessageBox(NULL, _T("There's already a running instance of USB2Email!"), 
