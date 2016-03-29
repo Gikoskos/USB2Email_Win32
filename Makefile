@@ -7,7 +7,7 @@ DBG = build/USB2Email/debug.exe
 RLS = build/USB2Email/USB2Email.exe
 DWARF2 = -ggdb
 
-LINKER = build/libU2MUsbIDs_dll.a build/libquickmail.dll.a build/libconfuse.a -lsetupapi -lgdi32 -lole32 -ladvapi32 -lshell32 -lcomctl32
+LINKER = build/libU2MUsbIDs_dll.a build/libquickmail.dll.a build/libconfuse.a -lsetupapi -lversion -lgdi32 -lole32 -ladvapi32 -lshell32 -lcomctl32
 RLS_FLAGS = -mwindows -O1
 
 WINDOW_SOURCE = U2MWin32.c

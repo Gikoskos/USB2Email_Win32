@@ -28,7 +28,7 @@ static user_input_data user_dat = {
 };
 
 BOOL USBdev_scan = FALSE; //helper global for the USB reload thread
-BOOL HlpDlg_open = FALSE; //bool to check whether Help dialog has already been opened
+BOOL HlpDlg_open = FALSE; //is TRUE when the Help dialog is open and FALSE when it's closed
 BOOL TrayIsInitialized = FALSE; //saves memory by initializing the tray icon once at any point
 BOOL AutostartWarning = TRUE; //when TRUE the warning dialog will be shown on autostart click
 
@@ -345,10 +345,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
     } else {
         user_dat.PORT = 0;
         /*free(tmp1);
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadString(*g_hInst, ID_ERR_MSG_45, tmpmsg1, sizeof(tmpmsg1)/sizeof(tmpmsg1[0]));
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);*/
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_45, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);*/
     }
 
     if ((user_dat.SMTP_SERVER = realloc(NULL, tmp1_len + 1)) != NULL) {
@@ -552,7 +549,7 @@ VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str)
 
 BOOL GetUSBListViewSelection(HWND hwnd)
 {
-    INT usb_sel_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), 
+    INT usb_sel_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST),
                                        LVM_GETNEXTITEM, -1, LVNI_SELECTED);
 
     if (usb_sel_idx == -1) return FALSE;
@@ -624,7 +621,56 @@ BOOL LoadLocaleDLLs(VOID)
     BOOL show_missing_libs_err = TRUE, show_missing_menu_err = TRUE;
     /* loading the language dlls */
     for (enum locale_idx i = GREEK_DLL; i <= ENGLISH_DLL; i++) {
-        U2M_dlls[i].module = LoadLibraryEx(U2M_dlls[i].filename, NULL, 0);
+        //first we check to see if the Product Version of the DLL
+        //and the version of USB2Email match (this could prevent possible DLL hijacking)
+        LPBYTE dllver_inf;
+        VS_FIXEDFILEINFO *dllver_inf_spec;
+        UINT dllver_inf_spec_sz;
+        DWORD dllver_sz = GetFileVersionInfoSize(U2M_dlls[i].filename, NULL); //get the size of the DLL
+        if (!dllver_sz) {
+            __MsgBoxGetLastError(NULL, TEXT("GetFileVersionInfoSize()"), __LINE__);
+            U2M_dlls[i].module = NULL;
+            U2M_dlls[i].locale_menu = NULL;
+            continue;
+        }
+        dllver_inf = malloc(sizeof(BYTE) * dllver_sz);
+        if (!GetFileVersionInfo(U2M_dlls[i].filename, (DWORD)0, dllver_sz, (LPVOID)dllver_inf)) {
+            __MsgBoxGetLastError(NULL, TEXT("GetFileVersionInfo()"), __LINE__);
+            U2M_dlls[i].module = NULL;
+            U2M_dlls[i].locale_menu = NULL;
+            free(dllver_inf);
+            continue;
+        }
+
+        if (!VerQueryValue(dllver_inf, _T("\\"), (LPVOID *)&dllver_inf_spec, &dllver_inf_spec_sz)) {
+            __MsgBoxGetLastError(NULL, TEXT("VerQueryValue()"), __LINE__);
+            U2M_dlls[i].module = NULL;
+            U2M_dlls[i].locale_menu = NULL;
+            free(dllver_inf);
+            continue;
+        }
+        if (HIWORD(dllver_inf_spec->dwProductVersionMS) != U2MWin32_MAJOR ||
+            LOWORD(dllver_inf_spec->dwProductVersionMS) != U2MWin32_MINOR ||
+            HIWORD(dllver_inf_spec->dwProductVersionLS) != U2MWin32_PATCH) {
+            TCHAR buf[255];
+
+            free(dllver_inf);
+            StringCchPrintf(buf, 255, _T("%s%s%s%s%s"), 
+                            TEXT("The version of the language pack \'"),
+                            U2M_dlls[i].filename,
+                            TEXT("\' mismatches the version of USB2Email. "),
+                            TEXT("The application might malfunction. "),
+                            TEXT("Are you sure you want to continue?"));
+            if (MessageBox(NULL, buf, TEXT("Failed loading language package!"), MB_ICONASTERISK | MB_YESNO) == IDNO) {
+                DestroyLanguageLibraries(i - 1);
+                return FALSE;
+            }
+            continue;
+        } else {
+            free(dllver_inf);
+        }
+
+        U2M_dlls[i].module = LoadLibraryEx(U2M_dlls[i].filename, NULL, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE);
         if (!U2M_dlls[i].module) {
             if (show_missing_libs_err) {
                 if (MessageBox(NULL,
