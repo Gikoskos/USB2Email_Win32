@@ -632,7 +632,24 @@ BOOL LoadLocaleDLLs(VOID)
     BOOL show_missing_libs_err = TRUE, show_missing_menu_err = TRUE;
     /* loading the language dlls */
     for (enum locale_idx i = GREEK_DLL; i <= ENGLISH_DLL; i++) {
-        //first we check to see if the Product Version of the DLL
+        U2M_dlls[i].module = LoadLibraryEx(U2M_dlls[i].filename, NULL, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE);
+        if (!U2M_dlls[i].module) {
+            if (show_missing_libs_err) {
+                if (MessageBox(NULL,
+                               TEXT("A language pack failed to load. ")
+                               TEXT("The application might malfunction. ")
+                               TEXT("Are you sure you want to continue?"),
+                               TEXT("Failed loading language package!"),
+                               MB_ICONASTERISK | MB_YESNO) == IDNO) {
+                    DestroyLanguageLibraries(i - 1); //free all the libraries up to this point
+                    return FALSE;
+                }
+                show_missing_libs_err = FALSE;
+            }
+            U2M_dlls[i].locale_menu = NULL;
+            continue;
+        }
+        //after the language pack is succesfully loaded we check to see if the Product Version of the DLL
         //and the version of USB2Email match (this could prevent possible DLL hijacking)
         LPBYTE dllver_inf;
         VS_FIXEDFILEINFO *dllver_inf_spec;
@@ -640,23 +657,23 @@ BOOL LoadLocaleDLLs(VOID)
         DWORD dllver_sz = GetFileVersionInfoSize(U2M_dlls[i].filename, NULL); //get the size of the DLL
         if (!dllver_sz) {
             __MsgBoxGetLastError(NULL, TEXT("GetFileVersionInfoSize()"), __LINE__);
+            FreeLibrary(U2M_dlls[i].module);
             U2M_dlls[i].module = NULL;
-            U2M_dlls[i].locale_menu = NULL;
             continue;
         }
         dllver_inf = malloc(sizeof(BYTE) * dllver_sz);
         if (!GetFileVersionInfo(U2M_dlls[i].filename, (DWORD)0, dllver_sz, (LPVOID)dllver_inf)) {
             __MsgBoxGetLastError(NULL, TEXT("GetFileVersionInfo()"), __LINE__);
+            FreeLibrary(U2M_dlls[i].module);
             U2M_dlls[i].module = NULL;
-            U2M_dlls[i].locale_menu = NULL;
             free(dllver_inf);
             continue;
         }
 
         if (!VerQueryValue(dllver_inf, _T("\\"), (LPVOID *)&dllver_inf_spec, &dllver_inf_spec_sz)) {
             __MsgBoxGetLastError(NULL, TEXT("VerQueryValue()"), __LINE__);
+            FreeLibrary(U2M_dlls[i].module);
             U2M_dlls[i].module = NULL;
-            U2M_dlls[i].locale_menu = NULL;
             free(dllver_inf);
             continue;
         }
@@ -681,24 +698,6 @@ BOOL LoadLocaleDLLs(VOID)
             free(dllver_inf);
         }
 
-        U2M_dlls[i].module = LoadLibraryEx(U2M_dlls[i].filename, NULL, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE);
-        if (!U2M_dlls[i].module) {
-            if (show_missing_libs_err) {
-                if (MessageBox(NULL,
-                               TEXT("A language pack failed to load. ")
-                               TEXT("The application might malfunction. ")
-                               TEXT("Are you sure you want to continue?"),
-                               TEXT("Failed loading language package!"),
-                               MB_ICONASTERISK | MB_YESNO) == IDNO) {
-                    DestroyLanguageLibraries(i - 1); //free all the libraries up to this point
-                    return FALSE;
-                }
-                show_missing_libs_err = FALSE;
-            }
-            U2M_dlls[i].locale_menu = NULL;
-            continue;
-        }
-
         U2M_dlls[i].locale_menu = LoadMenu(U2M_dlls[i].module, MAKEINTRESOURCE(IDR_MAINMENU));
         if (!U2M_dlls[i].locale_menu) {
             if (show_missing_menu_err) {
@@ -719,7 +718,7 @@ BOOL LoadLocaleDLLs(VOID)
         }
         // the loop gets here only if both the library and the menu were loaded successfully
         // the program locale defaults to the last library that was loaded succesfully
-        // this is a failsafe measure
+        // this is a failsafe measure, in case the default language pack of the user's Windows isn't loaded
         *g_hInst = U2M_dlls[i].module;
         MainMenu = U2M_dlls[i].locale_menu;
     }
@@ -1604,7 +1603,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 1;
     }
 
-#if !_MSC_VER
+#if !_MSC_VER //this is really just if you compile dynamically with the libcurl DLL libquickmail depends on
     libcurl_dll = LoadLibrary(TEXT("libcurl-4.dll"));
     if (!libcurl_dll) {
         __MsgBoxGetLastError(NULL, TEXT("LoadLibrary(TEXT(\"libcurl-4.dll\"))"), __LINE__);
