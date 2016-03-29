@@ -133,6 +133,7 @@
 #define ID_ERR_MSG_64                           40174
 #define ID_ERR_MSG_65                           40175
 #define ID_ERR_MSG_66                           40176
+#define ID_ERR_MSG_67                           40179
 #define ID_HELP_MSG2                            40177
 #define HELP_DLG_CAPTION                        40178
 

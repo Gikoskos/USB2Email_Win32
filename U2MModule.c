@@ -65,31 +65,19 @@ BOOL InitU2MThread(user_input_data user_dat, HWND hwnd)
     UINT u2mthrdID;
 
     if (!user_dat.FROM) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 53);
-        LoadLocaleErrMsg(tmpmsg2, 54);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_53, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     if (!user_dat.SMTP_SERVER) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 55);
-        LoadLocaleErrMsg(tmpmsg2, 54);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_55, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     if (!user_dat.usb_id_selection[0] || !user_dat.usb_id_selection[1]) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 56);
-        LoadLocaleErrMsg(tmpmsg2, 54);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_56, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
     if (!user_dat.pass) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 57);
-        LoadLocaleErrMsg(tmpmsg2, 54);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_57, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
@@ -143,9 +131,9 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
                    args->usr.usb_id_selection[1], IS_USB_CONNECTED)) {
                 if (WaitForSingleObject(u2m_StartStop_event, 200) != WAIT_TIMEOUT) {
                     _endthreadex(0);
-                    return 0; //if onoff is FALSE, it means that the STARTSTOP button has
+                    return 0; //if u2m_StartStop_event is signaled, it means that the STARTSTOP button has
                 }             //been already pushed and there's no need to potentially send the
-            }                 //message in line 132
+            }                 //message in line 154
         }
     }
 
@@ -355,7 +343,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
 
     if (hUSBDevInfo == INVALID_HANDLE_VALUE) {
 #ifdef DEBUG
-        __MsgBoxGetLastError(TEXT("hDevInfo"), __LINE__);
+        __MsgBoxGetLastError(hDlg, TEXT("hDevInfo"), __LINE__);
 #endif
         return FALSE;
     }
@@ -365,7 +353,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
     if (!SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
          dwMemberIdx, &DevIntfData)) {
 #ifdef DEBUG
-        __MsgBoxGetLastError(TEXT("SetupDiEnumDeviceInterfaces()"), __LINE__);
+        __MsgBoxGetLastError(hDlg, TEXT("SetupDiEnumDeviceInterfaces()"), __LINE__);
 #endif
         return FALSE;
     }
@@ -437,7 +425,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
             }
         } else {
 #ifdef DEBUG
-            __MsgBoxGetLastError(TEXT("SetupDiGetDeviceInterfaceDetail()"), __LINE__);
+            __MsgBoxGetLastError(hDlg, TEXT("SetupDiGetDeviceInterfaceDetail()"), __LINE__);
 #endif
             free(DevIntfDetailData);
             SetupDiDestroyDeviceInfoList(hUSBDevInfo);
@@ -450,7 +438,7 @@ SKIP_DEVICE:
     }
 #ifdef DEBUG
     if (!SetupDiDestroyDeviceInfoList(hUSBDevInfo)) {
-        __MsgBoxGetLastError(TEXT("SetupDiDestroyDeviceInfoList()"), __LINE__);
+        __MsgBoxGetLastError(hDlg, TEXT("SetupDiDestroyDeviceInfoList()"), __LINE__);
     }
 #else
     SetupDiDestroyDeviceInfoList(hUSBDevInfo);

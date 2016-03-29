@@ -110,6 +110,7 @@ VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str);
 VOID DeleteAll(VOID);
 VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
+int MessageBoxLocalized(HWND hwnd, UINT text_id, UINT caption_id, UINT type);
 
 
 UINT PowerOf10(UINT x)
@@ -134,53 +135,47 @@ VOID DeleteAll(VOID)
     DestroyLanguageLibraries(ENGLISH_DLL);
 }
 
+int MessageBoxLocalized(HWND hwnd, UINT text_id, UINT caption_id, UINT type)
+{
+    TCHAR tmp1[255], tmp2[255];
+
+    LoadString(*g_hInst, text_id, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
+    LoadString(*g_hInst, caption_id, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
+    return MessageBoxEx(hwnd, tmp1, tmp2, type, currentLangID);
+}
+
 VOID InitPreferencesDialog(HWND hwnd)
 {
     if (!DialogBoxParam(*g_hInst, MAKEINTRESOURCE(IDD_PREFDIALOG), hwnd, PrefDialogProcedure, (LPARAM)0)) {
-        TCHAR tmp1[255], tmp2[255];
-        LoadLocaleErrMsg(tmp1, 52);
-        LoadLocaleErrMsg(tmp2, 0);
-        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_52, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitPasswordDialog(HWND hwnd)
 {
     if (!DialogBoxParam(*g_hInst, MAKEINTRESOURCE(IDD_PWDDIALOG), hwnd, PwdDialogProcedure, (LPARAM)0)) {
-        TCHAR tmp1[255], tmp2[255];
-        LoadLocaleErrMsg(tmp1, 51);
-        LoadLocaleErrMsg(tmp2, 0);
-        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_51, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitUSBDialog(HWND hwnd)
 {
     if (!DialogBoxParam(*g_hInst, MAKEINTRESOURCE(IDD_USBDIALOG), hwnd, USBDialogProcedure, (LPARAM)0)) {
-        TCHAR tmp1[255], tmp2[255];
-        LoadLocaleErrMsg(tmp1, 50);
-        LoadLocaleErrMsg(tmp2, 0);
-        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_50, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitAboutDialog(HWND hwnd)
 {
     if (!DialogBoxParam(*g_hInst, MAKEINTRESOURCE(IDD_ABOUTDIALOG), hwnd, AboutDialogProcedure, (LPARAM)0)) {
-        TCHAR tmp1[255], tmp2[255];
-        LoadLocaleErrMsg(tmp1, 49);
-        LoadLocaleErrMsg(tmp2, 0);
-        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_49, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
 }
 
 VOID InitEmailDialog(HWND hwnd)
 {
     if (!DialogBoxParam(*g_hInst, MAKEINTRESOURCE(IDD_EMAILDIALOG), hwnd, EmailDialogProcedure, (LPARAM)0)) {
-        TCHAR tmp1[255], tmp2[255];
-        LoadLocaleErrMsg(tmp1, 48);
-        LoadLocaleErrMsg(tmp2, 0);
-        MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_48, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
 }
 
@@ -193,10 +188,7 @@ VOID InitHelpDialog(HWND hwnd)
         LPCDLGTEMPLATE HelpDlgPtr = (LPCDLGTEMPLATE)LockResource(HelpDlgHandle);
 
         if (!(hlp_hwnd = CreateDialogIndirectParam(*g_hInst, HelpDlgPtr, hwnd, HelpDialogProcedure, (LPARAM)0))) {
-            TCHAR tmp1[255], tmp2[255];
-            LoadLocaleErrMsg(tmp1, 47);
-            LoadLocaleErrMsg(tmp2, 0);
-            MessageBoxEx(hwnd, tmp1, tmp2, MB_OK | MB_ICONERROR, currentLangID);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_47, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
     } else {
         //SetActiveWindow doesn't work well so i'm saving a static handle for the Help dialog
@@ -315,28 +307,22 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_SERVERURLFIELD, &tmp1);
     if (!tmp1) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 46);
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_46, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         return FALSE;
     }
-    if (FAILED(StringCchLengthA(tmp1, 255, &tmp1_len))) {
-        __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+    if (FAILED(StringCchLengthA(tmp1, MAX_BUFFER, &tmp1_len))) {
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     GetFieldTextA(hwnd, IDC_PORTFIELD, &tmp2);
 
     if (tmp2) {
-        if (SUCCEEDED(StringCchLengthA(tmp2, 255, &tmp2_len))) {
+        if (SUCCEEDED(StringCchLengthA(tmp2, MAX_BUFFER, &tmp2_len))) {
             if (tmp2_len > 5) {
                 free(tmp1);
                 free(tmp2);
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadLocaleErrMsg(tmpmsg1, 44);
-                LoadLocaleErrMsg(tmpmsg2, 0);
-                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+                MessageBoxLocalized(hwnd, ID_ERR_MSG_44, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                 return FALSE;
             }
 
@@ -350,14 +336,11 @@ BOOL parsePrefDialogFields(HWND hwnd)
 
             if (user_dat.PORT > 65535) {
                 free(tmp1);
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadLocaleErrMsg(tmpmsg1, 44);
-                LoadLocaleErrMsg(tmpmsg2, 0);
-                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+                MessageBoxLocalized(hwnd, ID_ERR_MSG_44, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                 return FALSE;
             }
         } else {
-            __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
     } else {
         user_dat.PORT = 0;
@@ -371,7 +354,7 @@ BOOL parsePrefDialogFields(HWND hwnd)
     if ((user_dat.SMTP_SERVER = realloc(NULL, tmp1_len + 1)) != NULL) {
         StringCchPrintfA(user_dat.SMTP_SERVER, tmp1_len + 1, "%s", tmp1);
     } else {
-        __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+        __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
     }
     free(tmp1);
     return TRUE;
@@ -384,31 +367,25 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_FROMFIELD, &tmp);
     if (!tmp) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 43);
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_43, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     if (user_dat.ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
-            TCHAR tmpmsg1[255], tmpmsg2[255];
-            LoadLocaleErrMsg(tmpmsg1, 42);
-            LoadLocaleErrMsg(tmpmsg2, 0);
-            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_42, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
             free(tmp);
             return FALSE;
         }
     }
-    if (SUCCEEDED(StringCchLengthA(tmp, 255, &tmp_len))) {
+    if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
         if ((user_dat.FROM = realloc(NULL, tmp_len + 1)) != NULL) {
             StringCchPrintfA(user_dat.FROM, tmp_len + 1, "%s", tmp);
         } else {
-            __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
         }
     } else {
-        __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
     free(tmp);
     tmp = NULL;
@@ -416,31 +393,25 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_TOFIELD, &tmp);
     if (!tmp) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 41);
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_41, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         return FALSE;
     }
 
     if (user_dat.ValidEmailCheck) { 
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_40, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
             free(tmp);
-            TCHAR tmpmsg1[255], tmpmsg2[255];
-            LoadLocaleErrMsg(tmpmsg1, 40);
-            LoadLocaleErrMsg(tmpmsg2, 0);
-            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
             return FALSE;
         }
     }
-    if (SUCCEEDED(StringCchLengthA(tmp, 255, &tmp_len))) {
+    if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
         if ((user_dat.TO = realloc(NULL, tmp_len + 1)) != NULL) {
             StringCchPrintfA(user_dat.TO, tmp_len + 1, "%s", tmp);
         } else {
-            __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
         }
     } else {
-        __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
     free(tmp);
     tmp = NULL;
@@ -454,22 +425,19 @@ BOOL parseEmailDialogFields(HWND hwnd)
         if (user_dat.ValidEmailCheck) {
             if (!isValidDomain(tmp, ';')) {
                 free(tmp);
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadLocaleErrMsg(tmpmsg1, 39);
-                LoadLocaleErrMsg(tmpmsg2, 0);
-                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+                MessageBoxLocalized(hwnd, ID_ERR_MSG_39, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                 return FALSE;
             }
         }
 
-        if (SUCCEEDED(StringCchLengthA(tmp, 255, &tmp_len))) {
+        if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
             if ((user_dat.CC = realloc(NULL, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.CC, tmp_len + 1, tmp, tmp_len + 1);
             } else {
-                __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+                __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
         } else {
-            __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
         free(tmp);
         tmp = NULL;
@@ -478,27 +446,24 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_SUBJECTFIELD, &tmp);
     if (!tmp) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 38);
-        LoadLocaleErrMsg(tmpmsg2, 37);
-        if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
+        if (MessageBoxLocalized(hwnd, 38, 37, MB_YESNO | MB_ICONASTERISK) == IDYES) {
             if ((user_dat.SUBJECT = malloc(2)) != NULL) {
                 StringCchPrintfA(user_dat.SUBJECT, 2, "");
             } else {
-                __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+                __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
         } else {
             return FALSE;
         }
     } else {
-        if (SUCCEEDED(StringCchLengthA(tmp, 255, &tmp_len))) {
+        if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
             if ((user_dat.SUBJECT = realloc(NULL, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.SUBJECT, tmp_len + 1, tmp, tmp_len + 1);
             } else {
-                __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+                __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
         } else {
-            __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
         free(tmp);
         tmp = NULL;
@@ -507,27 +472,24 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_MESSAGEFIELD, &tmp);
     if (!tmp) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 36);
-        LoadLocaleErrMsg(tmpmsg2, 35);
-        if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_YESNO | MB_ICONASTERISK, currentLangID) == IDYES) {
+        if (MessageBoxLocalized(hwnd, 36, 35, MB_YESNO | MB_ICONASTERISK) == IDYES) {
             if ((user_dat.BODY = malloc(2)) != NULL) {
                 StringCchPrintfA(user_dat.BODY, 2, "");
             } else {
-                __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+                __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
         } else {
             return FALSE;
         }
     } else {
-        if (SUCCEEDED(StringCchLengthA(tmp, 255, &tmp_len))) {
+        if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
             if ((user_dat.BODY = realloc(NULL, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.BODY, tmp_len + 1, tmp, tmp_len + 1);
             } else {
-                __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+                __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
         } else {
-            __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
         free(tmp);
     }
@@ -542,21 +504,18 @@ BOOL parsePwdField(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_PWDFIELD, &tmp);
     if (!tmp) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 34);
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_OK | MB_ICONERROR, currentLangID);
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_34, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         return FALSE;
     } else {
-        if (SUCCEEDED(StringCchLengthA(tmp, 255, &tmp_len))) {
+        if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
             if ((user_dat.pass = realloc(NULL, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.pass, tmp_len + 1, tmp, tmp_len + 1);
             } else {
-                __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+                __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
             free(tmp);
         } else {
-            __MsgBoxGetLastError(TEXT("StringCchLengthA()"), __LINE__);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
     }
     return TRUE;
@@ -748,10 +707,7 @@ VOID InitU2MTray(HWND hwnd)
         Shell_NotifyIcon(NIM_ADD, &U2MTrayData);
         Shell_NotifyIcon(NIM_SETVERSION, &U2MTrayData);
     } else {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 30);
-        LoadLocaleErrMsg(tmpmsg2, 31);
-        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);            
+        MessageBoxLocalized(hwnd, ID_ERR_MSG_30, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
     }
 }
 
@@ -1146,10 +1102,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                         //if we double clicked and no item was under the mouse pointer (double clicked
                         //in white space) then there's no need to show the error message box
                         if (HIWORD(wParam) != 133) {
-                            TCHAR tmpmsg1[255], tmpmsg2[255];
-                            LoadLocaleErrMsg(tmpmsg1, 27);
-                            LoadLocaleErrMsg(tmpmsg2, 0);
-                            MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                            MessageBoxLocalized(hwnd, ID_ERR_MSG_27, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                         }
                         return (INT_PTR)TRUE;
                     }
@@ -1329,10 +1282,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                  30, 30, 200, 30, hwnd, (HMENU)IDC_CHOOSEUSBBUTTON,
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!USBListButton) {
-                    TCHAR tmpmsg1[255], tmpmsg2[255];
-                    LoadLocaleErrMsg(tmpmsg1, 20);
-                    LoadLocaleErrMsg(tmpmsg2, 0);
-                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                    MessageBoxLocalized(hwnd, ID_ERR_MSG_20, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
                     return -2;
                 }
                 SendMessage(USBListButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -1342,10 +1292,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                  300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!EMAILButton) {
-                    TCHAR tmpmsg1[255], tmpmsg2[255];
-                    LoadLocaleErrMsg(tmpmsg1, 18);
-                    LoadLocaleErrMsg(tmpmsg2, 0);
-                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                    MessageBoxLocalized(hwnd, ID_ERR_MSG_18, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
                     return -2;
                 }
                 SendMessage(EMAILButton, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -1355,10 +1302,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                  300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP, 
                                  *g_hInst, NULL);
                 if (!STARTSTOP) {
-                    TCHAR tmpmsg1[255], tmpmsg2[255];
-                    LoadLocaleErrMsg(tmpmsg1, 17);
-                    LoadLocaleErrMsg(tmpmsg2, 0);                    
-                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                    MessageBoxLocalized(hwnd, ID_ERR_MSG_17, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
                     return -2;
                 }
                 SendMessage(STARTSTOP, WM_SETFONT, (WPARAM)mainwindowcontrol_font_big, (LPARAM)TRUE);
@@ -1368,10 +1312,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                  30, 200, 200, 30, hwnd, (HMENU)IDC_TIMETRACK,
                                  *g_hInst, NULL);
                 if (!time_track) {
-                    TCHAR tmpmsg1[255], tmpmsg2[255];
-                    LoadLocaleErrMsg(tmpmsg1, 16);
-                    LoadLocaleErrMsg(tmpmsg2, 0);
-                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                    MessageBoxLocalized(hwnd, ID_ERR_MSG_16, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
                     return -2;
                 }
 
@@ -1379,10 +1320,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                  WS_VISIBLE | WS_CHILD | SS_CENTER,
                                  30, 160, 200, 40, hwnd, NULL, *g_hInst, NULL);
                 if (!ttrack_label) {
-                    TCHAR tmpmsg1[255], tmpmsg2[255];
-                    LoadLocaleErrMsg(tmpmsg1, 14);
-                    LoadLocaleErrMsg(tmpmsg2, 0);
-                    MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                    MessageBoxLocalized(hwnd, ID_ERR_MSG_14, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
                     return -2;
                 }
                 SendMessage(ttrack_label, WM_SETFONT, (WPARAM)mainwindowcontrol_font, (LPARAM)TRUE);
@@ -1425,22 +1363,15 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     InitAboutDialog(hwnd);
                     break;
                 case IDM_PREF:
-                    if (!onoff)
+                    if (!onoff) 
                         InitPreferencesDialog(hwnd);
-                    else {
-                        TCHAR tmpmsg1[255], tmpmsg2[255];
-                        LoadLocaleErrMsg(tmpmsg1, 13);
-                        LoadLocaleErrMsg(tmpmsg2, 1);
-                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
-                    }
+                    else
+                        MessageBoxLocalized(hwnd, ID_ERR_MSG_13, ID_ERR_MSG_1, MB_OK | MB_ICONEXCLAMATION);
                     break;
                 case IDM_AUTOSTART:
                     if (AutostartWarning) {
                         AutostartWarning = FALSE;
-                        TCHAR tmpmsg1[255], tmpmsg2[255];
-                        LoadLocaleErrMsg(tmpmsg1, 62);
-                        LoadLocaleErrMsg(tmpmsg2, 63);
-                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONASTERISK | MB_OK, currentLangID);
+                        MessageBoxLocalized(hwnd, ID_ERR_MSG_62, ID_ERR_MSG_63, MB_ICONASTERISK | MB_OK);
                     }
                     user_dat.Autostart = !user_dat.Autostart;
                     CheckMenuItem(GetMenu(hwnd), IDM_AUTOSTART,
@@ -1450,22 +1381,14 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 case IDM_PASSWORD:
                     if (!onoff)
                         InitPasswordDialog(hwnd);
-                    else {
-                        TCHAR tmpmsg1[255], tmpmsg2[255];
-                        LoadLocaleErrMsg(tmpmsg1, 12);
-                        LoadLocaleErrMsg(tmpmsg2, 1);
-                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
-                    }
+                    else
+                        MessageBoxLocalized(hwnd, ID_ERR_MSG_12, ID_ERR_MSG_1, MB_OK | MB_ICONEXCLAMATION);
                     break;
                 case IDC_CHOOSEUSBBUTTON:
                     if (!onoff)
                         InitUSBDialog(hwnd);
-                    else {
-                        TCHAR tmpmsg1[255], tmpmsg2[255];
-                        LoadLocaleErrMsg(tmpmsg1, 11);
-                        LoadLocaleErrMsg(tmpmsg2, 1);
-                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
-                    }
+                    else
+                        MessageBoxLocalized(hwnd, ID_ERR_MSG_11, ID_ERR_MSG_1, MB_OK | MB_ICONEXCLAMATION);
                     break;
                 case IDC_STARTSTOP:
                     if (onoff) {
@@ -1495,12 +1418,8 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 case IDC_EMAILBUTTON:
                     if (!onoff)
                         InitEmailDialog(hwnd);
-                    else {
-                        TCHAR tmpmsg1[255], tmpmsg2[255];
-                        LoadLocaleErrMsg(tmpmsg1, 8);
-                        LoadLocaleErrMsg(tmpmsg2, 1);
-                        MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
-                    }
+                    else
+                        MessageBoxLocalized(hwnd, ID_ERR_MSG_8, ID_ERR_MSG_1, MB_OK | MB_ICONEXCLAMATION);
                     break;
                 case IDM_H_ELP1:
                     InitHelpDialog(hwnd);
@@ -1565,26 +1484,15 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             break;
         case WM_CLOSE:
             if (onoff) {
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadLocaleErrMsg(tmpmsg1, 7);
-                LoadLocaleErrMsg(tmpmsg2, 1);
-                MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONEXCLAMATION | MB_OK, currentLangID);
+                MessageBoxLocalized(hwnd, ID_ERR_MSG_7, ID_ERR_MSG_1, MB_OK | MB_ICONEXCLAMATION);
                 break;
             }
 #ifndef DEBUG
-            {
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadLocaleErrMsg(tmpmsg1, 6);
-                LoadLocaleErrMsg(tmpmsg2, 5);
-                if (MessageBoxEx(hwnd, tmpmsg1, tmpmsg2, MB_ICONASTERISK | MB_YESNO, currentLangID) == IDNO)
-                    break;
-            }
+            if (MessageBoxLocalized(hwnd, ID_ERR_MSG_6, ID_ERR_MSG_5, MB_ICONASTERISK | MB_YESNO) == IDNO)
+                break;
 #endif
             if (!WriteDataToU2MReg(user_dat)) {
-                TCHAR tmpmsg1[255], tmpmsg2[255];
-                LoadLocaleErrMsg(tmpmsg1, 66);
-                LoadLocaleErrMsg(tmpmsg2, 31);
-                MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+                MessageBoxLocalized(hwnd, ID_ERR_MSG_66, ID_ERR_MSG_31, MB_ICONERROR);
             }
         case WM_QUIT:
             DeleteAll();
@@ -1621,13 +1529,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     err = GetLastError();
     if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED || u2m_sinstance_mtx == NULL) {
         MessageBox(NULL, TEXT("There's already a running instance of USB2Email!"), 
-                         TEXT("USB2Email is open!"), MB_ICONERROR | MB_OK);
+                         TEXT("USB2Email is open!"), MB_ICONERROR);
         return 1;
     }
 
     u2m_StartStop_event = InitStartStopEvent();
     if (!u2m_StartStop_event) {
-        __MsgBoxGetLastError(TEXT("InitStartStopEvent()"), __LINE__);
+        __MsgBoxGetLastError(NULL, TEXT("InitStartStopEvent()"), __LINE__);
         CloseHandle(u2m_sinstance_mtx);
         return 1;
     }
@@ -1650,12 +1558,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     parseConfFile(&user_dat);
     err = GetU2MRegData(&user_dat);
-    if (!err) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 65);
-        LoadLocaleErrMsg(tmpmsg2, 31);
-        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
-    }
+    if (!err) MessageBoxLocalized(NULL, ID_ERR_MSG_65, ID_ERR_MSG_31, MB_ICONERROR);
 
     if (user_dat.Autostart) user_dat.TrayIcon = TRUE;
 
@@ -1679,10 +1582,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     center_y = (wrkspace_px.bottom - 350)/2;
     
     if (!RegisterClassEx(&wc)) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 4);
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+        MessageBoxLocalized(NULL, ID_ERR_MSG_4, ID_ERR_MSG_31, MB_ICONERROR);
         DestroyLanguageLibraries(ENGLISH_DLL);
         return -1;
     }
@@ -1692,10 +1592,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                           center_x, center_y, 550, 350, NULL, NULL, *g_hInst, NULL);
 
     if (!hwnd) {
-        TCHAR tmpmsg1[255], tmpmsg2[255];
-        LoadLocaleErrMsg(tmpmsg1, 3);
-        LoadLocaleErrMsg(tmpmsg2, 0);
-        MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+        MessageBoxLocalized(NULL, ID_ERR_MSG_3, ID_ERR_MSG_31, MB_ICONERROR);
         DestroyLanguageLibraries(ENGLISH_DLL);
         return -2;
     }
@@ -1717,10 +1614,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         bRet = GetMessage(&Msg, NULL, 0, 0);
 
         if (bRet == -1) {
-            TCHAR tmpmsg1[255], tmpmsg2[255];
-            LoadLocaleErrMsg(tmpmsg1, 2);
-            LoadLocaleErrMsg(tmpmsg2, 0);
-            MessageBoxEx(NULL, tmpmsg1, tmpmsg2, MB_ICONERROR | MB_OK, currentLangID);
+            MessageBoxLocalized(hwnd, ID_ERR_MSG_2, ID_ERR_MSG_0, MB_ICONERROR);
             return -3;
         } else if (bRet == -2) {
             return -2;

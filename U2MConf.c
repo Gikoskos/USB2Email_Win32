@@ -63,7 +63,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->FROM) free(user_dat->FROM);
             user_dat->FROM = malloc(sizeof(temp[0])*(len + 1));
             if (user_dat->FROM) StringCchCopyA(user_dat->FROM, MAX_BUFFER, temp[0]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
     if (temp[1]) {
@@ -72,7 +72,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->TO) free(user_dat->TO);
             user_dat->TO = malloc(sizeof(temp[1])*(len + 1));
             if (user_dat->TO) StringCchCopyA(user_dat->TO, MAX_BUFFER, temp[1]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
     if (temp[2]) {
@@ -81,7 +81,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->CC) free(user_dat->CC);
             user_dat->CC = malloc(sizeof(temp[2])*(len + 1));
             if (user_dat->CC) StringCchCopyA(user_dat->CC, MAX_BUFFER, temp[2]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
     if (temp[3]) {
@@ -90,7 +90,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->SUBJECT) free(user_dat->SUBJECT);
             user_dat->SUBJECT = malloc(sizeof(temp[3])*(len + 1));
             if (user_dat->SUBJECT) StringCchCopyA(user_dat->SUBJECT, MAX_BUFFER, temp[3]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
     if (temp[4]) {
@@ -99,7 +99,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->BODY) free(user_dat->BODY);
             user_dat->BODY = malloc(sizeof(temp[4])*(len + 1));
             if (user_dat->BODY) StringCchCopyA(user_dat->BODY, MAX_BUFFER, temp[4]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
     if (temp[5]) {
@@ -108,7 +108,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->pass) free(user_dat->pass);
             user_dat->pass = malloc(sizeof(temp[5])*(len + 1));
             if (user_dat->pass) StringCchCopyA(user_dat->pass, MAX_BUFFER, temp[5]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
     if (temp[6]) {
@@ -117,7 +117,7 @@ BOOL parseConfFile(user_input_data *user_dat)
             if (user_dat->SMTP_SERVER) free(user_dat->SMTP_SERVER);
             user_dat->SMTP_SERVER = malloc(sizeof(temp[6])*(len + 1));
             if (user_dat->SMTP_SERVER) StringCchCopyA(user_dat->SMTP_SERVER, MAX_BUFFER, temp[6]);
-            else __MsgBoxGetLastError(TEXT("HeapAlloc()"), __LINE__);
+            else __MsgBoxGetLastError(NULL, TEXT("HeapAlloc()"), __LINE__);
         }
     }
 
@@ -126,7 +126,7 @@ BOOL parseConfFile(user_input_data *user_dat)
 
     cfg_free(U2MConf);
 
-#if 1
+#ifdef DEBUG
     printf("%s\n%s\n%s\n%s\n%s\n%s\n%s\n%u\n", user_dat->FROM, user_dat->TO, user_dat->CC,
            user_dat->SUBJECT, user_dat->BODY, user_dat->pass, user_dat->SMTP_SERVER, user_dat->PORT);
 #endif

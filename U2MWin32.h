@@ -25,7 +25,12 @@
 #define MAX_CONNECTED_USB  20
 
 /* constant buffer size in characters */
-#define MAX_BUFFER     100000
+#ifdef DEBUG
+//using smaller maximum buffer size for debug builds to make testing easier
+#define MAX_BUFFER        100
+#else
+#define MAX_BUFFER      10000
+#endif
 
 /* maximum size for a U2M log file is 80 kibibytes */
 #define MAX_LOG_FILE_SZ 81920
@@ -139,9 +144,9 @@ extern char *cfg_filename; //the filename of the configuration file
 extern WORD currentLangID; //the ID of the current language used
 
 #if !_MSC_VER
-static inline void __MsgBoxGetLastError(const LPCTSTR func, const ULONG line)
+static inline void __MsgBoxGetLastError(HWND hwnd, const LPCTSTR func, const ULONG line)
 #else
-static void __MsgBoxGetLastError(const LPCTSTR func, ULONG line)
+static void __MsgBoxGetLastError(HWND hwnd, const LPCTSTR func, ULONG line)
 #endif
 { 
     LPVOID lpMsgBuf;
@@ -162,20 +167,21 @@ static void __MsgBoxGetLastError(const LPCTSTR func, ULONG line)
                     func, err, line, lpMsgBuf);
 
     err = LoadLocaleErrMsg(error_localized, 0);
-    MessageBoxEx(NULL, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : TEXT("Error!"), MB_OK, currentLangID); 
+    MessageBoxEx(hwnd, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : TEXT("Error!"), MB_OK, currentLangID); 
 
     LocalFree(lpMsgBuf);
     LocalFree(lpDisplayBuf);
 }
 
-
-
+//U2MWin32.c
+int MessageBoxLocalized(HWND hwnd, UINT text_id, UINT caption_id, UINT type);
+VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str);
+//U2MModule.c
 BOOL InitU2MThread(user_input_data user_dat, HWND hwnd);
 BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag);
-VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str);
 VOID InitU2MLogging(VOID);
 VOID FreeModuleHeap(VOID);
-
+//U2MConf.c
 BOOL parseConfFile(user_input_data *user_dat);
 BOOL saveConfFile(user_input_data user_dat);
 BOOL WriteDataToU2MReg(user_input_data user_dat);
