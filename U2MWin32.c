@@ -5,6 +5,7 @@
 
 #include "U2MWin32.h"
 
+
 static const _TCHAR szClassName[] = TEXT("USB2Email");
 HINSTANCE *g_hInst;
 
@@ -67,6 +68,10 @@ WORD currentLangID;
 
 #define NO_SEPARATOR             '\0'
 
+/* to be used with curl_global_init */
+#define CURL_GLOBAL_SSL (1<<0)
+#define CURL_GLOBAL_WIN32 (1<<1)
+
 /***************************************************
 * Prototypes for functions in this compilation unit *
  ***************************************************/
@@ -112,6 +117,12 @@ VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str);
 VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str);
 int MessageBoxLocalized(HWND hwnd, UINT text_id, UINT caption_id, UINT type);
 
+/* Prototypes for functions in libcurl
+ * only work with the MSVC build which links statically to all builds */
+#if _MSC_VER
+int curl_global_init(long flags);
+void curl_global_cleanup(void);
+#endif
 
 UINT PowerOf10(UINT x)
 {
@@ -1569,6 +1580,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     INT err;
     HANDLE u2m_sinstance_mtx = NULL;
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES | ICC_LINK_CLASS};
+#if !_MSC_VER
+    HMODULE libcurl_dll;
+    typedef int (*curl_gl_in)(long);
+    typedef void (*curl_gl_cl)(void);
+    curl_gl_in curl_global_init;
+    curl_gl_cl curl_global_cleanup;
+#endif
 
     // check if there's already an instance of the application running
     u2m_sinstance_mtx = InitSingleInstanceMutex(); // possible DOS?
@@ -1586,9 +1604,26 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 1;
     }
 
+#if !_MSC_VER
+    libcurl_dll = LoadLibrary(TEXT("libcurl-4.dll"));
+    if (!libcurl_dll) {
+        __MsgBoxGetLastError(NULL, TEXT("LoadLibrary(TEXT(\"libcurl-4.dll\"))"), __LINE__);
+        CloseHandle(u2m_StartStop_event);
+        CloseHandle(u2m_sinstance_mtx);
+        return 1;
+    }
+    curl_global_init = (curl_gl_in)GetProcAddress(libcurl_dll, "curl_global_init");
+    curl_global_cleanup = (curl_gl_cl)GetProcAddress(libcurl_dll, "curl_global_cleanup");
+#endif
+    curl_global_init(CURL_GLOBAL_WIN32 | CURL_GLOBAL_SSL);
+
     g_hInst = &hInstance; //possibly a bad decision
     err = LoadLocaleDLLs();
-    if (!err) return 1;
+    if (!err) {
+        CloseHandle(u2m_StartStop_event);
+        CloseHandle(u2m_sinstance_mtx);
+        return 1;
+    }
 
     InitCommonControlsEx(&columnControlClass);
 
@@ -1626,10 +1661,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /* Coords to center the window in the center of the working area */
     center_x = (wrkspace_px.right - 550)/2;
     center_y = (wrkspace_px.bottom - 350)/2;
-    
+
     if (!RegisterClassEx(&wc)) {
         MessageBoxLocalized(NULL, ID_ERR_MSG_4, ID_ERR_MSG_31, MB_ICONERROR);
         DestroyLanguageLibraries(ENGLISH_DLL);
+        CloseHandle(u2m_StartStop_event);
+        CloseHandle(u2m_sinstance_mtx);
+        curl_global_cleanup();
         return -1;
     }
 
@@ -1640,9 +1678,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (!hwnd) {
         MessageBoxLocalized(NULL, ID_ERR_MSG_3, ID_ERR_MSG_31, MB_ICONERROR);
         DestroyLanguageLibraries(ENGLISH_DLL);
+        CloseHandle(u2m_StartStop_event);
+        CloseHandle(u2m_sinstance_mtx);
+        curl_global_cleanup();
         return -2;
     }
-
 
     if (!user_dat.Autostart) {
 #if 1
@@ -1660,15 +1700,24 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         bRet = GetMessage(&Msg, NULL, 0, 0);
 
         if (bRet == -1) {
+            CloseHandle(u2m_StartStop_event);
+            CloseHandle(u2m_sinstance_mtx);
             MessageBoxLocalized(hwnd, ID_ERR_MSG_2, ID_ERR_MSG_0, MB_ICONERROR);
             return -3;
         } else if (bRet == -2) {
+            CloseHandle(u2m_StartStop_event);
+            CloseHandle(u2m_sinstance_mtx);
             return -2;
         }
 
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
     }
+    curl_global_cleanup();
+
+#if !_MSC_VER
+    FreeLibrary(libcurl_dll);
+#endif
     CloseHandle(u2m_StartStop_event);
     CloseHandle(u2m_sinstance_mtx);
     return Msg.wParam;

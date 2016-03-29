@@ -173,7 +173,6 @@ UINT CALLBACK U2MThreadMulti(LPVOID dat)
 BOOL SendEmail(user_input_data user_dat)
 {
     BOOL retvalue = TRUE;
-    quickmail_initialize();
     quickmail mailobj = quickmail_create(user_dat.FROM, user_dat.SUBJECT);
 
     quickmail_add_to(mailobj, user_dat.TO);

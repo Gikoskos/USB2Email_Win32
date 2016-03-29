@@ -120,7 +120,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\LIBS;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ssleay32.lib;libeay32.lib;libcurl.lib;libConfuse.lib;setupapi.lib;comctl32.lib;wldap32.lib;libquickmail.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ssleay32.lib;libeay32.lib;libcurl.lib;version.lib;libConfuse.lib;setupapi.lib;comctl32.lib;wldap32.lib;libquickmail.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <OptimizeReferences>true</OptimizeReferences>
       <LinkStatus>true</LinkStatus>
@@ -163,7 +163,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>..\LIBS;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ssleay32.lib;libeay32.lib;libcurl.lib;libConfuse.lib;setupapi.lib;comctl32.lib;wldap32.lib;libquickmail.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ssleay32.lib;libeay32.lib;libcurl.lib;version.lib;libConfuse.lib;setupapi.lib;comctl32.lib;wldap32.lib;libquickmail.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <LinkStatus>true</LinkStatus>
     </Link>
