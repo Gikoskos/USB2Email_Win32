@@ -124,8 +124,9 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
             }
             SendMessageTimeout(args->hwnd, WM_ENABLE_STARTSTOP,
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
-
-            if (failed_emails > args->usr.MAX_FAILED_EMAILS) break; //bad logic but it works
+            //if the maximum number of failed e-mails has been reached at this pointer
+            //there's no need to enter the second loop; the thread exits
+            if (failed_emails > args->usr.MAX_FAILED_EMAILS) break;
 
             while (GetConnectedUSBDevs(NULL, args->usr.usb_id_selection[0],
                    args->usr.usb_id_selection[1], IS_USB_CONNECTED)) {
@@ -133,7 +134,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
                     _endthreadex(0);
                     return 0; //if u2m_StartStop_event is signaled, it means that the STARTSTOP button has
                 }             //been already pushed and there's no need to potentially send the
-            }                 //message in line 154
+            }                 //message in line 143
         }
     }
 
