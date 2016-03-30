@@ -1697,14 +1697,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         bRet = GetMessage(&Msg, NULL, 0, 0);
 
         if (bRet == -1) {
-            CloseHandle(u2m_StartStop_event);
-            CloseHandle(u2m_sinstance_mtx);
             MessageBoxLocalized(hwnd, ID_ERR_MSG_2, ID_ERR_MSG_0, MB_ICONERROR);
-            return -3;
-        } else if (bRet == -2) {
-            CloseHandle(u2m_StartStop_event);
-            CloseHandle(u2m_sinstance_mtx);
-            return -2;
+            break;
         }
 
         TranslateMessage(&Msg);
