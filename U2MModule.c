@@ -83,7 +83,7 @@ BOOL InitU2MThread(user_input_data user_dat, HWND hwnd)
 
     FreeModuleHeap();
 
-    tmp = malloc(sizeof(thread_args));
+    tmp = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, sizeof(thread_args));
 
     tmp->usr = user_dat;
     tmp->hwnd = hwnd;
@@ -219,7 +219,7 @@ VOID EnableU2MLogging(BOOL new_state)
 VOID FreeModuleHeap(VOID)
 {
     if (tmp != (thread_args*)NULL) {
-        free(tmp);
+        HeapFree(GetProcessHeap(), 0, tmp);
         tmp = NULL;
     }
 }
@@ -240,7 +240,6 @@ VOID InitU2MLogging(VOID)
 
             //if we found a U2M log file with the next to current filename
             if (curr_u2m_log != INVALID_HANDLE_VALUE) {
-                putchar('s');
                 //if this function fails break
                 if (!GetFileSizeEx(curr_u2m_log, &Logfile_sz)) {
                     CloseHandle(curr_u2m_log);
@@ -277,7 +276,7 @@ BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
 
     GetLocalTime(&curr_time);
     StringCchPrintf(filename, 255, TEXT("%s_%ld.txt"), Logfile_name, curr_filename);
-    hLogfile = CreateFile(filename, FILE_GENERIC_WRITE, FILE_SHARE_WRITE, 
+    hLogfile = CreateFile(filename, FILE_GENERIC_WRITE, FILE_SHARE_WRITE,
                           NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hLogfile == INVALID_HANDLE_VALUE) {
         return FALSE;
@@ -293,8 +292,8 @@ BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
 
 WRITE_TO_LOG:
     StringCchPrintf(to_write, 255,
-                    TEXT("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\r\n\r\n"), 
-                    curr_time.wDay, curr_time.wMonth, curr_time.wYear, curr_time.wHour, 
+                    TEXT("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\r\n\r\n"),
+                    curr_time.wDay, curr_time.wMonth, curr_time.wYear, curr_time.wHour,
                     curr_time.wMinute, curr_time.wSecond, curr_time.wMilliseconds);
     StringCbLength(to_write, 255, &to_write_len);
     WriteFile(hLogfile, to_write, to_write_len, &dwRet, &log_inf);
@@ -337,7 +336,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
     ULONG vID, dID;
 
     (VOID)hUSBHUBInfo;
-    hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE, 
+    hUSBDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE,
                NULL, NULL, DIGCF_PRESENT | DIGCF_ALLCLASSES | DIGCF_DEVICEINTERFACE);
 
     if (hUSBDevInfo == INVALID_HANDLE_VALUE) {
@@ -361,7 +360,7 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
         DevData.cbSize = sizeof(DevData);
         SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &DevIntfData, NULL, 0, &dwSize, NULL);
 
-        DevIntfDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(dwSize);
+        DevIntfDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, dwSize);
         DevIntfDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
         if (SetupDiGetDeviceInterfaceDetail(hUSBDevInfo, &DevIntfData,
@@ -411,9 +410,9 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
                     break;
                 case IS_USB_CONNECTED:
                     if ((VendorID == vID && ProductID == dID) || (VendorID == vID && ProductID == 0xabcd)) {
-                        free(DevIntfDetailData);
-                        SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, 
-                                                    &GUID_DEVINTERFACE_USB_DEVICE, 
+                        HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
+                        SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL,
+                                                    &GUID_DEVINTERFACE_USB_DEVICE,
                                                     ++dwMemberIdx, &DevIntfData);
                         SetupDiDestroyDeviceInfoList(hUSBDevInfo);
                         return TRUE;
@@ -426,14 +425,14 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
 #ifdef DEBUG
             __MsgBoxGetLastError(hDlg, TEXT("SetupDiGetDeviceInterfaceDetail()"), __LINE__);
 #endif
-            free(DevIntfDetailData);
+            HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
             SetupDiDestroyDeviceInfoList(hUSBDevInfo);
             return FALSE;
         }
 SKIP_DEVICE:
-        SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE, 
+        SetupDiEnumDeviceInterfaces(hUSBDevInfo, NULL, &GUID_DEVINTERFACE_USB_DEVICE,
              ++dwMemberIdx, &DevIntfData);
-        free(DevIntfDetailData);
+        HeapFree(GetProcessHeap(), 0, DevIntfDetailData);
     }
 #ifdef DEBUG
     if (!SetupDiDestroyDeviceInfoList(hUSBDevInfo)) {

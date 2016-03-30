@@ -241,11 +241,11 @@ VOID GetFieldTextA(HWND hwnd, int nIDDlgItem, char **str)
     int bufsiz = GetWindowTextLengthA(GetDlgItem(hwnd, nIDDlgItem)) + 1;
 
     if (bufsiz > 1) {
-        (*str) = calloc(bufsiz, 1);
+        (*str) = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, bufsiz*1);
         GetDlgItemTextA(hwnd, nIDDlgItem, (*str), bufsiz);
     } else {
         if (*str)
-            free(*str);
+            HeapFree(GetProcessHeap(), 0, *str);
         (*str) = NULL;
     }
 }
@@ -255,11 +255,11 @@ VOID GetFieldText(HWND hwnd, int nIDDlgItem, TCHAR **str)
     int bufsiz = GetWindowTextLengthA(GetDlgItem(hwnd, nIDDlgItem)) + 1;
 
     if (bufsiz > 1) {
-        (*str) = calloc(bufsiz, sizeof(TCHAR));
+        (*str) = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, bufsiz*sizeof(TCHAR));
         GetDlgItemText(hwnd, nIDDlgItem, (*str), bufsiz);
     } else {
         if (*str)
-            free(*str);
+            HeapFree(GetProcessHeap(), 0, *str);
         (*str) = NULL;
     }
 }
@@ -331,8 +331,8 @@ BOOL parsePrefDialogFields(HWND hwnd)
     if (tmp2) {
         if (SUCCEEDED(StringCchLengthA(tmp2, MAX_BUFFER, &tmp2_len))) {
             if (tmp2_len > 5) {
-                free(tmp1);
-                free(tmp2);
+                HeapFree(GetProcessHeap(), 0, tmp1);
+                HeapFree(GetProcessHeap(), 0, tmp2);
                 MessageBoxLocalized(hwnd, ID_ERR_MSG_44, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                 return FALSE;
             }
@@ -343,10 +343,10 @@ BOOL parsePrefDialogFields(HWND hwnd)
                 c = tmp2[i] - '0';
                 user_dat.PORT = c*(PowerOf10(tmp2_len - (i + 1))) + user_dat.PORT;
             }
-            free(tmp2);
+            HeapFree(GetProcessHeap(), 0, tmp2);
 
             if (user_dat.PORT > 65535) {
-                free(tmp1);
+                HeapFree(GetProcessHeap(), 0, tmp1);
                 MessageBoxLocalized(hwnd, ID_ERR_MSG_44, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                 return FALSE;
             }
@@ -355,16 +355,16 @@ BOOL parsePrefDialogFields(HWND hwnd)
         }
     } else {
         user_dat.PORT = 0;
-        /*free(tmp1);
+        /*HeapFree(GetProcessHeap(), 0, tmp1);
         MessageBoxLocalized(hwnd, ID_ERR_MSG_45, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);*/
     }
 
-    if ((user_dat.SMTP_SERVER = realloc(NULL, tmp1_len + 1)) != NULL) {
+    if ((user_dat.SMTP_SERVER = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp1_len + 1)) != NULL) {
         StringCchPrintfA(user_dat.SMTP_SERVER, tmp1_len + 1, "%s", tmp1);
     } else {
         __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
     }
-    free(tmp1);
+    HeapFree(GetProcessHeap(), 0, tmp1);
     return TRUE;
 }
 
@@ -382,12 +382,12 @@ BOOL parseEmailDialogFields(HWND hwnd)
     if (user_dat.ValidEmailCheck) {
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_42, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
-            free(tmp);
+            HeapFree(GetProcessHeap(), 0, tmp);
             return FALSE;
         }
     }
     if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
-        if ((user_dat.FROM = realloc(NULL, tmp_len + 1)) != NULL) {
+        if ((user_dat.FROM = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp_len + 1)) != NULL) {
             StringCchPrintfA(user_dat.FROM, tmp_len + 1, "%s", tmp);
         } else {
             __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -395,7 +395,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
     } else {
         MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
-    free(tmp);
+    HeapFree(GetProcessHeap(), 0, tmp);
     tmp = NULL;
     tmp_len = 0;
 
@@ -408,12 +408,12 @@ BOOL parseEmailDialogFields(HWND hwnd)
     if (user_dat.ValidEmailCheck) {
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_40, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
-            free(tmp);
+            HeapFree(GetProcessHeap(), 0, tmp);
             return FALSE;
         }
     }
     if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
-        if ((user_dat.TO = realloc(NULL, tmp_len + 1)) != NULL) {
+        if ((user_dat.TO = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp_len + 1)) != NULL) {
             StringCchPrintfA(user_dat.TO, tmp_len + 1, "%s", tmp);
         } else {
             __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -421,7 +421,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
     } else {
         MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
     }
-    free(tmp);
+    HeapFree(GetProcessHeap(), 0, tmp);
     tmp = NULL;
     tmp_len = 0;
 
@@ -432,14 +432,14 @@ BOOL parseEmailDialogFields(HWND hwnd)
     } else {
         if (user_dat.ValidEmailCheck) {
             if (!isValidDomain(tmp, ';')) {
-                free(tmp);
+                HeapFree(GetProcessHeap(), 0, tmp);
                 MessageBoxLocalized(hwnd, ID_ERR_MSG_39, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
                 return FALSE;
             }
         }
 
         if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
-            if ((user_dat.CC = realloc(NULL, tmp_len + 1)) != NULL) {
+            if ((user_dat.CC = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.CC, tmp_len + 1, tmp, tmp_len + 1);
             } else {
                 __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -447,7 +447,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         } else {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
-        free(tmp);
+        HeapFree(GetProcessHeap(), 0, tmp);
         tmp = NULL;
         tmp_len = 0;
     }
@@ -455,7 +455,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
     GetFieldTextA(hwnd, IDC_SUBJECTFIELD, &tmp);
     if (!tmp) {
         if (MessageBoxLocalized(hwnd, ID_ERR_MSG_38, ID_ERR_MSG_37, MB_YESNO | MB_ICONASTERISK) == IDYES) {
-            if ((user_dat.SUBJECT = malloc(2)) != NULL) {
+            if ((user_dat.SUBJECT = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, 2)) != NULL) {
                 StringCchPrintfA(user_dat.SUBJECT, 2, "");
             } else {
                 __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -465,7 +465,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         }
     } else {
         if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
-            if ((user_dat.SUBJECT = realloc(NULL, tmp_len + 1)) != NULL) {
+            if ((user_dat.SUBJECT = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.SUBJECT, tmp_len + 1, tmp, tmp_len + 1);
             } else {
                 __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -473,7 +473,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         } else {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
-        free(tmp);
+        HeapFree(GetProcessHeap(), 0, tmp);
         tmp = NULL;
         tmp_len = 0;
     }
@@ -481,7 +481,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
     GetFieldTextA(hwnd, IDC_MESSAGEFIELD, &tmp);
     if (!tmp) {
         if (MessageBoxLocalized(hwnd, ID_ERR_MSG_36, ID_ERR_MSG_35, MB_YESNO | MB_ICONASTERISK) == IDYES) {
-            if ((user_dat.BODY = malloc(2)) != NULL) {
+            if ((user_dat.BODY = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, 2)) != NULL) {
                 StringCchPrintfA(user_dat.BODY, 2, "");
             } else {
                 __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -491,7 +491,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         }
     } else {
         if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
-            if ((user_dat.BODY = realloc(NULL, tmp_len + 1)) != NULL) {
+            if ((user_dat.BODY = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.BODY, tmp_len + 1, tmp, tmp_len + 1);
             } else {
                 __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
@@ -499,7 +499,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         } else {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
-        free(tmp);
+        HeapFree(GetProcessHeap(), 0, tmp);
     }
 
     return TRUE;
@@ -516,12 +516,12 @@ BOOL parsePwdField(HWND hwnd)
         return FALSE;
     } else {
         if (SUCCEEDED(StringCchLengthA(tmp, MAX_BUFFER, &tmp_len))) {
-            if ((user_dat.pass = realloc(NULL, tmp_len + 1)) != NULL) {
+            if ((user_dat.pass = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, tmp_len + 1)) != NULL) {
                 StringCchCopyNA(user_dat.pass, tmp_len + 1, tmp, tmp_len + 1);
             } else {
                 __MsgBoxGetLastError(hwnd, TEXT("HeapAlloc()"), __LINE__);
             }
-            free(tmp);
+            HeapFree(GetProcessHeap(), 0, tmp);
         } else {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_67, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
@@ -661,12 +661,12 @@ BOOL LoadLocaleDLLs(VOID)
             U2M_dlls[i].module = NULL;
             continue;
         }
-        dllver_inf = malloc(sizeof(BYTE) * dllver_sz);
+        dllver_inf = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, sizeof(BYTE) * dllver_sz);
         if (!GetFileVersionInfo(U2M_dlls[i].filename, (DWORD)0, dllver_sz, (LPVOID)dllver_inf)) {
             __MsgBoxGetLastError(NULL, TEXT("GetFileVersionInfo()"), __LINE__);
             FreeLibrary(U2M_dlls[i].module);
             U2M_dlls[i].module = NULL;
-            free(dllver_inf);
+            HeapFree(GetProcessHeap(), 0, dllver_inf);
             continue;
         }
 
@@ -674,7 +674,7 @@ BOOL LoadLocaleDLLs(VOID)
             __MsgBoxGetLastError(NULL, TEXT("VerQueryValue()"), __LINE__);
             FreeLibrary(U2M_dlls[i].module);
             U2M_dlls[i].module = NULL;
-            free(dllver_inf);
+            HeapFree(GetProcessHeap(), 0, dllver_inf);
             continue;
         }
         if (HIWORD(dllver_inf_spec->dwProductVersionMS) != U2MWin32_MAJOR ||
@@ -682,8 +682,8 @@ BOOL LoadLocaleDLLs(VOID)
             HIWORD(dllver_inf_spec->dwProductVersionLS) != U2MWin32_PATCH) {
             TCHAR buf[255];
 
-            free(dllver_inf);
-            StringCchPrintf(buf, 255, _T("%s%s%s%s%s"), 
+            HeapFree(GetProcessHeap(), 0, dllver_inf);
+            StringCchPrintf(buf, 255, _T("%s%s%s%s%s"),
                             TEXT("The version of the language pack \'"),
                             U2M_dlls[i].filename,
                             TEXT("\' mismatches the version of USB2Email. "),
@@ -695,7 +695,7 @@ BOOL LoadLocaleDLLs(VOID)
             }
             continue;
         } else {
-            free(dllver_inf);
+            HeapFree(GetProcessHeap(), 0, dllver_inf);
         }
 
         U2M_dlls[i].locale_menu = LoadMenu(U2M_dlls[i].module, MAKEINTRESOURCE(IDR_MAINMENU));
@@ -736,11 +736,11 @@ VOID InitU2MTray(HWND hwnd)
     if (!TrayIsInitialized) {
     //stupid bug in mingw-w64 toolchain doesn't link against high DPI LoadIconMetric function
 #ifndef __MINGW32__ 
-        if (LoadIconMetric(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONSMALL), 
+        if (LoadIconMetric(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_USB2MAILICONSMALL),
                        LIM_SMALL, &(U2MTrayData.hIcon)) != S_OK) success = FALSE;
 #else //RIP open-source compilers
         U2MTrayData.hIcon = LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCEW(IDI_USB2MAILICONSMALL),
-                                      IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
+                                      IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
                                       GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
 #endif
         if (!U2MTrayData.hIcon) success = FALSE;
@@ -779,7 +779,7 @@ VOID SetU2MNotifyTip(VOID)
             TCHAR tmpmsg1[50];
             LoadLocaleErrMsg(tmpmsg1, 58);
             StringCchCopy(U2MTrayData.szTip, 50, tmpmsg1);
-            Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData); 
+            Shell_NotifyIcon(NIM_MODIFY, &U2MTrayData);
         }
     }
 }
@@ -834,7 +834,7 @@ HANDLE InitSingleInstanceMutex(VOID)
     DACL_success = ConvertStringSecurityDescriptorToSecurityDescriptor(szSD,
                        SDDL_REVISION_1, &(mtx_sa.lpSecurityDescriptor), NULL);
 
-    retvalue = CreateMutex((DACL_success) ? (&mtx_sa) : NULL, FALSE, 
+    retvalue = CreateMutex((DACL_success) ? (&mtx_sa) : NULL, FALSE,
                            TEXT("Global\\{USB2Email-2CB5E714-8B05-4DFC-B8B0-4CBECEEC00E3}"));
     LocalFree(mtx_sa.lpSecurityDescriptor);
 
@@ -905,15 +905,15 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
     switch (msg) {
         case WM_INITDIALOG:
-            about_usb_icon = (HICON)LoadImage(GetModuleHandle(NULL), 
+            about_usb_icon = (HICON)LoadImage(GetModuleHandle(NULL),
                                     MAKEINTRESOURCE(IDI_USB2MAILICONLARGE),
                                     IMAGE_ICON, 128, 128, 0);
             if (about_usb_icon)
-                SendDlgItemMessage(hwnd, IDOK, BM_SETIMAGE, 
+                SendDlgItemMessage(hwnd, IDOK, BM_SETIMAGE,
                                   (WPARAM)IMAGE_ICON, (LPARAM)about_usb_icon);
 
             DlgFont = CreateFont(12, 0, 0, 0, 400,
-                                 FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
+                                 FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                  CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
                                  VARIABLE_PITCH, TEXT("Ms Shell Dlg"));
 
@@ -925,7 +925,7 @@ INT_PTR CALLBACK AboutDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             if (lquick_link)
                 SendMessage(lquick_link, WM_SETFONT, (WPARAM)DlgFont, (LPARAM)TRUE);
 
-            lconf_link = CreateWindowEx(0, WC_LINK, 
+            lconf_link = CreateWindowEx(0, WC_LINK,
                                         TEXT("<a href=\"https://github.com/martinh/libconfuse/\">libconfuse 3.0</a>"),
                                         WS_VISIBLE | WS_CHILD | WS_TABSTOP | SS_LEFT,
                                         10, 166, 150, 14, hwnd, NULL, GetModuleHandle(NULL), NULL);
@@ -1129,7 +1129,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 ListView_InsertColumn(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, &devcCol);
             }
             ListView_SetExtendedListViewStyle(GetDlgItem(hwnd, IDC_USBDEVLIST),
-                LVS_EX_TRACKSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP);
+                LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP);
             ListView_SetColumnWidth(GetDlgItem(hwnd, IDC_USBDEVLIST), 0, 210);
             ListView_SetColumnWidth(GetDlgItem(hwnd, IDC_USBDEVLIST), 1, 150);
             ListView_SetHoverTime(GetDlgItem(hwnd, IDC_USBDEVLIST), 1);
@@ -1185,10 +1185,10 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                             //to determine whether the message came from the click of the button
                             //or from double clicking a list item
                             SendMessage(hwnd, WM_COMMAND, MAKEWPARAM(IDOK, 133), (LPARAM)0);
-                            return (INT_PTR)TRUE;                            
+                            return (INT_PTR)TRUE;
                         case NM_CLICK:
                         case NM_HOVER:
-                            temp_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST), 
+                            temp_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST),
                                                         LVM_GETNEXTITEM, -1, LVNI_FOCUSED | LVNI_SELECTED);
                             if (temp_idx != -1)
                                 ListView_SetItemState(GetDlgItem(hwnd, IDC_USBDEVLIST), (UINT)temp_idx,
@@ -1215,7 +1215,7 @@ INT_PTR CALLBACK EmailDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             {
                 HICON emailDlgIco = (HICON)LoadImage(GetModuleHandle(NULL),
                                                  MAKEINTRESOURCE(IDI_EMAILICON),
-                                                 IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), 
+                                                 IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
                                                  GetSystemMetrics(SM_CYSMICON), 0);
                 if (emailDlgIco) {
                     SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)emailDlgIco);
@@ -1329,7 +1329,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                                 VARIABLE_PITCH, TEXT("Trebuchet MS"));
 
                 mainwindowcontrol_font = CreateFont(18, 0, 0, 0, 550,
-                                FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, 
+                                FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                 CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
                                 VARIABLE_PITCH, TEXT("Trebuchet MS"));
 
@@ -1345,7 +1345,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
                 EMAILButton = CreateWindowEx(0, TEXT("BUTTON"), tmp2,
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-                                 300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON, 
+                                 300, 30, 200, 30, hwnd, (HMENU)IDC_EMAILBUTTON,
                                  (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
                 if (!EMAILButton) {
                     MessageBoxLocalized(hwnd, ID_ERR_MSG_18, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
@@ -1355,7 +1355,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
                 STARTSTOP = CreateWindowEx(0, TEXT("BUTTON"), tmp3,
                                  WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-                                 300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP, 
+                                 300, 200, 200, 50, hwnd, (HMENU)IDC_STARTSTOP,
                                  *g_hInst, NULL);
                 if (!STARTSTOP) {
                     MessageBoxLocalized(hwnd, ID_ERR_MSG_17, ID_ERR_MSG_31, MB_OK | MB_ICONERROR);
@@ -1419,7 +1419,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     InitAboutDialog(hwnd);
                     break;
                 case IDM_PREF:
-                    if (!onoff) 
+                    if (!onoff)
                         InitPreferencesDialog(hwnd);
                     else
                         MessageBoxLocalized(hwnd, ID_ERR_MSG_13, ID_ERR_MSG_1, MB_OK | MB_ICONEXCLAMATION);
@@ -1589,7 +1589,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     u2m_sinstance_mtx = InitSingleInstanceMutex(); // possible DOS?
     err = GetLastError();
     if (err == ERROR_ALREADY_EXISTS || err == ERROR_ACCESS_DENIED || u2m_sinstance_mtx == NULL) {
-        MessageBox(NULL, TEXT("There's already a running instance of USB2Email!"), 
+        MessageBox(NULL, TEXT("There's already a running instance of USB2Email!"),
                          TEXT("USB2Email is open!"), MB_ICONERROR);
         return 1;
     }
@@ -1612,7 +1612,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     curl_global_init = (int(*)(long))GetProcAddress(libcurl_dll, "curl_global_init");
     curl_global_cleanup = (void(*)(void))GetProcAddress(libcurl_dll, "curl_global_cleanup");
 #endif
-    curl_global_init(CURL_GLOBAL_WIN32 | CURL_GLOBAL_SSL);
+    curl_global_init(CURL_GLOBAL_SSL | CURL_GLOBAL_WIN32);
 
     g_hInst = &hInstance; //possibly a bad decision
     err = LoadLocaleDLLs();

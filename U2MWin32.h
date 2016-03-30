@@ -44,13 +44,6 @@
 #define FILL_USB_LISTVIEW 10
 #define IS_USB_CONNECTED 20
 
-/* wrappers for win32 native memory management */
-#define free(x) HeapFree(GetProcessHeap(), 0, x)
-//this one is technically a wrapper for calloc since stdlib malloc doesn't 0 out the allocated bytes
-#define malloc(x) HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, x)
-#define realloc(NULL, x) malloc(x)
-#define calloc(x, y) malloc(x * y)
-
 /* macro for LoadString which loads the error message 'y' from the currently
  * loaded locale DLL and puts it in the TCHAR string 'x' */
 #define LoadLocaleErrMsg(x, y) LoadString(*g_hInst, ERR_ID(y), x, sizeof(x)/sizeof(x[0]));
@@ -59,29 +52,29 @@
 /********************************************
 *Macros to clear all data entered by the user*
  ********************************************/
-#define ClearEmailData()                          \
-do {                                              \
-    if (user_dat.FROM) free(user_dat.FROM);       \
-    if (user_dat.TO) free(user_dat.TO);           \
-    if (user_dat.CC) free(user_dat.CC);           \
-    if (user_dat.SUBJECT) free(user_dat.SUBJECT); \
-    if (user_dat.BODY) free(user_dat.BODY);       \
-    user_dat.FROM = user_dat.TO = user_dat.CC =   \
-    user_dat.SUBJECT = user_dat.BODY = NULL;      \
+#define ClearEmailData()                                                   \
+do {                                                                       \
+    if (user_dat.FROM) HeapFree(GetProcessHeap(), 0, user_dat.FROM);       \
+    if (user_dat.TO) HeapFree(GetProcessHeap(), 0, user_dat.TO);           \
+    if (user_dat.CC) HeapFree(GetProcessHeap(), 0, user_dat.CC);           \
+    if (user_dat.SUBJECT) HeapFree(GetProcessHeap(), 0, user_dat.SUBJECT); \
+    if (user_dat.BODY) HeapFree(GetProcessHeap(), 0, user_dat.BODY);       \
+    user_dat.FROM = user_dat.TO = user_dat.CC =                            \
+    user_dat.SUBJECT = user_dat.BODY = NULL;                               \
 } while (0)
 
-#define ClearPwd()                          \
-do {                                        \
-    if (user_dat.pass) free(user_dat.pass); \
-    user_dat.pass = NULL;                   \
+#define ClearPwd()                                                   \
+do {                                                                 \
+    if (user_dat.pass) HeapFree(GetProcessHeap(), 0, user_dat.pass); \
+    user_dat.pass = NULL;                                            \
 } while (0)
 
-#define ClearPrefs()                                      \
-do {                                                      \
-    if (user_dat.SMTP_SERVER) free(user_dat.SMTP_SERVER); \
-    user_dat.SMTP_SERVER = NULL;                          \
-    user_dat.PORT = 0;                                    \
-    break;                                                \
+#define ClearPrefs()                                                               \
+do {                                                                               \
+    if (user_dat.SMTP_SERVER) HeapFree(GetProcessHeap(), 0, user_dat.SMTP_SERVER); \
+    user_dat.SMTP_SERVER = NULL;                                                   \
+    user_dat.PORT = 0;                                                             \
+    break;                                                                         \
 } while (0)
 
 #define DeleteScannedUSBIDs()                 \
@@ -122,7 +115,7 @@ typedef struct user_input_data{
     BOOL ValidEmailCheck;
 } user_input_data;
 
-/* enumeration of the locales, to be used as the index on the language DLL module array 
+/* enumeration of the locales, to be used as the index on the language DLL module array
    last locale always has to be English */
 enum locale_idx {
     GREEK_DLL = 0,
