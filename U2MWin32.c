@@ -1581,10 +1581,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     INITCOMMONCONTROLSEX columnControlClass = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES | ICC_LINK_CLASS};
 #if !_MSC_VER
     HMODULE libcurl_dll;
-    typedef int (*curl_gl_in)(long);
-    typedef void (*curl_gl_cl)(void);
-    curl_gl_in curl_global_init;
-    curl_gl_cl curl_global_cleanup;
+    int (*curl_global_init)(long);
+    void (*curl_global_cleanup)(void);
 #endif
 
     // check if there's already an instance of the application running
@@ -1611,8 +1609,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         CloseHandle(u2m_sinstance_mtx);
         return 1;
     }
-    curl_global_init = (curl_gl_in)GetProcAddress(libcurl_dll, "curl_global_init");
-    curl_global_cleanup = (curl_gl_cl)GetProcAddress(libcurl_dll, "curl_global_cleanup");
+    curl_global_init = (int(*)(long))GetProcAddress(libcurl_dll, "curl_global_init");
+    curl_global_cleanup = (void(*)(void))GetProcAddress(libcurl_dll, "curl_global_cleanup");
 #endif
     curl_global_init(CURL_GLOBAL_WIN32 | CURL_GLOBAL_SSL);
 
