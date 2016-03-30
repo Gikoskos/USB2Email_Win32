@@ -148,7 +148,7 @@ VOID DeleteAll(VOID)
 
 int MessageBoxLocalized(HWND hwnd, UINT text_id, UINT caption_id, UINT type)
 {
-    TCHAR tmp1[255], tmp2[255];
+    TCHAR tmp1[300], tmp2[300];
 
     LoadString(*g_hInst, text_id, tmp1, sizeof(tmp1)/sizeof(tmp1[0]));
     LoadString(*g_hInst, caption_id, tmp2, sizeof(tmp2)/sizeof(tmp2[0]));
@@ -379,7 +379,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         return FALSE;
     }
 
-    if (user_dat.ValidEmailCheck) { 
+    if (user_dat.ValidEmailCheck) {
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_42, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
             free(tmp);
@@ -405,7 +405,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
         return FALSE;
     }
 
-    if (user_dat.ValidEmailCheck) { 
+    if (user_dat.ValidEmailCheck) {
         if (!isValidDomain(tmp, NO_SEPARATOR)) {
             MessageBoxLocalized(hwnd, ID_ERR_MSG_40, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
             free(tmp);
@@ -454,7 +454,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_SUBJECTFIELD, &tmp);
     if (!tmp) {
-        if (MessageBoxLocalized(hwnd, 38, 37, MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBoxLocalized(hwnd, ID_ERR_MSG_38, ID_ERR_MSG_37, MB_YESNO | MB_ICONASTERISK) == IDYES) {
             if ((user_dat.SUBJECT = malloc(2)) != NULL) {
                 StringCchPrintfA(user_dat.SUBJECT, 2, "");
             } else {
@@ -480,7 +480,7 @@ BOOL parseEmailDialogFields(HWND hwnd)
 
     GetFieldTextA(hwnd, IDC_MESSAGEFIELD, &tmp);
     if (!tmp) {
-        if (MessageBoxLocalized(hwnd, 36, 35, MB_YESNO | MB_ICONASTERISK) == IDYES) {
+        if (MessageBoxLocalized(hwnd, ID_ERR_MSG_36, ID_ERR_MSG_35, MB_YESNO | MB_ICONASTERISK) == IDYES) {
             if ((user_dat.BODY = malloc(2)) != NULL) {
                 StringCchPrintfA(user_dat.BODY, 2, "");
             } else {
