@@ -43,6 +43,6 @@ Winapi
 
 ### License
 
-see LICENSE
+see the folder licenses
 
-2016 <georgekoskerid@outlook.com>
+USB2Email (C) 2016 <georgekoskerid@outlook.com>
