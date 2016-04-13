@@ -33,9 +33,9 @@ typedef struct thread_args {
 
 /*** Globals ***/
 ULONG scanned_usb_ids[MAX_CONNECTED_USB][2];
-
 HANDLE u2mMainThread;
 
+static SRWLOCK U2Msrw_lock = SRWLOCK_INIT;
 static ULONG curr_filename = 1; //current log file number
 static LONG Logging_System_Enabled = TRUE;
 /* pointer to the thread arguments
@@ -49,7 +49,7 @@ static thread_args *tmp = NULL;
 BOOL USBisConnected();
 UINT CALLBACK U2MThreadSingle(LPVOID dat);
 //UINT CALLBACK U2MThreadMulti(LPVOID dat);
-BOOL SendEmail(user_input_data user_dat);
+BOOL SendEmail(user_input_data *user_dat, char *errmsg_out);
 UsbDevStruct *find(unsigned long vendor, unsigned long device);
 BOOL GetDevIDs(ULONG *vid, ULONG *pid, TCHAR *devpath);
 BOOL WriteToU2MLogFile(TCHAR *Logfile_name);
@@ -58,25 +58,25 @@ VOID EnableU2MLogging(BOOL new_state);
 BOOL U2MLoggingIsEnabled(VOID);
 
 
-BOOL InitU2MThread(user_input_data user_dat, HWND hwnd)
+BOOL InitU2MThread(user_input_data *user_dat, HWND hwnd)
 {
     if (onoff == TRUE) return FALSE;
 
     UINT u2mthrdID;
 
-    if (!user_dat.FROM) {
+    if (!user_dat->FROM) {
         MessageBoxLocalized(hwnd, ID_ERR_MSG_53, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
-    if (!user_dat.SMTP_SERVER) {
+    if (!user_dat->SMTP_SERVER) {
         MessageBoxLocalized(hwnd, ID_ERR_MSG_55, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
-    if (!user_dat.usb_id_selection[0] || !user_dat.usb_id_selection[1]) {
+    if (!user_dat->usb_id_selection[0] || !user_dat->usb_id_selection[1]) {
         MessageBoxLocalized(hwnd, ID_ERR_MSG_56, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
-    if (!user_dat.pass) {
+    if (!user_dat->pass) {
         MessageBoxLocalized(hwnd, ID_ERR_MSG_57, ID_ERR_MSG_54, MB_OK | MB_ICONERROR);
         return FALSE;
     }
@@ -85,7 +85,7 @@ BOOL InitU2MThread(user_input_data user_dat, HWND hwnd)
 
     tmp = HeapAlloc(GetProcessHeap(), HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, sizeof(thread_args));
 
-    tmp->usr = user_dat;
+    tmp->usr = *user_dat;
     tmp->hwnd = hwnd;
     tmp->thrdID = GetThreadId(GetCurrentThread());
 
@@ -101,7 +101,9 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
 {
     thread_args *args = (thread_args *)dat;
     UINT failed_emails = 0;
+    char email_err_buff[255];
 
+    email_err_buff[0] = '\0';
     if (args->hwnd == NULL) {
         _endthreadex(1);
         return 1;
@@ -119,14 +121,19 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
             //a custom message to the main window
             SendMessageTimeout(args->hwnd, WM_ENABLE_STARTSTOP,
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
-            if (SendEmail(args->usr) == FALSE) {
+            if (SendEmail(&(args->usr), email_err_buff) == FALSE) {
                 failed_emails++;
             }
             SendMessageTimeout(args->hwnd, WM_ENABLE_STARTSTOP,
                                (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
             //if the maximum number of failed e-mails has been reached at this pointer
             //there's no need to enter the second loop; the thread exits
-            if (failed_emails > args->usr.MAX_FAILED_EMAILS) break;
+            if (failed_emails > args->usr.MAX_FAILED_EMAILS) {
+                if (email_err_buff[0]) {
+                    MessageBoxA(args->hwnd, email_err_buff, "Failed sending the e-mail!", MB_OK | MB_ICONERROR);
+                }
+                break;
+            }
 
             while (GetConnectedUSBDevs(NULL, args->usr.usb_id_selection[0],
                    args->usr.usb_id_selection[1], IS_USB_CONNECTED)) {
@@ -141,7 +148,7 @@ UINT CALLBACK U2MThreadSingle(LPVOID dat)
     //InterlockedDecrement(&Logging_System_Enabled);
     if (failed_emails > args->usr.MAX_FAILED_EMAILS) {
         SendMessageTimeout(args->hwnd, WM_STARTSTOP_CONTROL,
-                               (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
+                           (WPARAM)0, (LPARAM)0, SMTO_NORMAL, 0, NULL);
     }
     _endthreadex(0);
     return 0;
@@ -171,27 +178,38 @@ UINT CALLBACK U2MThreadMulti(LPVOID dat)
     return 0;
 }*/
 
-BOOL SendEmail(user_input_data user_dat)
+BOOL SendEmail(user_input_data *user_dat, char *errmsg_out)
 {
     BOOL retvalue = TRUE;
-    quickmail mailobj = quickmail_create(user_dat.FROM, user_dat.SUBJECT);
+    quickmail mailobj = quickmail_create(user_dat->FROM, user_dat->SUBJECT);
 
-    quickmail_add_to(mailobj, user_dat.TO);
+    quickmail_add_to(mailobj, user_dat->TO);
 
-    if (user_dat.CC)
-        quickmail_add_cc(mailobj, user_dat.CC);
+    if (user_dat->CC)
+        quickmail_add_cc(mailobj, user_dat->CC);
 
     quickmail_add_header(mailobj, "Importance: High");
     /*quickmail_add_header(mailobj, "X-Priority: 5");
     quickmail_add_header(mailobj, "X-MSMail-Priority: Low");*/
-    quickmail_set_body(mailobj, user_dat.BODY);
+    quickmail_set_body(mailobj, user_dat->BODY);
 
     const char* errmsg;
-#if 1
+#ifdef DEBUG
     quickmail_set_debug_log(mailobj, stderr);
 #endif
-    if ((errmsg = quickmail_send(mailobj, user_dat.SMTP_SERVER, user_dat.PORT, user_dat.FROM, user_dat.pass)) != NULL) {
+    if (user_dat->PORT == 465) { //smtps
+        if ((errmsg = quickmail_send_secure(mailobj, user_dat->SMTP_SERVER, user_dat->PORT,
+                                            user_dat->FROM, user_dat->pass)) != NULL) {
+            retvalue = FALSE;
+        }
+    } else if ((errmsg = quickmail_send(mailobj, user_dat->SMTP_SERVER, user_dat->PORT, user_dat->FROM, user_dat->pass)) != NULL) {
         retvalue = FALSE;
+    }
+
+    if (errmsg && errmsg_out) {
+        if (FAILED(StringCchCopyNA(errmsg_out, 255, errmsg, (size_t)lstrlenA(errmsg)))) {
+            errmsg_out[0] = '\0';
+        }
     }
     quickmail_destroy(mailobj);
     return retvalue;
@@ -199,7 +217,6 @@ BOOL SendEmail(user_input_data user_dat)
 
 BOOL U2MLoggingIsEnabled(VOID)
 {
-    SRWLOCK U2Msrw_lock = SRWLOCK_INIT;
     BOOL retvalue;
 
     AcquireSRWLockShared(&U2Msrw_lock);
@@ -210,8 +227,6 @@ BOOL U2MLoggingIsEnabled(VOID)
 
 VOID EnableU2MLogging(BOOL new_state)
 {
-    SRWLOCK U2Msrw_lock = SRWLOCK_INIT;
-
     AcquireSRWLockExclusive(&U2Msrw_lock);
     Logging_System_Enabled = new_state;
     ReleaseSRWLockExclusive(&U2Msrw_lock);
@@ -267,10 +282,11 @@ VOID InitU2MLogging(VOID)
 
 BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
 {
+#define MAX_TOWRITE 255
     HANDLE hLogfile;
     DWORD dwRet;
     SYSTEMTIME curr_time;
-    TCHAR to_write[255], filename[255];
+    TCHAR to_write[MAX_TOWRITE], filename[255];
     size_t to_write_len;
     OVERLAPPED log_inf = {.Offset = 0xffffffff, .OffsetHigh = 0xffffffff}; //to write to the end of the file
     LARGE_INTEGER Logfile_sz; //the size of the current file
@@ -292,11 +308,11 @@ BOOL WriteToU2MLogFile(TCHAR *Logfile_name)
     }
 
 WRITE_TO_LOG:
-    StringCchPrintf(to_write, 255,
-                    TEXT("-- DAY:%02d, MONTH:%02d, YEAR:%d, \tHOUR:%02d, MINUTE:%02d, SECONDS:%02d, MILLISECONDS:%04d --\r\n\r\n"),
+    StringCchPrintf(to_write, MAX_TOWRITE,
+                    TEXT("-- %02d:%02d:%02d.%04d\tDAY:%02d, MONTH:%02d, YEAR:%d --\r\n\r\n"),
                     curr_time.wDay, curr_time.wMonth, curr_time.wYear, curr_time.wHour,
                     curr_time.wMinute, curr_time.wSecond, curr_time.wMilliseconds);
-    StringCbLength(to_write, 255, &to_write_len);
+    StringCbLength(to_write, MAX_TOWRITE, &to_write_len);
     WriteFile(hLogfile, to_write, to_write_len, &dwRet, &log_inf);
     CloseHandle(hLogfile);
 

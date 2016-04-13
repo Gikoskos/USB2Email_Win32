@@ -160,7 +160,7 @@ static void __MsgBoxGetLastError(HWND hwnd, const LPCTSTR func, ULONG line)
                     func, err, line, lpMsgBuf);
 
     err = LoadLocaleErrMsg(error_localized, 0);
-    MessageBoxEx(hwnd, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : TEXT("Error!"), MB_OK, currentLangID); 
+    MessageBoxEx(hwnd, (LPCTSTR)lpDisplayBuf, (err) ? error_localized : TEXT("Error!"), MB_OK | MB_ICONERROR, currentLangID); 
 
     LocalFree(lpMsgBuf);
     LocalFree(lpDisplayBuf);
@@ -170,12 +170,12 @@ static void __MsgBoxGetLastError(HWND hwnd, const LPCTSTR func, ULONG line)
 int MessageBoxLocalized(HWND hwnd, UINT text_id, UINT caption_id, UINT type);
 VOID AddDeviceToUSBListView(HWND hDlg, TCHAR *dev_str, TCHAR *ven_str);
 //U2MModule.c
-BOOL InitU2MThread(user_input_data user_dat, HWND hwnd);
+BOOL InitU2MThread(user_input_data *user_dat, HWND hwnd);
 BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag);
 VOID InitU2MLogging(VOID);
 VOID FreeModuleHeap(VOID);
 //U2MConf.c
 BOOL parseConfFile(user_input_data *user_dat);
-BOOL saveConfFile(user_input_data user_dat);
-BOOL WriteDataToU2MReg(user_input_data user_dat);
+BOOL saveConfFile(user_input_data *user_dat);
+BOOL WriteDataToU2MReg(user_input_data *user_dat);
 BOOL GetU2MRegData(user_input_data *user_dat);

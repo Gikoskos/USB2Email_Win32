@@ -133,21 +133,21 @@ BOOL parseConfFile(user_input_data *user_dat)
     return TRUE;
 }
 
-BOOL saveConfFile(user_input_data user_dat)
+BOOL saveConfFile(user_input_data *user_dat)
 {
     FILE *U2Mconf_file = fopen(cfg_filename, "w");
 
     if (!U2Mconf_file) return FALSE;
 
     cfg_opt_t email_opts[] = {
-        CFG_STR("From", user_dat.FROM, CFGF_NONE),
-        CFG_STR("To", user_dat.TO, CFGF_NONE),
-        CFG_STR("Cc", user_dat.CC, CFGF_NONE),
-        CFG_STR("Subject", user_dat.SUBJECT, CFGF_NONE),
-        CFG_STR("Body", user_dat.BODY, CFGF_NONE),
-        CFG_STR("Password", user_dat.pass, CFGF_NONE),
-        CFG_STR("SMTP_server", user_dat.SMTP_SERVER, CFGF_NONE),
-        CFG_INT("Port_number", (int)user_dat.PORT, CFGF_NONE),
+        CFG_STR("From", user_dat->FROM, CFGF_NONE),
+        CFG_STR("To", user_dat->TO, CFGF_NONE),
+        CFG_STR("Cc", user_dat->CC, CFGF_NONE),
+        CFG_STR("Subject", user_dat->SUBJECT, CFGF_NONE),
+        CFG_STR("Body", user_dat->BODY, CFGF_NONE),
+        CFG_STR("Password", user_dat->pass, CFGF_NONE),
+        CFG_STR("SMTP_server", user_dat->SMTP_SERVER, CFGF_NONE),
+        CFG_INT("Port_number", (int)user_dat->PORT, CFGF_NONE),
         CFG_END()
     };
 
@@ -162,7 +162,7 @@ BOOL saveConfFile(user_input_data user_dat)
 
 /* functions for handling data in the registry */
 
-BOOL WriteDataToU2MReg(user_input_data user_dat)
+BOOL WriteDataToU2MReg(user_input_data *user_dat)
 {
     HKEY U2MRegkey = NULL, WinAuto = NULL;
     TCHAR U2MPath[1024];
@@ -171,14 +171,14 @@ BOOL WriteDataToU2MReg(user_input_data user_dat)
                        REG_OPTION_NON_VOLATILE, KEY_CREATE_SUB_KEY | KEY_SET_VALUE, NULL,
                        &U2MRegkey, NULL) != ERROR_SUCCESS) return FALSE;
 
-    RegSetValueEx(U2MRegkey, reg_subkeys[0], 0, REG_DWORD, (BYTE*)&user_dat.TrayIcon, sizeof(user_dat.TrayIcon));
-    RegSetValueEx(U2MRegkey, reg_subkeys[1], 0, REG_DWORD, (BYTE*)&user_dat.usb_id_selection[0], sizeof(user_dat.usb_id_selection[0]));
-    RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&user_dat.usb_id_selection[1], sizeof(user_dat.usb_id_selection[1]));
-    RegSetValueEx(U2MRegkey, reg_subkeys[3], 0, REG_DWORD, (BYTE*)&user_dat.Autostart, sizeof(user_dat.Autostart));
-    RegSetValueEx(U2MRegkey, reg_subkeys[4], 0, REG_DWORD, (BYTE*)&user_dat.TIMEOUT, sizeof(user_dat.TIMEOUT));
-    RegSetValueEx(U2MRegkey, reg_subkeys[5], 0, REG_DWORD, (BYTE*)&user_dat.MAX_FAILED_EMAILS, sizeof(user_dat.MAX_FAILED_EMAILS));
-    RegSetValueEx(U2MRegkey, reg_subkeys[6], 0, REG_DWORD, (BYTE*)&user_dat.ValidEmailCheck, sizeof(user_dat.ValidEmailCheck));
-    RegSetValueEx(U2MRegkey, reg_subkeys[7], 0, REG_DWORD, (BYTE*)&user_dat.USBRefresh, sizeof(user_dat.USBRefresh));
+    RegSetValueEx(U2MRegkey, reg_subkeys[0], 0, REG_DWORD, (BYTE*)&user_dat->TrayIcon, sizeof(user_dat->TrayIcon));
+    RegSetValueEx(U2MRegkey, reg_subkeys[1], 0, REG_DWORD, (BYTE*)&user_dat->usb_id_selection[0], sizeof(user_dat->usb_id_selection[0]));
+    RegSetValueEx(U2MRegkey, reg_subkeys[2], 0, REG_DWORD, (BYTE*)&user_dat->usb_id_selection[1], sizeof(user_dat->usb_id_selection[1]));
+    RegSetValueEx(U2MRegkey, reg_subkeys[3], 0, REG_DWORD, (BYTE*)&user_dat->Autostart, sizeof(user_dat->Autostart));
+    RegSetValueEx(U2MRegkey, reg_subkeys[4], 0, REG_DWORD, (BYTE*)&user_dat->TIMEOUT, sizeof(user_dat->TIMEOUT));
+    RegSetValueEx(U2MRegkey, reg_subkeys[5], 0, REG_DWORD, (BYTE*)&user_dat->MAX_FAILED_EMAILS, sizeof(user_dat->MAX_FAILED_EMAILS));
+    RegSetValueEx(U2MRegkey, reg_subkeys[6], 0, REG_DWORD, (BYTE*)&user_dat->ValidEmailCheck, sizeof(user_dat->ValidEmailCheck));
+    RegSetValueEx(U2MRegkey, reg_subkeys[7], 0, REG_DWORD, (BYTE*)&user_dat->USBRefresh, sizeof(user_dat->USBRefresh));
 
     if (RegCloseKey(U2MRegkey) != ERROR_SUCCESS) return FALSE;
 
@@ -187,7 +187,7 @@ BOOL WriteDataToU2MReg(user_input_data user_dat)
     if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 
                      0, KEY_ALL_ACCESS, &WinAuto) != ERROR_SUCCESS) return FALSE;
 
-    if (user_dat.Autostart) {
+    if (user_dat->Autostart) {
         RegSetValueEx(WinAuto, TEXT("USB2Email"), 0, REG_SZ, (LPBYTE)U2MPath, sizeof(TCHAR)*(_tcslen(U2MPath) + 1));
     } else {
         RegDeleteKeyValue(WinAuto, NULL, TEXT("USB2Email"));
@@ -206,14 +206,12 @@ BOOL GetU2MRegData(user_input_data *user_dat)
                        REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL,
                        &U2MRegkey, &RegDisposition) != ERROR_SUCCESS) return FALSE;
 
-    if (RegDisposition == REG_CREATED_NEW_KEY) {
-        goto CLOSE_KEY;
-    } else if (RegDisposition == REG_OPENED_EXISTING_KEY) {
+    if (RegDisposition == REG_OPENED_EXISTING_KEY) {
         DWORD sub_data[8];
         DWORD data_size = (DWORD)sizeof(DWORD);
 
         for (int i = 0; i < 8; i++) {
-            if (RegQueryValueEx(U2MRegkey, reg_subkeys[i], NULL, NULL, 
+            if (RegQueryValueEx(U2MRegkey, reg_subkeys[i], NULL, NULL,
                                 (BYTE*)&sub_data[i], &data_size) != ERROR_SUCCESS) goto CLOSE_KEY;
         }
         user_dat->TrayIcon = (BOOL)(sub_data[0] | 0x0);
@@ -229,6 +227,7 @@ BOOL GetU2MRegData(user_input_data *user_dat)
 CLOSE_KEY:
     if (RegCloseKey(U2MRegkey) != ERROR_SUCCESS) return FALSE;
 
-    if (RegDisposition == REG_CREATED_NEW_KEY) return WriteDataToU2MReg(*user_dat);
-    else return TRUE;
+    if (RegDisposition == REG_CREATED_NEW_KEY) return WriteDataToU2MReg(user_dat);
+
+    return TRUE;
 }

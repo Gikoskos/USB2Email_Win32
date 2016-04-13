@@ -202,7 +202,7 @@ VOID InitHelpDialog(HWND hwnd)
             MessageBoxLocalized(hwnd, ID_ERR_MSG_47, ID_ERR_MSG_0, MB_OK | MB_ICONERROR);
         }
     } else {
-        //SetActiveWindow doesn't work well so i'm saving a static handle for the Help dialog
+        //SetActiveWindow doesn't work well so i'm saving a global handle for the Help dialog
         //SetActiveWindow(GetDlgItem(hwnd, IDD_HELPDIALOG));
         SetActiveWindow(hlp_hwnd);
     }
@@ -1051,7 +1051,7 @@ INT_PTR CALLBACK PrefDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case IDC_SAVECONFBUTTON:
-                    saveConfFile(user_dat);
+                    saveConfFile(&user_dat);
                     return (INT_PTR)TRUE;
                 case IDAPPLY:
                 case IDOK:
@@ -1110,8 +1110,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 SendMessage(hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)usbDlgIco);
             }
 
-            ZeroMemory(&vendCol, sizeof(vendCol));
-            ZeroMemory(&devcCol, sizeof(devcCol));
+            SecureZeroMemory(&vendCol, sizeof(vendCol));
+            SecureZeroMemory(&devcCol, sizeof(devcCol));
             temp_idx = -1;
             vendCol.mask = devcCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
             vendCol.iSubItem = 0;
@@ -1142,7 +1142,7 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             return (INT_PTR)TRUE;
         case WM_COMMAND:
             usb_idx = 0;
-            ZeroMemory(user_dat.usb_id_selection, sizeof(UINT)*2);
+            SecureZeroMemory(user_dat.usb_id_selection, sizeof(UINT)*2);
             switch (LOWORD(wParam)) {
                 case IDUSBREFRESH:
                     ListView_DeleteAllItems(GetDlgItem(hwnd, IDC_USBDEVLIST));
@@ -1187,7 +1187,8 @@ INT_PTR CALLBACK USBDialogProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                             SendMessage(hwnd, WM_COMMAND, MAKEWPARAM(IDOK, 133), (LPARAM)0);
                             return (INT_PTR)TRUE;
                         case NM_CLICK:
-                        case NM_HOVER:
+                        case NM_RELEASEDCAPTURE:
+
                             temp_idx = (INT)SendMessage(GetDlgItem(hwnd, IDC_USBDEVLIST),
                                                         LVM_GETNEXTITEM, -1, LVNI_FOCUSED | LVNI_SELECTED);
                             if (temp_idx != -1)
@@ -1458,7 +1459,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     } else {
                         ResetEvent(u2m_StartStop_event);
                     }
-                    onoff = InitU2MThread(user_dat, hwnd);
+                    onoff = InitU2MThread(&user_dat, hwnd);
                     EnableWindow(USBListButton, !onoff);
                     EnableWindow(EMAILButton, !onoff);
                     EnableWindow(time_track, !onoff);
@@ -1547,7 +1548,7 @@ LRESULT CALLBACK MainWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             if (MessageBoxLocalized(hwnd, ID_ERR_MSG_6, ID_ERR_MSG_5, MB_ICONASTERISK | MB_YESNO) == IDNO)
                 break;
 #endif
-            if (!WriteDataToU2MReg(user_dat)) {
+            if (!WriteDataToU2MReg(&user_dat)) {
                 MessageBoxLocalized(hwnd, ID_ERR_MSG_66, ID_ERR_MSG_31, MB_ICONERROR);
             }
         case WM_QUIT:
@@ -1628,7 +1629,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /*** Global initializations ***/
     onoff = FALSE;
     TrayIconMenu = NULL;
-    ZeroMemory(user_dat.usb_id_selection, sizeof(UINT)*2);
+    SecureZeroMemory(user_dat.usb_id_selection, sizeof(UINT)*2);
 
     usb_idx = 0;
 

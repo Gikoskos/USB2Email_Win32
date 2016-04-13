@@ -1,7 +1,7 @@
 /*! \file      quickmail.h
  *  \brief     header file for libquickmail
  *  \author    Brecht Sanders
- *  \date      2012-2013
+ *  \date      2012-2016
  *  \copyright GPL
  */
 /*
@@ -296,6 +296,17 @@ DLL_EXPORT_LIBQUICKMAIL size_t quickmail_get_data (void* buffer, size_t size, si
  * \return NULL on success or error message on error
  */
 DLL_EXPORT_LIBQUICKMAIL const char* quickmail_send (quickmail mailobj, const char* smtpserver, unsigned int smtpport, const char* username, const char* password);
+
+/*! \brief send the e-mail via SMTPS
+ * \param  mailobj     quickmail object
+ * \param  smtpserver  IP address or hostname of SMTPS server
+ * \param  smtpport    SMTPS port number (normally this is 465)
+ * \param  username    username to use for authentication (or NULL if not needed)
+ * \param  password    password to use for authentication (or NULL if not needed)
+ * \return NULL on success or error message on error
+ */
+DLL_EXPORT_LIBQUICKMAIL const char* quickmail_send_secure (quickmail mailobj, const char* smtpserver, unsigned int smtpport, const char* username, const char* password);
+
 
 #ifdef __cplusplus
 }
