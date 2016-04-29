@@ -8,8 +8,19 @@ SMTP settings and the e-mail you want to send and start the service.
 USB2Email logs all the times the USB device is detected and writes down to log files a timestamp
 of when the USB was inserted.
 
-More detailed instructions about different functionalities in the application, you will find in
+At the moment the installer isn't finished so the user has to delete the registry key created
+by this application manually, in case he wants to remove this application completely from the PC.
+
+The registry key to be deleted is
+
+    HKEY_CURRENT_USER\Software\USB2Email
+
+Detailed instructions about different functionalities in the application, you will find in
 the Help dialog.
+
+## TODO
+
+* Implement WiX installer
 
 ## Language support
 
