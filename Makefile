@@ -34,25 +34,19 @@ all_extern: clean locale_dlls usbids_dll compile_icon_res
 
 locale_dlls: compile_en_dll compile_gr_dll
 
-compile_en_dll: compile_en_resources
+compile_en_dll:
+	pushd resources & windres $(EN_RES) ..\en_resources.o & popd &
 	$(CC) -shared -o build/USB2Email/U2MLocale_En.dll en_resources.o
 
-compile_gr_dll: compile_gr_resources
+compile_gr_dll:
+	pushd resources & windres $(GR_RES) ..\gr_resources.o &	popd &
 	$(CC) -shared -o build/USB2Email/U2MLocale_Gr.dll gr_resources.o
-
-compile_en_resources:
-	cd resources & windres $(EN_RES) ..\en_resources.o & cd ..
-
-compile_gr_resources: 
-	cd resources & windres $(GR_RES) ..\gr_resources.o & cd ..
 
 compile_icon_res:
 	cd resources & windres $(MAIN_RES) ..\main_res.o & cd ..
 
-compile_usbids:
+usbids_dll:
 	$(CC) $(CFLAGS) -c $(USBIDS_SOURCE)
-
-usbids_dll: compile_usbids
 	$(CC) -shared -o build/USB2Email/U2MUsbIDs.dll find_usb.o usb_ids.o -Wl,--out-implib,build/libU2MUsbIDs_dll.a
 
 installer: candle light
