@@ -396,15 +396,9 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
                         // then we will show a localized 'Unknown device/vendor' string
                         // with the device's ID
                         if (new == NULL) {
-                            TCHAR device_to_add[255], vendor_to_add[255];
-                            TCHAR venIDstr[] = {
-                                TEXT('('), TEXT('0'), TEXT('x'),
-                                DevIntfDetailData->DevicePath[12],
-                                DevIntfDetailData->DevicePath[13],
-                                DevIntfDetailData->DevicePath[14],
-                                DevIntfDetailData->DevicePath[15],
-                                TEXT(')'), TEXT('\0')
-                            },    devIDstr[] = {
+                            //first, we create the device string in the form of "Unknown device(0xabcd)"
+                            TCHAR device_to_add[255];
+                            TCHAR devIDstr[] = {
                                 TEXT('('), TEXT('0'), TEXT('x'),
                                 DevIntfDetailData->DevicePath[21],
                                 DevIntfDetailData->DevicePath[22],
@@ -413,11 +407,33 @@ BOOL GetConnectedUSBDevs(HWND hDlg, ULONG VendorID, ULONG ProductID, USHORT flag
                                 TEXT(')'), TEXT('\0')
                             };
 
-                            LoadLocaleErrMsg(vendor_to_add, 32);
                             LoadLocaleErrMsg(device_to_add, 33);
-                            StringCchCat(vendor_to_add, sizeof(vendor_to_add) / sizeof(vendor_to_add[0]), venIDstr);
                             StringCchCat(device_to_add, sizeof(device_to_add) / sizeof(device_to_add[0]), devIDstr);
-                            AddDeviceToUSBListView(hDlg, device_to_add, vendor_to_add);
+
+                            //then we look to see if the usb list has the vendor's name, at least, because a normal user
+                            //won't be able to identify easily their USB device from its IDs. Any kind of identification
+                            //at this point can be useful.
+                            new = UsbFind(vID, 0xabcd);
+                            if (!new) {
+                                //if we didn't find any vendor, we default to the
+                                //Unknown device/vendor strings
+                                TCHAR vendor_to_add[255];
+                                TCHAR venIDstr[] = {
+                                    TEXT('('), TEXT('0'), TEXT('x'),
+                                    DevIntfDetailData->DevicePath[12],
+                                    DevIntfDetailData->DevicePath[13],
+                                    DevIntfDetailData->DevicePath[14],
+                                    DevIntfDetailData->DevicePath[15],
+                                    TEXT(')'), TEXT('\0')
+                                };
+
+                                LoadLocaleErrMsg(vendor_to_add, 32);
+                                StringCchCat(vendor_to_add, sizeof(vendor_to_add) / sizeof(vendor_to_add[0]), venIDstr);
+                                AddDeviceToUSBListView(hDlg, device_to_add, vendor_to_add);
+                            } else {
+                                //if we found a vendor then we send the strings to the USB list view
+                                AddDeviceToUSBListView(hDlg, device_to_add, new->Vendor);
+                            }
                         } else {
                             AddDeviceToUSBListView(hDlg, new->Device, new->Vendor);
                         }
