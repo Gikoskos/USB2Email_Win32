@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>USB2Email by Gikoskos</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>USB2Email</h1>
+        <p>Win32 program that sends an e-mail when a USB device is inserted</p>
+
+        <p class="view"><a href="https://github.com/Gikoskos/USB2Email_Win32">View the Project on GitHub <small>Gikoskos/USB2Email_Win32</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/Gikoskos/USB2Email_Win32/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/Gikoskos/USB2Email_Win32/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/Gikoskos/USB2Email_Win32">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h2>
+<a id="overview" class="anchor" href="#overview" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Overview</h2>
+
+<p>With USB2Email you can send an e-mail whenever a certain USB device is inserted on the computer.
+Insert your USB device to the PC, find it and choose it from the list, configure your server's
+SMTP settings and the e-mail you want to send and start the service.</p>
+
+<p>Every time the USB device you chose is inserted on the computer, a single e-mail is sent and the service
+goes to sleep until your USB device is removed. When it's removed, the program starts running again.</p>
+
+<p>USB2Email logs all the times the USB device is detected and writes down to log files a timestamp
+of when the USB was inserted.</p>
+
+<p>At the moment the installer isn't finished so the user has to delete the registry key created
+by this application manually, in case he wants to remove this application completely from the PC.</p>
+
+<p>The registry key to be deleted is</p>
+
+<pre><code>HKEY_CURRENT_USER\Software\USB2Email
+</code></pre>
+
+<p>Detailed instructions about different functionalities in the application, you will find in
+the Help dialog.</p>
+
+<h2>
+<a id="language-support" class="anchor" href="#language-support" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Language support</h2>
+
+<p>English</p>
+
+<p>Greek</p>
+
+<p>If you want to support other languages e-mail me.</p>
+
+<h2>
+<a id="libs-used" class="anchor" href="#libs-used" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Libs used</h2>
+
+<p>libquickmail (depends on libcurl)</p>
+
+<p>libconfuse</p>
+
+<p>Winapi</p>
+
+<h3>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>License</h3>
+
+<p>see the folder 'licenses'</p>
+
+<p>USB2Email (C) 2016 <a href="mailto:georgekoskerid@outlook.com">georgekoskerid@outlook.com</a></p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/Gikoskos">Gikoskos</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
