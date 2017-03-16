@@ -14,9 +14,10 @@ by this application manually, in case he wants to remove this application comple
 The registry key to be deleted is
 
     HKEY_CURRENT_USER\Software\USB2Email
-
 Detailed instructions about different functionalities in the application, you will find in
 the Help dialog.
+
+![Alt Text](http://i.imgur.com/eU5RRgh.gif)
 
 ## TODO
 
